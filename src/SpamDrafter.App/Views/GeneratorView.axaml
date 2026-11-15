@@ -1,0 +1,115 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:d="using:SpamDrafter.Core.Decks"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.GeneratorView"
+             x:DataType="vm:GeneratorViewModel">
+  <Grid ColumnDefinitions="330,*,*" Margin="12" ColumnSpacing="16">
+
+    <!-- Sélecteur de cartes -->
+    <DockPanel>
+      <Button DockPanel.Dock="Bottom" Content="Imposer cette carte (ou double-clic)" Command="{Binding AddCommand}"
+              HorizontalAlignment="Stretch" Margin="0,8,0,0" />
+      <v:CardListPanel x:Name="Picker" DataContext="{Binding Browser}" />
+    </DockPanel>
+
+    <!-- Sélection, réglage, propositions -->
+    <DockPanel Grid.Column="1">
+      <StackPanel DockPanel.Dock="Top" Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding FixedText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Tout effacer" Command="{Binding ClearCommand}" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Fixed}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:FixedSlotViewModel">
+              <Border BorderBrush="#44808080" BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,0,0,6">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                  <Border Width="36" Height="52" CornerRadius="3" ClipToBounds="True" Background="#22000000">
+                    <Image Source="{Binding Card.Thumbnail}" Stretch="UniformToFill" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Card.Name}" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding TalentOptions}" SelectedItem="{Binding Talent}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <Button Grid.Column="2" Content="✕" VerticalAlignment="Center"
+                          Command="{Binding $parent[UserControl].((vm:GeneratorViewModel)DataContext).RemoveCommand}"
+                          CommandParameter="{Binding}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <TextBlock Text="Effort :" VerticalAlignment="Center" />
+          <ComboBox Grid.Column="1" ItemsSource="{Binding EffortOptions}" SelectedItem="{Binding SelectedEffort}" HorizontalAlignment="Stretch" />
+        </Grid>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Générer des decks" Command="{Binding GenerateCommand}" Classes="accent" />
+          <Button Content="Annuler" Command="{Binding CancelCommand}" />
+        </StackPanel>
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" IsVisible="{Binding IsBusy}" Height="6" />
+        <TextBlock Text="{Binding Step}" Opacity="0.7" FontSize="12" IsVisible="{Binding IsBusy}" />
+        <TextBlock Text="{Binding Status}" Opacity="0.85" TextWrapping="Wrap" />
+      </StackPanel>
+      <ScrollViewer Margin="0,8,0,0">
+        <ItemsControl ItemsSource="{Binding Proposals}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ProposalViewModel">
+              <Border BorderBrush="#44808080" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                <StackPanel Spacing="4">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16" />
+                    <TextBlock Text="{Binding Score}" Opacity="0.7" VerticalAlignment="Center" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <ItemsControl ItemsSource="{Binding Lines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <TextBlock Text="{Binding}" Opacity="0.85" FontSize="12" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                    <Button Content="Fiche du deck"
+                            Command="{Binding $parent[UserControl].((vm:GeneratorViewModel)DataContext).AnalyseCommand}"
+                            CommandParameter="{Binding}" />
+                    <Button Content="{Binding SaveLabel}"
+                            Command="{Binding $parent[UserControl].((vm:GeneratorViewModel)DataContext).SaveCommand}"
+                            CommandParameter="{Binding}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+
+    <!-- Rapport -->
+    <DockPanel Grid.Column="2">
+      <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+        <TextBlock Text="Analyser un deck sauvegardé (4 cartes)" FontWeight="SemiBold" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <ComboBox ItemsSource="{Binding CompleteDecks}" SelectedItem="{Binding SavedToAnalyse}" HorizontalAlignment="Stretch"
+                    PlaceholderText="Choisir un deck…">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="d:Deck">
+                <TextBlock Text="{Binding Name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Grid.Column="1" Content="Analyser" Command="{Binding AnalyseSavedCommand}" />
+        </Grid>
+        <TextBlock Text="{Binding ReportTitle}" FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap" IsVisible="{Binding HasReport}" />
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasReport}">
+          <Button Content="{Binding DetailButtonLabel}" Command="{Binding ToggleDetailCommand}" />
+          <Button Content="Analyse complète (liens entre cartes, ≈ 1 min)" Command="{Binding CompleteAnalysisCommand}" />
+        </StackPanel>
+      </StackPanel>
+      <ScrollViewer IsVisible="{Binding HasReport}">
+        <SelectableTextBlock Text="{Binding Report}" TextWrapping="Wrap" FontSize="13" />
+      </ScrollViewer>
+    </DockPanel>
+  </Grid>
+</UserControl>

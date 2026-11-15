@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>spamdrafter-duel</AssemblyName>
+    <!-- Banc d'essai : beaucoup de copies de parties en parallèle ; le ramasse-miettes « serveur » évite de bloquer les cœurs. -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SpamDrafter.Engines\SpamDrafter.Engines.csproj" />
+  </ItemGroup>
+</Project>

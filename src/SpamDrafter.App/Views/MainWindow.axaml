@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SpamDrafter.App.ViewModels"
+        xmlns:v="using:SpamDrafter.App.Views"
+        x:Class="SpamDrafter.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="SpamDrafter (non officiel)" Width="1280" Height="800" MinWidth="1000" MinHeight="640">
+  <DockPanel>
+    <DockPanel DockPanel.Dock="Top" Margin="14,6">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" DataContext="{Binding Updater}">
+        <TextBlock Text="{Binding Status}" Opacity="0.7" FontSize="12" VerticalAlignment="Center" />
+        <Button Content="Redémarrer pour mettre à jour" Command="{Binding RestartCommand}"
+                IsVisible="{Binding UpdateReady}" FontSize="12" Padding="8,2" />
+        <Button Content="Rechercher une mise à jour" Command="{Binding CheckCommand}"
+                IsVisible="{Binding IsInstalled}" FontSize="12" Padding="8,2" />
+        <Button Content="Importer des données…" Click="ImportData_Click" FontSize="12" Padding="8,2"
+                ToolTip.Tip="Installer un fichier SpamDrafter-donnees-….zip (sans connexion)" />
+        <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
+    </DockPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{Binding LoadError}" IsVisible="{Binding HasError}"
+               Foreground="#E07070" Margin="14" TextWrapping="Wrap" />
+    <TabControl IsVisible="{Binding IsLoaded}" SelectedIndex="{Binding SelectedTab}">
+      <TabItem Header="Bibliothèque">
+        <v:LibraryView DataContext="{Binding Library}" />
+      </TabItem>
+      <TabItem Header="Deck builder">
+        <v:DeckBuilderView DataContext="{Binding DeckBuilder}" />
+      </TabItem>
+      <TabItem Header="Drafter">
+        <v:DrafterView DataContext="{Binding Drafter}" />
+      </TabItem>
+      <TabItem Header="Génération de deck" IsEnabled="{Binding HasGenerator}" ToolTip.Tip="{Binding GeneratorError}">
+        <v:GeneratorView DataContext="{Binding Generator}" />
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

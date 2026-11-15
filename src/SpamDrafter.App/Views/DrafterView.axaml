@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.DrafterView"
+             x:DataType="vm:DrafterViewModel">
+  <Grid ColumnDefinitions="360,*" Margin="12" ColumnSpacing="16">
+
+    <!-- Sélecteur de cartes -->
+    <DockPanel>
+      <Button DockPanel.Dock="Bottom" Content="Ajouter à la recherche (ou double-clic)" Command="{Binding AddCommand}"
+              HorizontalAlignment="Stretch" Margin="0,8,0,0" />
+      <v:CardListPanel x:Name="Picker" DataContext="{Binding Browser}" />
+    </DockPanel>
+
+    <!-- Recherche et résultats -->
+    <DockPanel Grid.Column="1">
+      <StackPanel DockPanel.Dock="Top" Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding WantedText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Tout effacer" Command="{Binding ClearCommand}" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Wanted}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CardItem">
+              <Border BorderBrush="#44808080" BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,0,8,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border Width="36" Height="52" CornerRadius="3" ClipToBounds="True" Background="#22000000">
+                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                  </Border>
+                  <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                  <Button Content="✕" VerticalAlignment="Center"
+                          Command="{Binding $parent[UserControl].((vm:DrafterViewModel)DataContext).RemoveCommand}"
+                          CommandParameter="{Binding}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Text="{Binding Message}" Opacity="0.85" TextWrapping="Wrap" Margin="0,0,0,4" />
+      </StackPanel>
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Results}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:DrafterResult">
+              <Border BorderBrush="#44808080" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Spacing="3">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="16" />
+                      <TextBlock Text="{Binding Badge}" Opacity="0.65" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Lines}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <TextBlock Text="{Binding}" Opacity="0.8" FontSize="12" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                  <Button Grid.Column="1" Content="Ouvrir dans le Deck builder" VerticalAlignment="Center"
+                          Command="{Binding $parent[UserControl].((vm:DrafterViewModel)DataContext).OpenCommand}"
+                          CommandParameter="{Binding}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+  </Grid>
+</UserControl>

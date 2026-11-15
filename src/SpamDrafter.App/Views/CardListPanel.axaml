@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             x:Class="SpamDrafter.App.Views.CardListPanel"
+             x:DataType="vm:CardBrowser">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <TextBox Text="{Binding Search}" PlaceholderText="Rechercher une carte…" />
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+        <ComboBox ItemsSource="{Binding ElementOptions}" SelectedItem="{Binding Element}" HorizontalAlignment="Stretch" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding RarityOptions}" SelectedItem="{Binding Rarity}" HorizontalAlignment="Stretch" />
+      </Grid>
+      <TextBlock Text="{Binding CountText}" Opacity="0.7" FontSize="12" />
+    </StackPanel>
+    <ListBox x:Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+             ItemTemplate="{StaticResource CardRow}" />
+  </DockPanel>
+</UserControl>

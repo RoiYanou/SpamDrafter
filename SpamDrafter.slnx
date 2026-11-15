@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SpamDrafter.Core/SpamDrafter.Core.csproj" />
+    <Project Path="src/SpamDrafter.App/SpamDrafter.App.csproj" />
+    <Project Path="src/SpamDrafter.Engines/SpamDrafter.Engines.csproj" />
+    <Project Path="src/SpamDrafter.Simulator/SpamDrafter.Simulator.csproj" />
+    <Project Path="src/SpamDrafter.DuelCli/SpamDrafter.DuelCli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SpamDrafter.Core.Tests/SpamDrafter.Core.Tests.csproj" />
+    <Project Path="tests/SpamDrafter.Engines.Tests/SpamDrafter.Engines.Tests.csproj" />
+    <Project Path="tests/SpamDrafter.Simulator.Tests/SpamDrafter.Simulator.Tests.csproj" />
+  </Folder>
+</Solution>

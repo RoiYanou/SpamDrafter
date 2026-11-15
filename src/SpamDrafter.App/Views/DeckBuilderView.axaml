@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:d="using:SpamDrafter.Core.Decks"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.DeckBuilderView"
+             x:DataType="vm:DeckBuilderViewModel">
+  <Grid ColumnDefinitions="220,*,360" Margin="12" ColumnSpacing="16">
+
+    <!-- Decks sauvegardés -->
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Text="Mes decks" FontWeight="SemiBold" Margin="0,0,0,8" />
+      <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
+        <Button Content="Nouveau deck" Command="{Binding NewCommand}" HorizontalAlignment="Stretch" />
+        <Button Content="Supprimer" Command="{Binding DeleteCommand}" HorizontalAlignment="Stretch" />
+      </StackPanel>
+      <ListBox ItemsSource="{Binding SavedDecks}" SelectedItem="{Binding SelectedSaved}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="d:Deck">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <!-- Deck en cours -->
+    <DockPanel Grid.Column="1">
+      <StackPanel DockPanel.Dock="Top" Spacing="8">
+        <TextBox Text="{Binding Name}" PlaceholderText="Nom du deck" FontSize="18" />
+        <TextBlock Text="{Binding SlotsText}" Opacity="0.7" />
+        <CheckBox IsChecked="{Binding IsReference}"
+                  Content="Deck de référence : un deck qui se joue vraiment dans le jeu (adversaire à battre pour le Cuisinier)" />
+      </StackPanel>
+      <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
+        <ItemsControl ItemsSource="{Binding Problems}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Text="{Binding StringFormat='• {0}'}" Foreground="#E0A050" FontSize="12" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="Sauvegarder" Command="{Binding SaveCommand}" HorizontalAlignment="Left" Classes="accent" />
+        <TextBlock Text="{Binding Status}" Opacity="0.85" TextWrapping="Wrap" />
+      </StackPanel>
+      <ScrollViewer Margin="0,8,0,0">
+        <ItemsControl ItemsSource="{Binding Slots}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:SlotViewModel">
+              <Border BorderBrush="#44808080" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <Border Width="52" Height="74" CornerRadius="3" ClipToBounds="True" Background="#22000000">
+                    <Image Source="{Binding Card.Thumbnail}" Stretch="UniformToFill" />
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                    <TextBlock Text="{Binding Card.Name}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Card.Summary}" Opacity="0.7" FontSize="12" />
+                    <ComboBox ItemsSource="{Binding TalentOptions}" SelectedItem="{Binding Talent}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                  <Button Grid.Column="2" Content="Retirer" VerticalAlignment="Center"
+                          Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).RemoveCommand}"
+                          CommandParameter="{Binding}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+
+    <!-- Sélecteur de cartes -->
+    <DockPanel Grid.Column="2">
+      <Button DockPanel.Dock="Bottom" Content="Ajouter au deck (ou double-clic)" Command="{Binding AddCommand}"
+              HorizontalAlignment="Stretch" Margin="0,8,0,0" />
+      <v:CardListPanel x:Name="Picker" DataContext="{Binding Browser}" />
+    </DockPanel>
+  </Grid>
+</UserControl>
