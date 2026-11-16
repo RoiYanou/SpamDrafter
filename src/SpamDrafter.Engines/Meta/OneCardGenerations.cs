@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using SpamDrafter.Engines.Cooking;
 using SpamDrafter.Simulator.Data;
 using SpamDrafter.Simulator.Engine;
+using SpamDrafter.Simulator.Players;
 
 namespace SpamDrafter.Engines.Meta;
 
@@ -26,8 +27,10 @@ public static class OneCardGenerations
     public sealed record FileProposal(IReadOnlyList<FileSlot> Cards, double Score, double Margin95, int Games, int Opponents);
     public sealed record FileCard(string Card, double Seconds, IReadOnlyList<FileProposal> Proposals);
     /// <param name="MetaSha256">Empreinte du fichier de méta synthétique utilisé : si la méta change, tout est à refaire.</param>
+    /// <param name="PlayerSha256">Empreinte des poids du Grand Joueur des données (null = poids intégrés) : s'ils changent,
+    /// tout est à refaire (phase 11, lot E).</param>
     public sealed record FileContent(int FormatVersion, string GameVersion, string Effort, ulong Seed, string MetaSha256,
-        double Minutes, IReadOnlyList<FileCard> Cards);
+        double Minutes, IReadOnlyList<FileCard> Cards, string? PlayerSha256 = null);
 
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -57,11 +60,13 @@ public static class OneCardGenerations
     {
         var meta = SyntheticMeta.Load(metaPath, kb).Select(m => m.Deck).ToList();
         var metaSha = FileSha256(metaPath);
+        var playerSha = PlayerWeightsFile.Fingerprint(kb.PlayerWeights);
         var effortName = effort.ToString().ToLowerInvariant();
         var targets = (cards ?? kb.Cards.Select(c => c.Id).ToList()).Order(StringComparer.Ordinal).ToList();
 
         var previous = File.Exists(path) ? Read(path) : null;
         var done = previous is not null && previous.GameVersion == kb.GameVersion && previous.MetaSha256 == metaSha &&
+                   previous.PlayerSha256 == playerSha &&
                    previous.Effort == effortName && previous.Seed == seed && previous.FormatVersion == FormatVersion
             ? previous.Cards.ToDictionary(c => c.Card)
             : new Dictionary<string, FileCard>();
@@ -83,10 +88,10 @@ public static class OneCardGenerations
                 res.RandomOpponents)).ToList());
             computed++;
             Save(path, new FileContent(FormatVersion, kb.GameVersion, effortName, seed, metaSha,
-                Math.Round(minutes + total.Elapsed.TotalMinutes, 1), Ordered(done)));
+                Math.Round(minutes + total.Elapsed.TotalMinutes, 1), Ordered(done), playerSha));
         }
         var content = new FileContent(FormatVersion, kb.GameVersion, effortName, seed, metaSha,
-            Math.Round(minutes + total.Elapsed.TotalMinutes, 1), Ordered(done));
+            Math.Round(minutes + total.Elapsed.TotalMinutes, 1), Ordered(done), playerSha);
         if (computed > 0 || !File.Exists(path)) Save(path, content);
         return (content, computed);
     }

@@ -84,6 +84,8 @@ public static class PlayerCatalog
         "rapide" or "fast" => seed => new FastPlayer(seed),
         "planificateur" or "planner" => seed => new TurnPlanner(seed),
         // Versions d'avant le lot H de la phase 8, gardées pour comparer.
+        // Poids intégrés au programme, même si les données en livrent d'autres (meta/joueur.json, phase 11, lot E).
+        "heuristique-integre" or "heuristique-intégré" => seed => new HeuristicPlayer(seed, HeuristicWeights.Default),
         "heuristique-v1" => seed => new HeuristicPlayer(seed, HeuristicWeights.V1),
         // Réglage d'essai : « heuristique-combo:X » = la note du lot H avec X tours pour les niveaux et le critique.
         _ when name.StartsWith("heuristique-combo:", StringComparison.OrdinalIgnoreCase)

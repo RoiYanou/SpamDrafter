@@ -59,7 +59,6 @@ Pour construire vos decks : **4 cartes différentes** et **un talent par carte**
 
 - **Ajouter au deck (ou double-clic)**, **Retirer**, puis donnez un **Nom du deck** et cliquez sur **Sauvegarder**. Un deck incomplet est sauvegardé comme brouillon.
 - **Mes decks** : vos decks sauvegardés. Cliquez sur l'un d'eux pour l'ouvrir et le modifier. **Nouveau deck** repart de zéro ; **Supprimer** efface le deck ouvert.
-- **Deck de référence** : cochez cette case pour un deck qui se joue vraiment en partie (un deck que vous rencontrez souvent). Ces decks deviennent les **adversaires à battre** des onglets de génération et d'analyse (voir plus bas).
 
 ### Drafter
 
@@ -89,10 +88,9 @@ Chaque proposition affiche un **score** : les victoires plus la moitié des éga
 
 ### Contre qui sont mesurés les decks ?
 
-- Si vous avez coché **au moins 2 decks de référence**, ce sont eux.
-- Sinon, les decks de la **méta synthétique** : 20 decks forts, calculés pour cette version de SPAM par le Grand Cuisinier lui-même, et livrés avec les données.
+Contre les decks de la **méta synthétique** : 20 decks forts, calculés pour cette version de SPAM par le Grand Cuisinier lui-même, et livrés avec les données. Vos propres decks ne servent jamais d'adversaires.
 
-Le message sous les propositions indique toujours quels adversaires ont servi.
+Quand une nouvelle méta est calculée, elle arrive avec une mise à jour des données, comme le reste.
 
 ### Ce qu'il faut savoir sur les résultats
 

@@ -21,6 +21,11 @@ public sealed class SimKnowledge
     public string GameVersion { get; }
     public DuelSettings Settings { get; }
     public IReadOnlyCollection<CardDef> Cards => _cards.Values;
+    /// <summary>
+    /// Poids du Grand Joueur livrés avec les données (<c>meta/joueur.json</c>, phase 11, lot E) ; null = poids intégrés.
+    /// Les joueurs créés sans poids explicites les utilisent.
+    /// </summary>
+    public Players.HeuristicWeights? PlayerWeights { get; set; }
 
     public SimKnowledge(string gameVersion, DuelSettings settings, IEnumerable<CardDef> cards,
         IEnumerable<AbilityDef> abilities, IEnumerable<BrickDef> effects, IEnumerable<BrickDef> conditions,
@@ -93,8 +98,11 @@ public sealed class SimKnowledge
         if (File.Exists(textFile))
             texts = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(textFile));
 
-        return new SimKnowledge(manifest.GetProperty("gameVersion").GetString() ?? "?", settings,
-            cards, abilities, effects, conditions, costs, filters, texts, tox, talents);
+        var gameVersion = manifest.GetProperty("gameVersion").GetString() ?? "?";
+        return new SimKnowledge(gameVersion, settings, cards, abilities, effects, conditions, costs, filters, texts, tox, talents)
+        {
+            PlayerWeights = Players.PlayerWeightsFile.TryLoad(dir, gameVersion),
+        };
     }
 
     private static DuelSettings ReadSettings(JsonElement s)

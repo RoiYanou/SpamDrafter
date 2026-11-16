@@ -65,8 +65,7 @@ public sealed class DrafterViewModel : ViewModelBase
         foreach (var m in DeckSearch.Find(_library.Decks, Wanted.Select(w => w.Card.Id).ToList()))
             Results.Add(new DrafterResult(m.Deck, m.Deck.Name,
                 (m.IsComplete ? "Complet" : $"Brouillon · {m.Deck.Slots.Count} carte(s)") +
-                (m.Deck.Origin == DeckOrigin.Generated ? " · généré" : " · créé à la main") +
-                (m.Deck.IsReference ? " · référence" : ""),
+                (m.Deck.Origin == DeckOrigin.Generated ? " · généré" : " · créé à la main"),
                 m.Deck.Slots.Select(Describe).ToList()));
         Message = Results.Count > 0
             ? $"{Results.Count} deck(s) trouvé(s)."

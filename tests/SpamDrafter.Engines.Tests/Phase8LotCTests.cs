@@ -44,6 +44,7 @@ public class Phase8LotCTests
         Assert.Null(ReportWriter.TalentText(kb, "talent-inexistant"));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void L_analyse_est_complete_et_reproductible()
     {
@@ -83,6 +84,7 @@ public class Phase8LotCTests
         Assert.ThrowsAny<OperationCanceledException>(() => GrandAnalyseur.Analyse(kb, deck, Tiny with { FieldSeed = 78 }, cts.Token));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Avancement_jusqu_a_la_fin()
     {

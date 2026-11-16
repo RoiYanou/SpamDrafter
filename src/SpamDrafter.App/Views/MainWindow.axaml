@@ -4,7 +4,7 @@
         xmlns:v="using:SpamDrafter.App.Views"
         x:Class="SpamDrafter.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Title="SpamDrafter (non officiel)" Width="1280" Height="800" MinWidth="1000" MinHeight="640">
+        Title="SpamDrafter (non officiel)" Icon="/Assets/SpamDrafter.ico" Width="1280" Height="800" MinWidth="1000" MinHeight="640">
   <DockPanel>
     <DockPanel DockPanel.Dock="Top" Margin="14,6">
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" DataContext="{Binding Updater}">
@@ -17,8 +17,15 @@
                 ToolTip.Tip="Installer un fichier SpamDrafter-donnees-….zip (sans connexion)" />
         <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
       </StackPanel>
-      <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Image Source="/Assets/banniere.png" Height="40" VerticalAlignment="Center" IsVisible="{Binding IsLoaded}"
+               RenderOptions.BitmapInterpolationMode="HighQuality" ToolTip.Tip="SpamDrafter (non officiel)" />
+        <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
+      </StackPanel>
     </DockPanel>
+    <!-- Sans données (premier lancement, erreur) : la bannière en grand au lieu d'une fenêtre vide. -->
+    <Image DockPanel.Dock="Top" Source="/Assets/banniere.png" MaxHeight="220" Margin="14,40,14,0"
+           HorizontalAlignment="Center" IsVisible="{Binding !IsLoaded}" RenderOptions.BitmapInterpolationMode="HighQuality" />
     <TextBlock DockPanel.Dock="Top" Text="{Binding LoadError}" IsVisible="{Binding HasError}"
                Foreground="#E07070" Margin="14" TextWrapping="Wrap" />
     <TabControl IsVisible="{Binding IsLoaded}" SelectedIndex="{Binding SelectedTab}">

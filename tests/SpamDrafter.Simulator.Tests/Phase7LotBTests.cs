@@ -34,6 +34,7 @@ public class Phase7LotBTests(ITestOutputHelper output)
 
     // ================================================================ copie directe
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void La_copie_directe_egale_la_copie_par_rejeu_et_continue_pareil()
     {
@@ -128,6 +129,7 @@ public class Phase7LotBTests(ITestOutputHelper output)
 
     // ================================================================ correction : morts du début de tour
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Entre_deux_actions_rien_n_attend_dans_la_file()
     {
@@ -260,6 +262,7 @@ public class Phase7LotBTests(ITestOutputHelper output)
         Assert.Equal(["Faible", "Fort"], targets.Order());
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void L_heuristique_joue_des_parties_completes_sans_erreur()
     {

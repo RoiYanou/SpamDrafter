@@ -59,7 +59,7 @@ public sealed class TurnPlanner : IDuelPlayer
     private double Continue(Duel duel, DuelAction action, HeuristicPlayer.Plan? plan, int me)
     {
         var start = Step(duel, action, plan?.Index, me);
-        var bestValue = Evaluator.Score(start, me, _h.Weights);
+        var bestValue = Evaluator.Score(start, me, _h.WeightsFor(start.Knowledge));
         var beams = new List<(Duel Duel, double Score)> { (start, bestValue) };
         for (var depth = 1; depth < _s.MaxDepth && beams.Count > 0; depth++)
         {
@@ -73,7 +73,7 @@ public sealed class TurnPlanner : IDuelPlayer
                 foreach (var i in Top(r, opts.Count, _s.TopK))
                 {
                     var child = Step(b, opts[i], r.Plans[i]?.Index, me);
-                    var score = Evaluator.Score(child, me, _h.Weights);
+                    var score = Evaluator.Score(child, me, _h.WeightsFor(child.Knowledge));
                     next.Add((child, score));
                     if (score > bestValue) bestValue = score;
                 }

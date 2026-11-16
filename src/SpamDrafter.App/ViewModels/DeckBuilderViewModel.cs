@@ -38,7 +38,6 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     private Deck? _selectedSaved;
     private string _name = "";
     private string _status = "";
-    private bool _isReference;
 
     public DeckBuilderViewModel(CardBrowser browser, IReadOnlyList<CardItem> items, KnowledgeBase kb, DeckLibrary library)
     {
@@ -68,8 +67,6 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     public string SlotsText => $"{Slots.Count} / {Deck.MaxCards} cartes";
     public string Name { get => _name; set { if (Set(ref _name, value)) Revalidate(); } }
     public string Status { get => _status; private set => Set(ref _status, value); }
-    /// <summary>Deck qui se joue réellement dans le jeu (D-050) : sert d'adversaire de référence aux moteurs.</summary>
-    public bool IsReference { get => _isReference; set => Set(ref _isReference, value); }
 
     public Deck? SelectedSaved
     {
@@ -88,7 +85,6 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         Slots.Clear();
         _selectedSaved = null; Raise(nameof(SelectedSaved)); DeleteCommand.RaiseCanExecuteChanged();
         Name = "Nouveau deck";
-        IsReference = false;
         Status = "";
     }
 
@@ -101,7 +97,6 @@ public sealed class DeckBuilderViewModel : ViewModelBase
             if (_byId.TryGetValue(s.CardId, out var item))
                 Slots.Add(new SlotViewModel(item, _kb, s.TalentId, Revalidate));
         Name = d.Name;
-        IsReference = d.IsReference;
         Status = "";
         Revalidate();
     }
@@ -120,7 +115,6 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     private Deck Snapshot()
     {
         _current.Name = Name.Trim();
-        _current.IsReference = IsReference;
         _current.GameVersion = _kb.Manifest.GameVersion;
         _current.Slots = Slots.Select(s => new DeckSlot(s.Card.Card.Id, s.Talent.Id)).ToList();
         return _current;

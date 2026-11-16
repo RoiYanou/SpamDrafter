@@ -68,6 +68,7 @@ public class Phase8LotATests
         Assert.Null(duel.Copy().Stats);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Statistiques_coherentes_et_sans_effet_sur_la_partie()
     {

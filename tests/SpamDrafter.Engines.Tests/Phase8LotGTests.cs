@@ -62,6 +62,7 @@ public class Phase8LotGTests
         Assert.Null(new GrandCuisinier.Guide(p, share: 0).Pick([shinobi], ids, [shinobi], rng));   // 0 = toujours au hasard
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Statistiques_de_critique_et_de_niveaux_d_element()
     {
@@ -88,6 +89,7 @@ public class Phase8LotGTests
         Assert.True(given > 0);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void La_fiche_explique_pourquoi_le_deck_marche()
     {
@@ -108,6 +110,7 @@ public class Phase8LotGTests
         Assert.Contains(why, l => l.Contains("Astry") || l.Contains("Niveau"));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Une_proposition_beaucoup_plus_faible_n_est_pas_montree()
     {
@@ -126,6 +129,7 @@ public class Phase8LotGTests
         }
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Sans_guide_la_cuisine_reste_possible_et_reproductible()
     {

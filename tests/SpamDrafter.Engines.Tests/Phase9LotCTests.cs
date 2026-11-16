@@ -37,6 +37,7 @@ public class Phase9LotCTests
     private static List<string> Cards(SimKnowledge kb, int n) =>
         kb.Cards.Select(c => c.Id).Order(StringComparer.Ordinal).Take(n).ToList();
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Chaque_carte_a_ses_propositions_et_le_fichier_se_relit()
     {
@@ -64,6 +65,7 @@ public class Phase9LotCTests
         }
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Un_calcul_interrompu_reprend_et_une_nouvelle_meta_refait_tout()
     {
@@ -79,6 +81,7 @@ public class Phase9LotCTests
         Assert.Equal(3, OneCardGenerations.Build(kb, meta, path, cards: Cards(kb, 3), cookOverride: Tiny).Computed);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Meme_meta_et_memes_reglages_donnent_les_memes_propositions()
     {
@@ -92,6 +95,7 @@ public class Phase9LotCTests
             b.Cards.SelectMany(c => c.Proposals).Select(p => string.Join("|", p.Cards.Select(s => s.Card + "/" + s.Talent))));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Un_fichier_d_une_autre_version_est_refuse()
     {

@@ -39,6 +39,7 @@ public class Phase8LotATests
         Assert.All(a.Decks, d => Assert.Equal(d.Count, d.Select(s => s.CardId).Distinct().Count()));   // D-020
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void L_evaluation_est_reproductible_en_parallele_ou_non()
     {
@@ -63,6 +64,7 @@ public class Phase8LotATests
         Assert.NotEqual(DeckEvaluator.Seeds(5, 2, 1), DeckEvaluator.Seeds(6, 2, 1));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Un_deck_contre_lui_meme_fait_environ_50_pour_cent()
     {
@@ -73,6 +75,7 @@ public class Phase8LotATests
         Assert.InRange(ev.Score, 0.40, 0.60);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Les_moyennes_par_carte_suivent_le_deck()
     {

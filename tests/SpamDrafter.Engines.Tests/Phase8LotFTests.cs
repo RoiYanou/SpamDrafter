@@ -28,6 +28,7 @@ public class Phase8LotFTests
         Player = "rapide", Pairs = 1, TalentPairs = 1, RoleVariants = 2, MetaPairs = 2, MetaRatingPairs = 1, ToxMinGames = 1,
     };
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Le_Cuisinier_affronte_les_decks_de_reference()
     {
@@ -44,6 +45,7 @@ public class Phase8LotFTests
         Assert.False(without.UsesMeta);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void L_Analyseur_mesure_contre_chaque_deck_de_reference()
     {
@@ -67,6 +69,7 @@ public class Phase8LotFTests
         Assert.Contains("Réf 1", md);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Un_seul_deck_de_reference_ne_suffit_pas()
     {

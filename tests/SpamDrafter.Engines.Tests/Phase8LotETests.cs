@@ -17,6 +17,7 @@ public class Phase8LotETests
         DangerMinGames = 2, ToxMinGames = 1, FieldSeed = 91,
     };
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void La_fiche_est_courte_complete_et_sans_liens_mesures()
     {
@@ -60,6 +61,7 @@ public class Phase8LotETests
         Assert.True(SheetWriter.GapMargin(many) < many.ScoreWith - many.ScoreWithout);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void La_preparation_remplit_le_classement_une_seule_fois()
     {

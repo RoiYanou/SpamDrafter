@@ -38,6 +38,7 @@ public class Phase7LotATests(ITestOutputHelper output)
 
     // ================================================================ copie par rejeu (vraies cartes)
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Une_copie_est_identique_et_continue_exactement_comme_l_original()
     {
@@ -80,6 +81,7 @@ public class Phase7LotATests(ITestOutputHelper output)
         }
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Un_nouveau_hasard_garde_le_present_change_l_avenir_et_ne_touche_pas_l_original()
     {
@@ -106,6 +108,7 @@ public class Phase7LotATests(ITestOutputHelper output)
         Assert.True(different >= 35, $"seulement {different} / 40 avenirs différents");
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Les_choix_pendant_un_lancer_sont_rejoues()
     {
@@ -124,6 +127,7 @@ public class Phase7LotATests(ITestOutputHelper output)
         Assert.True(withChoices > 0);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Copier_une_partie_coute_peu()
     {
@@ -250,6 +254,7 @@ public class Phase7LotATests(ITestOutputHelper output)
 
     // ================================================================ banc d'essai
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Le_banc_d_essai_est_reproductible_et_sans_erreur()
     {

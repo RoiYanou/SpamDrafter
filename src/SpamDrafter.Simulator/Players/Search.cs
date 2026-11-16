@@ -158,7 +158,7 @@ public sealed class SearchPlayer : IDuelPlayer
                 if (copy.Phase == DuelPhase.Main) copy.EndTurn();
             }
         }
-        return Evaluator.Score(copy, me, _h.Weights);
+        return Evaluator.Score(copy, me, _h.WeightsFor(copy.Knowledge));
     }
 
     private void PlayTurn(Duel copy, IDuelPlayer? policy = null)

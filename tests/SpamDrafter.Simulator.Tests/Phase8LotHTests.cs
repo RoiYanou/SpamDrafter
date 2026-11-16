@@ -88,6 +88,7 @@ public class Phase8LotHTests
         Assert.True(HeuristicWeights.Default.ElementUse > 0);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Le_planificateur_joue_des_parties_completes_sans_toucher_a_la_vraie_partie()
     {

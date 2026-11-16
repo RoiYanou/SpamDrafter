@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!-- Version du programme ; le numéro du paquet Velopack (vpk pack -v) doit être le même. -->
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <AssemblyName>SpamDrafter</AssemblyName>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,7 +12,13 @@
     <!-- Génération et analyse : beaucoup de duels en parallèle ; le ramasse-miettes « serveur » occupe mieux les cœurs. -->
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <!-- Icône du programme (SpamDrafter.exe, raccourcis), fabriquée à partir de Assets/logo.png. -->
+    <ApplicationIcon>Assets\SpamDrafter.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Logo, icône et bannière de l'application, intégrés au programme. -->
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.6" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />

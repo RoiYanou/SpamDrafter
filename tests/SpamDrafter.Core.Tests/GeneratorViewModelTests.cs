@@ -31,7 +31,21 @@ public class GeneratorViewModelTests
         var items = kb.Cards.Select(c => new CardItem(c, kb)).ToList();
         var dir = Path.Combine(Path.GetTempPath(), "spamdrafter-tests-" + Guid.NewGuid().ToString("N"));
         var library = new DeckLibrary(new DeckStore(dir));
-        var vm = new GeneratorViewModel(new CardBrowser(items, kb), items, kb, new Coordinator(SimKnowledge.Load(p)), library, post: a => a());
+        // Réglages miniatures : ces tests vérifient l'onglet (boutons, messages, sauvegarde), pas la qualité des moteurs.
+        var coordinator = new Coordinator(SimKnowledge.Load(p))
+        {
+            CookOverride = new SpamDrafter.Engines.Cooking.CookSettings
+            {
+                Population = 6, Elites = 2, MutantsPerElite = 2, Generations = 2, ChampionEvery = 0, ScreenOpponents = 4,
+                ConfirmPlayer = "rapide", ConfirmCandidates = 3, ConfirmOpponents = 4, Proposals = 2,
+            },
+            AnalysisOverride = SpamDrafter.Engines.Analysis.AnalysisSettings.Sheet with
+            {
+                Player = "rapide", Opponents = 4, Pairs = 1, TalentPairs = 2, RoleVariants = 2, PoolSize = 20, CalibrationOpponents = 4,
+                DangerMinGames = 2, ToxMinGames = 1, MetaPairs = 1, MetaRatingPairs = 1,
+            },
+        };
+        var vm = new GeneratorViewModel(new CardBrowser(items, kb), items, kb, coordinator, library, post: a => a());
         var drafter = new DrafterViewModel(new CardBrowser(items, kb), items, kb, library);
         return new World(kb, vm, library, drafter, dir);
     }
@@ -144,32 +158,29 @@ public class GeneratorViewModelTests
     }
 
     [Fact]
-    public void Les_decks_coches_reference_deviennent_la_meta_du_coordinateur()
+    public void Les_anciens_decks_de_reference_ne_changent_plus_les_adversaires()
     {
+        // D-065 : la génération se fait toujours contre la méta synthétique (ou au hasard sans elle), jamais contre
+        // les decks du joueur, même ceux qu'il avait cochés « référence » avant la 1.0.2.
         if (FindKnowledge() is not { } p) return;
         var kb = KnowledgeBase.Load(p);
         var dir = Path.Combine(Path.GetTempPath(), "spamdrafter-tests-" + Guid.NewGuid().ToString("N"));
         try
         {
             var library = new DeckLibrary(new DeckStore(dir));
-            var coordinator = new Coordinator(SimKnowledge.Load(p));
-            GeneratorViewModel.FollowReferenceDecks(coordinator, library, kb.Manifest.GameVersion);   // comme l'application
-            Deck D(string name, bool reference, int skip) => new()
-            {
-                Name = name, IsReference = reference, GameVersion = kb.Manifest.GameVersion,
-                Slots = kb.Cards.Skip(skip).Take(4).Select(c => new DeckSlot(c.Id, null)).ToList(),
-            };
-            library.Save(D("Réf A", true, 0));
-            Assert.False(coordinator.UsesMeta);                       // un seul deck : pas assez
-            library.Save(D("Perso", false, 4));
-            library.Save(D("Réf B", true, 8));
-            var old = D("Réf autre version", true, 12);
-            old.GameVersion = "0.99";
-            library.Save(old);                                         // règle n° 7 : pas de mélange de versions
-            Assert.True(coordinator.UsesMeta);
-            Assert.Equal(["Réf A", "Réf B"], coordinator.Meta.Select(m => m.Name).Order());
-            // Le drapeau survit à la sauvegarde puis au rechargement.
-            Assert.Equal(3, new DeckStore(dir).LoadAll().Count(d => d.IsReference));   // dont celui de l'autre version
+            var coordinator = new Coordinator(SimKnowledge.Load(p), SyntheticData.Load(p, SimKnowledge.Load(p)));
+            var before = coordinator.Opponents;
+            for (var i = 0; i < 3; i++)
+                library.Save(new Deck
+                {
+                    Name = $"Ancien témoin {i}", IsReference = true, GameVersion = kb.Manifest.GameVersion,
+                    Slots = kb.Cards.Skip(4 * i).Take(4).Select(c => new DeckSlot(c.Id, null)).ToList(),
+                });
+            Assert.Equal(before, coordinator.Opponents);
+            if (File.Exists(SpamDrafter.Engines.Meta.SyntheticMeta.DefaultPath(p)))
+                Assert.Equal(OpponentSource.Synthetic, coordinator.Opponents);
+            // Le drapeau des anciens fichiers est conservé (outil de mesure du Studio).
+            Assert.Equal(3, new DeckStore(dir).LoadAll().Count(d => d.IsReference));
         }
         finally { try { Directory.Delete(dir, true); } catch (IOException) { } }
     }

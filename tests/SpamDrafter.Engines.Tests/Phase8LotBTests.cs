@@ -75,6 +75,7 @@ public class Phase8LotBTests
         Assert.Equal(0, GrandCuisinier.MinDifference(0, strict: true));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void La_cuisine_est_reproductible_et_respecte_la_selection()
     {
@@ -102,6 +103,7 @@ public class Phase8LotBTests
             string.Join(",", d.Select(x => x.CardId).Where(id => selection.All(f => f.CardId != id)).Order(StringComparer.Ordinal));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Quatre_cartes_imposees_seuls_talents_et_places_changent()
     {
@@ -113,6 +115,7 @@ public class Phase8LotBTests
         Assert.Equal(res.Proposals.Count, res.Proposals.Select(p => GrandCuisinier.Key(p.Deck)).Distinct().Count());
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Avancement_puis_fin_et_annulation()
     {

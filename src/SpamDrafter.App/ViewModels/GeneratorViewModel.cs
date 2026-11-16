@@ -272,27 +272,12 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         return s.TalentId is null ? $"{name}{imposed} — aucun talent" : $"{name}{imposed} — {_kb.TalentName(s.TalentId)}";
     }
 
-    /// <summary>
-    /// Decks de référence (D-050) : les decks sauvegardés cochés « référence », complets et de la même version de SPAM,
-    /// deviennent les adversaires des moteurs ; la liste suit chaque changement de la bibliothèque.
-    /// </summary>
-    public static void FollowReferenceDecks(Coordinator coordinator, DeckLibrary library, string gameVersion)
-    {
-        void Update() => coordinator.Meta = library.Decks
-            .Where(d => d.IsReference && d.Slots.Count == Deck.MaxCards && d.GameVersion == gameVersion)
-            .OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
-            .Select(d => new SpamDrafter.Engines.Analysis.NamedDeck(d.Name, d.Slots.Select(x => new DuelSlot(x.CardId, x.TalentId)).ToList()))
-            .ToList();
-        Update();
-        library.Changed += (_, _) => Update();
-    }
 
     /// <summary>Nom des adversaires dans les messages.</summary>
     public static string OpponentsText(OpponentSource s) => s switch
     {
-        OpponentSource.Reference => "decks de référence",
-        OpponentSource.Synthetic => "decks de la méta synthétique (aucun deck de référence)",
-        _ => "decks au hasard (ni deck de référence, ni méta synthétique)",
+        OpponentSource.Synthetic => "decks de la méta synthétique",
+        _ => "decks au hasard (données sans méta synthétique)",
     };
 
     /// <summary>Même graine à chaque fois : même sélection = mêmes propositions (reproductible).</summary>

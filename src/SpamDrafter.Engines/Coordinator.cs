@@ -13,9 +13,9 @@ public enum Effort { Rapide, Normal, Precis }
 public sealed record GeneratedDeck(IReadOnlyList<DuelSlot> Deck, double Score, double Margin95, int Games, int RandomOpponents, bool UsesMeta = false,
     bool Precomputed = false);
 
-/// <summary>Adversaires des moteurs : decks de référence du joueur (au moins 2), sinon méta synthétique livrée avec les
-/// données (D-054), sinon decks tirés au hasard.</summary>
-public enum OpponentSource { Random, Synthetic, Reference }
+/// <summary>Adversaires des moteurs (D-065) : la méta synthétique livrée avec les données, contrôlée par le Studio ;
+/// à défaut (données sans méta, développement), des decks tirés au hasard.</summary>
+public enum OpponentSource { Random, Synthetic }
 
 /// <summary>Méta synthétique et pré-calcul des générations à une carte, lus dans le dossier des données (phase 9, lot D).</summary>
 public sealed record SyntheticData(IReadOnlyList<NamedDeck> Meta, IReadOnlyDictionary<string, IReadOnlyList<GeneratedDeck>>? OneCard,
@@ -42,6 +42,8 @@ public sealed record SyntheticData(IReadOnlyList<NamedDeck> Meta, IReadOnlyDicti
             var head = OneCardGenerations.Read(genPath);
             if (head.MetaSha256 != OneCardGenerations.FileSha256(metaPath))
                 return new(meta, null, "pré-calcul fait contre une autre méta : ignoré");
+            if (head.PlayerSha256 != SpamDrafter.Simulator.Players.PlayerWeightsFile.Fingerprint(kb.PlayerWeights))
+                return new(meta, null, "pré-calcul fait avec d'autres poids du Grand Joueur : ignoré");
             if (head.Effort != Effort.Normal.ToString().ToLowerInvariant() || head.Seed != Coordinator.AppSeed)
                 return new(meta, null, "pré-calcul fait avec d'autres réglages : ignoré");
             return new(meta, OneCardGenerations.Load(genPath, kb), null);
@@ -79,21 +81,10 @@ public sealed class Coordinator
 
     public string GameVersion => _kb.GameVersion;
 
-    /// <summary>
-    /// Decks de référence (D-050, D-051) : adversaires du Cuisinier et de l'Analyseur quand il y en a au moins 2.
-    /// Mis à jour par l'application quand la liste des decks change.
-    /// </summary>
-    public IReadOnlyList<NamedDeck> Meta { get; set; } = [];
-    /// <summary>Adversaires utilisés en ce moment : les decks de référence l'emportent sur la méta synthétique.</summary>
-    public OpponentSource Opponents => Meta.Count >= 2 ? OpponentSource.Reference
-        : Synthetic.Meta.Count >= 2 ? OpponentSource.Synthetic : OpponentSource.Random;
+    /// <summary>Adversaires utilisés : la méta synthétique (D-065), ou des decks au hasard si les données n'en ont pas.</summary>
+    public OpponentSource Opponents => Synthetic.Meta.Count >= 2 ? OpponentSource.Synthetic : OpponentSource.Random;
     public bool UsesMeta => Opponents != OpponentSource.Random;
-    private IReadOnlyList<NamedDeck>? ActiveMeta => Opponents switch
-    {
-        OpponentSource.Reference => Meta,
-        OpponentSource.Synthetic => Synthetic.Meta,
-        _ => null,
-    };
+    private IReadOnlyList<NamedDeck>? ActiveMeta => Opponents == OpponentSource.Synthetic ? Synthetic.Meta : null;
     private AnalysisSettings WithOpponents(AnalysisSettings s) =>
         s with { Meta = ActiveMeta, MetaIsSynthetic = Opponents == OpponentSource.Synthetic };
 
@@ -106,6 +97,12 @@ public sealed class Coordinator
         && Opponents == OpponentSource.Synthetic && Synthetic.OneCard is { } all
         && all.TryGetValue(one.CardId, out var props) && props.Count > 0 ? props : null;
     public bool IsBusy => Volatile.Read(ref _busy) == 1;
+
+    /// <summary>Tests automatiques seulement : réglages miniatures du Cuisinier (les tests de l'interface vérifient les
+    /// boutons et messages ; la qualité des moteurs est vérifiée par leurs propres tests).</summary>
+    public CookSettings? CookOverride { get; init; }
+    /// <summary>Tests automatiques seulement : réglages miniatures de l'Analyseur (fiche et analyse complète).</summary>
+    public AnalysisSettings? AnalysisOverride { get; init; }
 
     public static CookSettings CookSettingsFor(Effort e) => e switch
     {
@@ -133,7 +130,7 @@ public sealed class Coordinator
                 _ => "Terminé.",
             }, c.Fraction)));
             var meta = ActiveMeta?.Select(m => m.Deck).ToList();
-            var res = GrandCuisinier.Cook(_kb, selection, CookSettingsFor(effort) with { Seed = seed, Meta = meta }, cancel, p);
+            var res = GrandCuisinier.Cook(_kb, selection, (CookOverride ?? CookSettingsFor(effort)) with { Seed = seed, Meta = meta }, cancel, p);
             return (IReadOnlyList<GeneratedDeck>)res.Proposals.Select(x => new GeneratedDeck(x.Deck, x.Confirmation.Score,
                 x.Confirmation.Margin95, x.Confirmation.Counted, res.RandomOpponents, res.UsesMeta)).ToList();
         }, cancel);
@@ -143,7 +140,7 @@ public sealed class Coordinator
     /// la première fiche est alors aussi rapide que les suivantes. Ne bloque pas les autres calculs.
     /// </summary>
     public Task WarmUpAsync(CancellationToken cancel = default) =>
-        Task.Run(() => GrandAnalyseur.WarmUp(_kb, WithOpponents(AnalysisSettings.Sheet), cancel), cancel);
+        Task.Run(() => GrandAnalyseur.WarmUp(_kb, WithOpponents(AnalysisOverride ?? AnalysisSettings.Sheet), cancel), cancel);
 
     /// <summary>Analyse un deck de 4 cartes : <paramref name="complete"/> = faux pour la fiche joueur (rapide),
     /// vrai pour l'analyse complète (liens entre cartes, talents avec le joueur fin).</summary>
@@ -160,7 +157,7 @@ public sealed class Coordinator
                 AnalysisStage.Dangers => "Recherche des adversaires difficiles…",
                 _ => "Terminé.",
             }, a.Fraction)));
-            var settings = WithOpponents(complete ? AnalysisSettingsFor(effort) : AnalysisSettings.Sheet) with { Seed = seed };
+            var settings = WithOpponents(AnalysisOverride ?? (complete ? AnalysisSettingsFor(effort) : AnalysisSettings.Sheet)) with { Seed = seed };
             var report = GrandAnalyseur.Analyse(_kb, deck, settings, cancel, p);
             return new AnalysisResult(report, SheetWriter.ToText(_kb, report), ReportWriter.ToMarkdown(_kb, report));
         }, cancel);

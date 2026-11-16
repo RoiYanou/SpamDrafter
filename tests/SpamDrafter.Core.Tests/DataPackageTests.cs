@@ -39,6 +39,7 @@ public class DataPackageTests
         Assert.Contains(zip.Entries, x => x.FullName == DataPackage.ManifestFile);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public async Task FirstInstallThenNewerRevision()
     {

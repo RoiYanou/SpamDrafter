@@ -81,6 +81,7 @@ public class Phase7LotCTests(ITestOutputHelper output)
         Assert.Equal(["Faible", "Fort"], targets.Order());
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void La_recherche_joue_des_parties_completes_reproductibles()
     {

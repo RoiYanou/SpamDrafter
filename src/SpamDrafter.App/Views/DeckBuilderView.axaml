@@ -28,8 +28,6 @@
       <StackPanel DockPanel.Dock="Top" Spacing="8">
         <TextBox Text="{Binding Name}" PlaceholderText="Nom du deck" FontSize="18" />
         <TextBlock Text="{Binding SlotsText}" Opacity="0.7" />
-        <CheckBox IsChecked="{Binding IsReference}"
-                  Content="Deck de référence : un deck qui se joue vraiment dans le jeu (adversaire à battre pour le Cuisinier)" />
       </StackPanel>
       <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
         <ItemsControl ItemsSource="{Binding Problems}">

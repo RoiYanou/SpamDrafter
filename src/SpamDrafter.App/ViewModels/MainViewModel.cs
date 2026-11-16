@@ -40,8 +40,6 @@ public sealed class MainViewModel : ViewModelBase
                 // Méta synthétique et pré-calcul livrés avec les données (phase 9, lot D, D-054).
                 var coordinator = new SpamDrafter.Engines.Coordinator(sim, SpamDrafter.Engines.SyntheticData.Load(dir, sim));
                 Generator = new GeneratorViewModel(new CardBrowser(items, kb), items, kb, coordinator, decks);
-                // Decks de référence (D-050) : adversaires des moteurs, tenus à jour quand la liste des decks change.
-                GeneratorViewModel.FollowReferenceDecks(coordinator, decks, kb.Manifest.GameVersion);
                 _ = coordinator.WarmUpAsync();   // classement de référence des fiches, préparé en arrière-plan
             }
             catch (Exception e)

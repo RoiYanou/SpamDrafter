@@ -20,6 +20,7 @@ public class Phase8LotITests
         },
     };
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void La_meta_est_variee_reproductible_et_sans_erreur()
     {
@@ -48,6 +49,7 @@ public class Phase8LotITests
         Assert.Equal(a.Meta.Select(m => GrandCuisinier.Key(m.Deck)), b.Meta.Select(m => GrandCuisinier.Key(m.Deck)));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Un_tour_suivant_affronte_la_meta_en_place_et_peut_la_garder()
     {
@@ -87,6 +89,7 @@ public class Phase8LotITests
         }
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Le_Cuisinier_accepte_la_meta_synthetique_comme_adversaires()
     {

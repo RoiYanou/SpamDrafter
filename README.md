@@ -1,3 +1,5 @@
+![SpamDrafter](src/SpamDrafter.App/Assets/banniere.png)
+
 # SpamDrafter
 
 Application de bureau **non officielle** pour les joueurs de **SPAM** : bibliothèque de cartes, deck builder, drafter, et génération de decks avec analyse, grâce à des duels simulés.
@@ -24,7 +26,7 @@ Les mises à jour du programme et des données du jeu se font automatiquement. S
 
 - **Simulateur** (`SpamDrafter.Simulator`) : une réécriture indépendante des règles du duel de SPAM. Elle est déterministe : même graine, même duel. **Aucun code du jeu n'est inclus dans ce dépôt.**
 - **Grand Joueur** : les joueurs artificiels du simulateur (heuristique, recherche).
-- **Grand Cuisinier** et **Grand Analyseur** (`SpamDrafter.Engines`) : ils génèrent et analysent les decks en faisant jouer des milliers de duels simulés. Les adversaires sont les decks de référence du joueur, sinon une « méta synthétique » calculée pour chaque version de SPAM.
+- **Grand Cuisinier** et **Grand Analyseur** (`SpamDrafter.Engines`) : ils génèrent et analysent les decks en faisant jouer des milliers de duels simulés. Les adversaires sont une « méta synthétique » : 20 decks forts calculés pour chaque version de SPAM et livrés avec les données.
 - **Données du jeu** : elles ne sont pas dans ce dépôt. Elles forment un paquet séparé (`SpamDrafter-donnees-<version>-r<N>.zip`, environ 30 Mo), avec une empreinte SHA-256 par fichier, publié sur la page Releases.
 
 Les résultats sont des **estimations par simulation**, jouées par une IA. Ce ne sont pas des statistiques de vraies parties.

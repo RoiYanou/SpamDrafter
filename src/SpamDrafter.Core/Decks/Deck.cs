@@ -14,8 +14,9 @@ public sealed class Deck
     public string Name { get; set; } = "";
     public DeckOrigin Origin { get; set; } = DeckOrigin.Manual;
     /// <summary>
-    /// Deck de référence (D-050) : un deck qui se joue réellement dans le jeu, saisi par le joueur. Les moteurs s'en
-    /// servent comme adversaires à battre (« méta »). Absent des anciens fichiers : faux par défaut.
+    /// Deck témoin (ancien « deck de référence », D-050) : plus utilisé ni affiché par l'application (D-065). Gardé dans
+    /// les fichiers pour l'outil de mesure du Studio (`spamdrafter-duel` : écart simulation / vrais taux de victoire).
+    /// Absent des anciens fichiers : faux par défaut ; conservé tel quel quand le joueur modifie et sauvegarde le deck.
     /// </summary>
     public bool IsReference { get; set; }
     public string GameVersion { get; set; } = "";

@@ -30,6 +30,7 @@ public class Phase9LotDTests
         return (dir, cards);
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public async Task Sans_deck_de_reference_la_meta_synthetique_sert_d_adversaire_et_une_carte_est_immediate()
     {
@@ -50,6 +51,7 @@ public class Phase9LotDTests
         Assert.NotNull(c.Precomputed([new FixedCard(cards[0])], Effort.Rapide, Coordinator.AppSeed));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Le_precalcul_ne_sert_que_dans_son_cas_exact()
     {
@@ -63,14 +65,9 @@ public class Phase9LotDTests
         Assert.Null(c.Precomputed([new FixedCard(cards[0])], Effort.Normal, 2));
         var other = kb.Cards.Select(x => x.Id).Order(StringComparer.Ordinal).Skip(5).First();
         Assert.Null(c.Precomputed([new FixedCard(other)], Effort.Normal, Coordinator.AppSeed));               // carte non pré-calculée
-
-        // Decks de référence du joueur : ils l'emportent sur la méta synthétique, donc plus de pré-calcul.
-        var rng = new Rng(3);
-        c.Meta = [new NamedDeck("A", Bench.RandomDeck(kb, rng)), new NamedDeck("B", Bench.RandomDeck(kb, rng))];
-        Assert.Equal(OpponentSource.Reference, c.Opponents);
-        Assert.Null(c.Precomputed([new FixedCard(cards[0])], Effort.Normal, Coordinator.AppSeed));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Un_precalcul_fait_contre_une_autre_meta_est_ignore()
     {

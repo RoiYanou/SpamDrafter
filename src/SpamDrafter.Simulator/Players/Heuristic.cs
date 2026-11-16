@@ -287,8 +287,9 @@ public sealed class HeuristicPlayer : IDuelPlayer
     private readonly Rng _rng;
     private readonly RuleDecider _rules;
     internal RuleDecider Rules => _rules;
-    internal HeuristicWeights Weights => _w;
-    private readonly HeuristicWeights _w;
+    /// <summary>Poids utilisés : ceux donnés au joueur, sinon ceux des données (meta/joueur.json), sinon les intégrés.</summary>
+    internal HeuristicWeights WeightsFor(SimKnowledge kb) => _explicit ?? kb.PlayerWeights ?? HeuristicWeights.Default;
+    private readonly HeuristicWeights? _explicit;
     private readonly int _samples;
 
     /// <param name="samples">Nombre d'essais par action (hasards différents) : plus = plus juste, mais plus lent.</param>
@@ -296,7 +297,7 @@ public sealed class HeuristicPlayer : IDuelPlayer
     {
         _rng = new Rng(seed);
         _rules = new RuleDecider(seed ^ 0x5DEECE66DUL);
-        _w = weights ?? HeuristicWeights.Default;
+        _explicit = weights;
         _samples = Math.Max(1, samples);
     }
 
@@ -307,7 +308,8 @@ public sealed class HeuristicPlayer : IDuelPlayer
     internal Ranking Rank(Duel duel, IReadOnlyList<DuelAction> options)
     {
         var me = duel.CurrentPlayer;
-        var baseline = Evaluator.Score(duel, me, _w);
+        var w = WeightsFor(duel.Knowledge);
+        var baseline = Evaluator.Score(duel, me, w);
 
         var scores = new double[options.Count];
         var plans = new Plan?[options.Count];
@@ -330,7 +332,7 @@ public sealed class HeuristicPlayer : IDuelPlayer
         var playable = new bool[options.Count];
         for (var i = 0; i < options.Count; i++)
         {
-            var threshold = options[i].Kind == ActionKind.Cast ? baseline - _w.CastTolerance - 1e-6 : baseline + 1e-6;
+            var threshold = options[i].Kind == ActionKind.Cast ? baseline - w.CastTolerance - 1e-6 : baseline + 1e-6;
             playable[i] = scores[i] >= threshold;
         }
         return new Ranking(baseline, scores, plans, hiddenGroup, playable);
@@ -391,6 +393,7 @@ public sealed class HeuristicPlayer : IDuelPlayer
     private (double Score, Question? First) Try(Duel duel, DuelAction action, int me, int? forced)
     {
         var total = 0.0;
+        var w = WeightsFor(duel.Knowledge);
         Question? first = null;
         for (var s = 0; s < _samples; s++)
         {
@@ -399,7 +402,7 @@ public sealed class HeuristicPlayer : IDuelPlayer
             copy.Deciders[me] = script;
             copy.Deciders[1 - me] = _rules;
             copy.Apply(copy.Resolve(duel.RefOf(action)));
-            total += Evaluator.Score(copy, me, _w);
+            total += Evaluator.Score(copy, me, w);
             first ??= script.First;
         }
         return (total / _samples, first);

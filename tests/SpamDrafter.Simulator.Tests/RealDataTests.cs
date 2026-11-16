@@ -142,6 +142,7 @@ public class RealDataTests(ITestOutputHelper output)
         Assert.All(roi.Abilities, id => Assert.Empty(duel.UnsupportedParts(kb.Ability(id))));
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Mille_duels_au_hasard_se_terminent_sans_erreur()
     {
@@ -171,6 +172,7 @@ public class RealDataTests(ITestOutputHelper output)
         output.WriteLine($"J1 : {wins[1]}, J2 : {wins[2]}, égalités : {wins[0]}, round max : {maxRound}");
     }
 
+    [Trait("Categorie", "Lent")]
     [Fact]
     public void Deux_cents_duels_sans_boucle_ni_effet_non_simule()
     {
