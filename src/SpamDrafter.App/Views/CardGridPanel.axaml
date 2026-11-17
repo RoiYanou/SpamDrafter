@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.CardGridPanel"
+             x:DataType="vm:CardBrowser">
+  <!-- Liste de cartes en grand quadrillage (phase 13) : filtres en une barre, cartes en vignettes qui remplissent la largeur. -->
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+        <TextBox x:Name="SearchBox" Text="{Binding Search}" PlaceholderText="Rechercher une carte, une capacité ou un talent…" />
+        <Button Grid.Column="1" Content="{Binding FiltersToggleText}" Click="ToggleFilters_Click" Padding="10,6" ToolTip.Tip="Réduire ou afficher le menu de tri et de filtres" />
+        <Button Grid.Column="2" Content="Réinitialiser" Click="ClearFilters_Click" Padding="10,6" />
+      </Grid>
+      <StackPanel Spacing="6" IsVisible="{Binding FiltersVisible}">
+      <!-- Éléments et raretés : cases à cocher, combinables à volonté (aucune cochée = toutes). -->
+      <ItemsControl ItemsSource="{Binding ElementChoices}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ToggleOption">
+            <CheckBox Classes="chip" IsChecked="{Binding IsChecked}" ToolTip.Tip="{Binding Label}">
+              <Image Source="{Binding Icon}" Height="22" Stretch="Uniform" />
+            </CheckBox>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ItemsControl ItemsSource="{Binding RarityChoices}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ToggleOption">
+            <CheckBox Classes="chip" IsChecked="{Binding IsChecked}" ToolTip.Tip="{Binding Label}">
+              <Image Source="{Binding Icon}" Height="24" Stretch="Uniform" />
+            </CheckBox>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Expander Header="{Binding AdvancedHeader}" HorizontalAlignment="Stretch" FontSize="12" Padding="0">
+        <StackPanel Spacing="8" Margin="10,8,10,10">
+          <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" HorizontalAlignment="Stretch" />
+          <!-- « Filtrer par » : un seul menu avec des sous-menus (Régions, Espèces, Périodes) construits dans le code. -->
+          <Button x:Name="LoreButton" Content="{Binding LoreSummary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="10,7" />
+        </StackPanel>
+      </Expander>
+      </StackPanel>
+      <TextBlock Text="{Binding CountText}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" />
+    </StackPanel>
+    <ListBox x:Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Classes="grid">
+      <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ListBox.ItemsPanel>
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:CardItem">
+          <!-- Le nom est écrit sur la carte (en haut au centre), plus besoin de le répéter dessous. -->
+          <ContentControl Width="{Binding $parent[v:CardGridPanel].TileWidth}" Height="{Binding $parent[v:CardGridPanel].TileHeight}"
+                          Content="{Binding}" ContentTemplate="{StaticResource CardThumb}" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</UserControl>

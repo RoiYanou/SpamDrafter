@@ -4,21 +4,33 @@
              xmlns:v="using:SpamDrafter.App.Views"
              x:Class="SpamDrafter.App.Views.DrafterView"
              x:DataType="vm:DrafterViewModel">
-  <Grid ColumnDefinitions="360,*" Margin="12" ColumnSpacing="16">
+  <!-- Même disposition que le Deck builder : colonnes délimitées, largeur réglable à la souris. -->
+  <Grid x:Name="RootGrid" Margin="12">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="1.4*" MinWidth="230" />
+      <ColumnDefinition Width="10" />
+      <ColumnDefinition Width="1.6*" MinWidth="230" />
+    </Grid.ColumnDefinitions>
 
     <!-- Sélecteur de cartes -->
+    <Border Classes="panel" Padding="14">
     <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Cartes" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,10" />
       <Button DockPanel.Dock="Bottom" Content="Ajouter à la recherche (ou double-clic)" Command="{Binding AddCommand}"
-              HorizontalAlignment="Stretch" Margin="0,8,0,0" />
-      <v:CardListPanel x:Name="Picker" DataContext="{Binding Browser}" />
+              Classes="soft" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,10,0,0" Padding="10,8" />
+      <v:CardGridPanel x:Name="Picker" DataContext="{Binding Browser}" TileWidth="104" TileHeight="148" />
     </DockPanel>
+    </Border>
+    <GridSplitter Grid.Column="1" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
 
     <!-- Recherche et résultats -->
-    <DockPanel Grid.Column="1">
+    <Border Grid.Column="2" Classes="panel" Padding="14">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Decks trouvés" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,10" />
       <StackPanel DockPanel.Dock="Top" Spacing="8">
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="{Binding WantedText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Content="Tout effacer" Command="{Binding ClearCommand}" />
+          <TextBlock Text="{Binding WantedText}" Classes="hot" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Tout effacer" Command="{Binding ClearCommand}" Classes="danger" Padding="10,5" />
         </Grid>
         <ItemsControl ItemsSource="{Binding Wanted}">
           <ItemsControl.ItemsPanel>
@@ -26,13 +38,11 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:CardItem">
-              <Border BorderBrush="#44808080" BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,0,8,8">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Border Width="36" Height="52" CornerRadius="3" ClipToBounds="True" Background="#22000000">
-                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-                  </Border>
-                  <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                  <Button Content="✕" VerticalAlignment="Center"
+              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="8" Margin="0,0,10,10">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <ContentControl Width="58" Height="82" Content="{Binding}" ContentTemplate="{StaticResource CardThumbQuiet}" />
+                  <TextBlock Text="{Binding Name}" Classes="title" VerticalAlignment="Center" />
+                  <Button Content="✕" Classes="danger" VerticalAlignment="Center"
                           Command="{Binding $parent[UserControl].((vm:DrafterViewModel)DataContext).RemoveCommand}"
                           CommandParameter="{Binding}" />
                 </StackPanel>
@@ -40,19 +50,38 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock Text="{Binding Message}" Opacity="0.85" TextWrapping="Wrap" Margin="0,0,0,4" />
+        <TextBlock Text="{Binding Message}" Classes="good" TextWrapping="Wrap" Margin="0,0,0,4" />
+        <!-- Mêmes recherche, tri et filtres que « Mes decks » du Builder (partagés). -->
+        <StackPanel Spacing="8" Margin="0,0,0,6" DataContext="{Binding Decks}" IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    x:DataType="vm:DeckBuilderViewModel">
+          <TextBox Text="{Binding DeckFilter}" PlaceholderText="Rechercher un deck…" />
+          <Expander Header="Tri et filtres supplémentaires" HorizontalAlignment="Stretch" FontSize="12" Padding="0">
+            <StackPanel Spacing="8" Margin="10,8,10,10">
+              <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" HorizontalAlignment="Stretch" />
+              <ComboBox ItemsSource="{Binding OriginOptions}" SelectedItem="{Binding OriginFilter}" HorizontalAlignment="Stretch" />
+              <ComboBox ItemsSource="{Binding TagOptions}" SelectedItem="{Binding TagFilter}" HorizontalAlignment="Stretch" />
+              <WrapPanel ItemSpacing="10" LineSpacing="6">
+                <CheckBox Content="★ Favoris seulement" IsChecked="{Binding FavoritesOnly}" />
+                <Button Content="Réinitialiser" Command="{Binding ClearDeckFiltersCommand}" FontSize="12" Padding="10,4" />
+              </WrapPanel>
+            </StackPanel>
+          </Expander>
+        </StackPanel>
       </StackPanel>
       <ScrollViewer>
         <ItemsControl ItemsSource="{Binding Results}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:DrafterResult">
-              <Border BorderBrush="#44808080" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,10,10">
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Spacing="3">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="16" />
-                      <TextBlock Text="{Binding Badge}" Opacity="0.65" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Name}" Classes="title" FontSize="18" />
+                      <TextBlock Text="{Binding Badge}" Classes="hot" VerticalAlignment="Center" />
                     </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Deck.Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" ItemTemplate="{StaticResource DeckChipTemplate}" Margin="0,4,0,4">
+                      <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
                     <ItemsControl ItemsSource="{Binding Lines}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="x:String">
@@ -61,7 +90,7 @@
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
                   </StackPanel>
-                  <Button Grid.Column="1" Content="Ouvrir dans le Deck builder" VerticalAlignment="Center"
+                  <Button Grid.Column="1" Content="Ouvrir dans le Deck builder" Classes="soft" Padding="12,8" VerticalAlignment="Center"
                           Command="{Binding $parent[UserControl].((vm:DrafterViewModel)DataContext).OpenCommand}"
                           CommandParameter="{Binding}" />
                 </Grid>
@@ -71,5 +100,8 @@
         </ItemsControl>
       </ScrollViewer>
     </DockPanel>
+    </Border>
+    <Button x:Name="ResetLayout" Grid.ColumnSpan="3" Content="Réinitialiser les dimensions" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0,16,22,0" Padding="10,4" FontSize="12" Classes="info" ZIndex="20" ToolTip.Tip="Remet les colonnes à leur largeur d'origine" />
   </Grid>
 </UserControl>

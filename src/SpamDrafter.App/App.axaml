@@ -1,22 +1,122 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
              x:Class="SpamDrafter.App.App"
              RequestedThemeVariant="Dark">
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="/Styles/Theme.axaml" />
   </Application.Styles>
   <Application.Resources>
-    <DataTemplate x:Key="CardRow" x:DataType="vm:CardItem">
-      <Grid ColumnDefinitions="Auto,*" Margin="2">
-        <Border Width="52" Height="74" CornerRadius="3" ClipToBounds="True" Background="#22000000">
-          <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
-        </Border>
-        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding Summary}" Opacity="0.7" FontSize="12" />
-        </StackPanel>
-      </Grid>
-    </DataTemplate>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <!-- Menus déroulants, info-bulles, menus volants, barres de défilement et couleur d'accent aux couleurs de l'application (phase 13).
+             Les pinceaux « Brush… » mutables sont dans Styles/Theme.axaml ; ceux-ci suivent la palette de base (violet). -->
+        <ResourceDictionary x:Key="Dark">
+          <Color x:Key="SystemAccentColor">#FFC93C</Color>
+          <Color x:Key="SystemAccentColorDark1">#E6B22E</Color>
+          <Color x:Key="SystemAccentColorDark2">#C99A22</Color>
+          <Color x:Key="SystemAccentColorDark3">#A87F18</Color>
+          <Color x:Key="SystemAccentColorLight1">#FFD866</Color>
+          <Color x:Key="SystemAccentColorLight2">#FFE394</Color>
+          <Color x:Key="SystemAccentColorLight3">#FFEDB8</Color>
+          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#2B1B52" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#8A6BD6" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#4B2E8C" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundPressed" Color="#5B3AA8" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#5B3AA8" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#6A46C0" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPressed" Color="#6A46C0" />
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#703B2377" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#905B3AA8" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#905B3AA8" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundFocused" Color="#703B2377" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#8A6BD6" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#FFC93C" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#FFC93C" />
+          <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#2B1B52" />
+          <SolidColorBrush x:Key="FlyoutBorderThemeBrush" Color="#8A6BD6" />
+          <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#2B1B52" />
+          <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#8A6BD6" />
+          <SolidColorBrush x:Key="ToolTipBackground" Color="#F01A1033" />
+          <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#FFC93C" />
+          <SolidColorBrush x:Key="ToolTipForeground" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#8A6BD6" />
+          <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#FFC93C" />
+          <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#E6B22E" />
+          <SolidColorBrush x:Key="ScrollBarThumbFillDisabled" Color="#4B2E8C" />
+          <SolidColorBrush x:Key="ScrollBarTrackFill" Color="#33120A24" />
+          <SolidColorBrush x:Key="ScrollBarTrackFillPointerOver" Color="#55120A24" />
+          <SolidColorBrush x:Key="ScrollBarTrackStroke" Color="Transparent" />
+          <SolidColorBrush x:Key="ScrollBarTrackStrokePointerOver" Color="Transparent" />
+          <SolidColorBrush x:Key="ScrollBarBackground" Color="Transparent" />
+          <SolidColorBrush x:Key="ScrollBarBackgroundPointerOver" Color="Transparent" />
+          <SolidColorBrush x:Key="ScrollBarPanningThumbBackground" Color="#8A6BD6" />
+          <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#1A1033" />
+          <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#1A1033" />
+          <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" Color="#1A1033" />
+          <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="#8A6BD6" />
+          <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUnchecked" Color="#703B2377" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+
+      <!-- Une carte : nom en haut, élément à gauche, rareté sur le cadre. La taille vient du conteneur (ContentControl). -->
+      <DataTemplate x:Key="CardThumb" x:DataType="vm:CardItem">
+        <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" />
+      </DataTemplate>
+      <!-- Carte moyenne (listes, talents, Tox, artistes) : élément et rareté, le nom est écrit à côté. -->
+      <DataTemplate x:Key="CardThumbMedium" x:DataType="vm:CardItem">
+        <v:CardFace Item="{Binding}" ShowElement="True" ShowRarity="True" ShowIncome="True" />
+      </DataTemplate>
+      <!-- Carte discrète : cadre et symbole de rareté seulement. -->
+      <DataTemplate x:Key="CardThumbQuiet" x:DataType="vm:CardItem">
+        <v:CardFace Item="{Binding}" ShowRarity="True" />
+      </DataTemplate>
+
+      <!-- Une carte d'un deck : cadre de rareté, étiquette du talent (« T2 ») en haut à droite, nom complet de la carte et du talent au survol ;
+           emplacement libre = rectangle en pointillés. Trois tailles : liste de cartes (petite), « Mes decks » (grande), accueil (très grande, avec le nom). -->
+      <DataTemplate x:Key="DeckChipTemplate" x:DataType="vm:DeckChip">
+        <Grid Width="56" Height="80" ToolTip.Tip="{Binding TalentName}">
+          <Border IsVisible="{Binding IsEmpty}" BorderBrush="{StaticResource BrushViolet}" BorderThickness="2" CornerRadius="8" Opacity="0.8" />
+          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowRarity="True" />
+        </Grid>
+      </DataTemplate>
+      <DataTemplate x:Key="DeckChipLarge" x:DataType="vm:DeckChip">
+        <Grid Width="84" Height="118" ToolTip.Tip="{Binding TalentName}">
+          <Border IsVisible="{Binding IsEmpty}" BorderBrush="{StaticResource BrushViolet}" BorderThickness="2" CornerRadius="9" Opacity="0.8" />
+          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowRarity="True" />
+        </Grid>
+      </DataTemplate>
+      <DataTemplate x:Key="DeckChipHome" x:DataType="vm:DeckChip">
+        <Grid Width="118" Height="168" ToolTip.Tip="{Binding TalentName}">
+          <Border IsVisible="{Binding IsEmpty}" BorderBrush="{StaticResource BrushViolet}" BorderThickness="2" CornerRadius="12" Opacity="0.8" />
+          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowName="True" ShowElement="True" ShowRarity="True" HoverZoom="False" />
+        </Grid>
+      </DataTemplate>
+
+      <!-- Une carte dans une liste de sélection à une colonne : le nom à côté de la carte (l'élément et la rareté sont sur la carte). -->
+      <DataTemplate x:Key="CardRow" x:DataType="vm:CardItem">
+        <Grid ColumnDefinitions="Auto,*" Margin="2">
+          <ContentControl Width="60" Height="86" Content="{Binding}" ContentTemplate="{StaticResource CardThumbMedium}" />
+          <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="14,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+        </Grid>
+      </DataTemplate>
+      <!-- Une carte dans une liste d'un sous-onglet de la Bibliothèque : un clic l'ouvre dans « Cartes ». -->
+      <DataTemplate x:Key="CardLinkRow" x:DataType="vm:CardLink">
+        <Button Command="{Binding Open}" CommandParameter="{Binding}" Background="Transparent" Padding="6" HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Left" ToolTip.Tip="Ouvrir la fiche de la carte">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <Grid Width="96" Height="136">
+              <v:CardFace Item="{Binding Card}" ImageOverride="{Binding SkinThumbnail}" ShowElement="True" ShowRarity="True" ShowIncome="True" />
+            </Grid>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+              <TextBlock Text="{Binding Card.Name}" Classes="title" FontSize="16" />
+              <TextBlock Text="{Binding Note}" Classes="value" FontSize="12" IsVisible="{Binding HasNote}" />
+            </StackPanel>
+          </Grid>
+        </Button>
+      </DataTemplate>
+    </ResourceDictionary>
   </Application.Resources>
 </Application>

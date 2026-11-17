@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.LibraryTabsView"
+             x:DataType="vm:LibraryTabsViewModel">
+  <TabControl SelectedIndex="{Binding SelectedTab}">
+    <TabItem Header="Cartes" FontSize="18"><v:LibraryView DataContext="{Binding Cards}" /></TabItem>
+    <TabItem Header="Talents" FontSize="18"><v:TalentsView DataContext="{Binding Talents}" /></TabItem>
+    <TabItem Header="Tox" FontSize="18"><v:ToxView DataContext="{Binding Tox}" /></TabItem>
+    <TabItem Header="Artistes" FontSize="18"><v:ArtistsView DataContext="{Binding Artists}" /></TabItem>
+  </TabControl>
+</UserControl>

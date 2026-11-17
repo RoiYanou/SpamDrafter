@@ -4,36 +4,9 @@
              xmlns:v="using:SpamDrafter.App.Views"
              x:Class="SpamDrafter.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
-  <Grid ColumnDefinitions="360,*" Margin="12">
-    <v:CardListPanel DataContext="{Binding Browser}" />
-    <ScrollViewer Grid.Column="1" Margin="16,0,0,0">
-      <Grid ColumnDefinitions="Auto,*">
-        <Border Width="300" Height="430" CornerRadius="6" ClipToBounds="True" VerticalAlignment="Top" Background="#22000000">
-          <Image Source="{Binding Image}" Stretch="Uniform" />
-        </Border>
-        <StackPanel Grid.Column="1" Margin="20,0,0,0" Spacing="6">
-          <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="Bold" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding Stats}" Opacity="0.85" />
-          <TextBlock Text="{Binding Resistances}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
-          <TextBlock Text="Capacités" FontWeight="SemiBold" Margin="0,12,0,0" />
-          <ItemsControl ItemsSource="{Binding Abilities}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" /></DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="Talents (1 choisi par carte)" FontWeight="SemiBold" Margin="0,12,0,0" />
-          <ItemsControl ItemsSource="{Binding Talents}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:TalentLine">
-                <StackPanel Margin="0,0,0,6">
-                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                  <TextBlock Text="{Binding Description}" Opacity="0.75" FontSize="12" TextWrapping="Wrap" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </Grid>
-    </ScrollViewer>
+  <Grid Margin="12">
+    <v:CardGridPanel DataContext="{Binding Browser}" TileWidth="140" TileHeight="200" />
+    <!-- La fiche s'affiche en fenêtre au centre, sur un fond assombri qui laisse voir les cartes ; un clic en dehors la ferme (phase 13). -->
+    <v:CardDetailView />
   </Grid>
 </UserControl>

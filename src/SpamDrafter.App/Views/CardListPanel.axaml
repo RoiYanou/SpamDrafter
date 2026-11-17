@@ -5,11 +5,38 @@
              x:DataType="vm:CardBrowser">
   <DockPanel>
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
-      <TextBox Text="{Binding Search}" PlaceholderText="Rechercher une carte…" />
+      <TextBox x:Name="SearchBox" Text="{Binding Search}" PlaceholderText="Rechercher une carte, une capacité ou un talent…" />
       <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-        <ComboBox ItemsSource="{Binding ElementOptions}" SelectedItem="{Binding Element}" HorizontalAlignment="Stretch" />
-        <ComboBox Grid.Column="1" ItemsSource="{Binding RarityOptions}" SelectedItem="{Binding Rarity}" HorizontalAlignment="Stretch" />
+        <ComboBox ItemsSource="{Binding ElementOptions}" SelectedItem="{Binding Element}" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:FilterOption">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Source="{Binding Icon}" Height="18" Stretch="Uniform" IsVisible="{Binding Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <ComboBox Grid.Column="1" ItemsSource="{Binding RarityOptions}" SelectedItem="{Binding Rarity}" HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:FilterOption">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Image Source="{Binding Icon}" Height="18" Stretch="Uniform" IsVisible="{Binding Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
       </Grid>
+      <Expander Header="{Binding AdvancedHeader}" HorizontalAlignment="Stretch" FontSize="12" Padding="0">
+        <StackPanel Spacing="6" Margin="0,4,0,0">
+          <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" HorizontalAlignment="Stretch" />
+          <ComboBox ItemsSource="{Binding SpeciesOptions}" SelectedItem="{Binding Species}" HorizontalAlignment="Stretch" />
+          <ComboBox ItemsSource="{Binding RegionOptions}" SelectedItem="{Binding Region}" HorizontalAlignment="Stretch" />
+          <ComboBox ItemsSource="{Binding ChronologyOptions}" SelectedItem="{Binding Chronology}" HorizontalAlignment="Stretch" />
+          <Button Content="Réinitialiser les filtres" Click="ClearFilters_Click" FontSize="12" Padding="8,2" />
+        </StackPanel>
+      </Expander>
       <TextBlock Text="{Binding CountText}" Opacity="0.7" FontSize="12" />
     </StackPanel>
     <ListBox x:Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"

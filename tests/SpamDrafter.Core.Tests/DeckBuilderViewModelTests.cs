@@ -83,6 +83,14 @@ public class DeckBuilderViewModelTests : IDisposable
         Add(vm, vm.Browser.Items[0]);
         vm.SaveCommand.Execute(null);
         vm.DeleteCommand.Execute(null);
+        // Une fenêtre de confirmation nomme le deck ; rien n'est supprimé avant la confirmation.
+        Assert.True(vm.DeleteConfirmVisible);
+        Assert.Contains(vm.SavedDecks[0].Name, vm.DeleteConfirmText);
+        vm.DeleteCancelCommand.Execute(null);
+        Assert.False(vm.DeleteConfirmVisible);
+        Assert.Single(vm.SavedDecks);
+        vm.DeleteCommand.Execute(null);
+        vm.DeleteConfirmCommand.Execute(null);
         Assert.Empty(vm.SavedDecks);
         Assert.Empty(new DeckStore(_dir).LoadAll());
     }
@@ -97,6 +105,9 @@ public class DeckBuilderViewModelTests : IDisposable
         Assert.NotEmpty(b.Items);
         Assert.All(b.Items, i => Assert.Equal("fire", i.Card.Element));
         b.Search = "Esprit";
-        Assert.All(b.Items, i => Assert.Contains("Esprit", i.Name));
+        // La recherche porte aussi sur les capacités et les talents (phase 12) : le nom seul ne suffit plus à expliquer un résultat.
+        Assert.NotEmpty(b.Items);
+        Assert.Contains(b.Items, i => i.Name.Contains("Esprit"));
+        Assert.All(b.Items, i => Assert.True(i.Matches("Esprit", "fire", null)));
     }
 }

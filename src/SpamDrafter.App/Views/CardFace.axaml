@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.CardFace"
+             x:DataType="v:CardFace">
+  <!-- Une carte (phase 13) : illustration rognée aux coins arrondis, cadre de rareté dessiné PAR-DESSUS l'image (le contour épouse
+       toujours les coins), nom en haut au centre, élément en haut à gauche, Spamton et talent en haut à droite, symbole de rareté
+       intégré au bas du cadre. Reflet holographique (fiche détaillée seulement) ; au survol, un exemplaire agrandi flotte au-dessus. -->
+  <Border x:Name="Root" Classes="cardface" Background="Transparent" ToolTip.Tip="{Binding TooltipText}">
+    <Grid>
+      <Grid Margin="{Binding BodyMargin}">
+        <Border Margin="{Binding ImageMargin}" CornerRadius="{Binding ImageCorner}" ClipToBounds="True" Background="#33000000">
+          <Grid>
+            <Image Source="{Binding Item.Thumbnail}" Stretch="UniformToFill"
+                   IsVisible="{Binding ImageOverride, Converter={x:Static ObjectConverters.IsNull}}" />
+            <Image Source="{Binding ImageOverride}" Stretch="UniformToFill"
+                   IsVisible="{Binding ImageOverride, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <Border x:Name="HoloLayer" IsHitTestVisible="False" Opacity="0">
+              <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.18" /></Transitions></Border.Transitions>
+            </Border>
+            <Border IsVisible="{Binding Credit, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="{Binding CreditMargin}" Background="#B0000000" CornerRadius="4" Padding="6,2" IsHitTestVisible="False">
+              <TextBlock Text="{Binding Credit}" FontSize="{Binding CreditSize}" FontStyle="Italic" Foreground="White" TextTrimming="CharacterEllipsis" />
+            </Border>
+            <Border IsVisible="{Binding ShowName}" VerticalAlignment="Top" IsHitTestVisible="False" Padding="4,4,4,12">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                  <GradientStop Color="#D0120A24" Offset="0" />
+                  <GradientStop Color="#00120A24" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <TextBlock Classes="title" Text="{Binding Item.Name}" FontSize="{Binding NameSize}" TextAlignment="Center"
+                         TextTrimming="CharacterEllipsis" Foreground="White" />
+            </Border>
+          </Grid>
+        </Border>
+        <Border CornerRadius="{Binding Corner}" BorderBrush="{Binding Item.RarityBrush}" BorderThickness="{Binding FrameThickness}" IsHitTestVisible="False" />
+        <Border IsVisible="{Binding ShowElement}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding OverlayMargin}"
+                Width="{Binding Glyph}" Height="{Binding Glyph}" CornerRadius="999" Background="#B0120A24" IsHitTestVisible="False">
+          <Image Source="{Binding Item.ElementIcon}" Margin="3" Stretch="Uniform" />
+        </Border>
+        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding OverlayMargin}" Spacing="3" IsHitTestVisible="False">
+          <Border IsVisible="{Binding ShowIncome}" HorizontalAlignment="Right" Background="#C0120A24" CornerRadius="999" Padding="4,1,7,1">
+            <StackPanel Orientation="Horizontal" Spacing="3">
+              <Image Source="{Binding Item.SpamtonIcon}" Height="{Binding TagSize}" Stretch="Uniform" />
+              <TextBlock Text="{Binding Item.IncomeText}" FontSize="{Binding TagSize}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <Border IsVisible="{Binding TopTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" HorizontalAlignment="Right"
+                  Background="{StaticResource BrushYellow}" CornerRadius="999" Padding="6,0">
+            <TextBlock Text="{Binding TopTag}" FontSize="{Binding TagSize}" FontWeight="Bold" Foreground="{StaticResource BrushOnYellow}" />
+          </Border>
+        </StackPanel>
+        <!-- Talent en bas à gauche (présentation d'un deck) : « T1 » puis son nom, en gras. -->
+        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding BottomLeftMargin}" Spacing="3" IsHitTestVisible="False"
+                    IsVisible="{Binding BottomTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <Border HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" CornerRadius="999" Padding="7,0">
+            <TextBlock Text="{Binding BottomTag}" FontSize="{Binding NameSize}" FontWeight="Bold" Foreground="{StaticResource BrushOnYellow}" />
+          </Border>
+          <Border IsVisible="{Binding TalentName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" HorizontalAlignment="Left"
+                  MaxWidth="{Binding TalentMaxWidth}" Background="#D0120A24" CornerRadius="6" Padding="6,2">
+            <TextBlock Text="{Binding TalentName}" FontSize="{Binding NameSize}" FontWeight="ExtraBold" TextWrapping="Wrap" Foreground="White" />
+          </Border>
+        </StackPanel>
+      </Grid>
+      <!-- Symbole de rareté : un médaillon posé sur le milieu du bord inférieur du cadre, dans sa couleur. -->
+      <!-- Symbole de rareté posé directement sur le milieu du bord inférieur du cadre (sans cercle). -->
+      <Image IsVisible="{Binding ShowRarity}" Source="{Binding Item.RarityIcon}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding RarityMargin}"
+             Width="{Binding RarityBadge}" Height="{Binding RarityBadge}" Stretch="Uniform" IsHitTestVisible="False">
+        <Image.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="4" Color="#000000" Opacity="0.8" /></Image.Effect>
+      </Image>
+    </Grid>
+  </Border>
+</UserControl>

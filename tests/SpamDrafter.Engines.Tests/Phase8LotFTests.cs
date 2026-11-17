@@ -83,9 +83,10 @@ public class Phase8LotFTests
     [Fact]
     public void Qualificatif_contre_la_meta()
     {
-        Assert.Equal("Deck au-dessus de la méta", SheetWriter.MetaLevel(0.65));
-        Assert.Equal("Deck au niveau de la méta", SheetWriter.MetaLevel(0.52));
-        Assert.Equal("Deck un peu en dessous de la méta", SheetWriter.MetaLevel(0.45));
-        Assert.Equal("Deck nettement en dessous de la méta", SheetWriter.MetaLevel(0.2));
+        // Phase 12, lot B : la note sur 100 remplace les anciens qualificatifs.
+        Assert.Equal("Excellent", DeckNote.LabelFor(80));
+        Assert.Equal("Bon", DeckNote.LabelFor(60));
+        Assert.Equal("Correct", DeckNote.LabelFor(40));
+        Assert.Equal("Faible", DeckNote.LabelFor(20));
     }
 }

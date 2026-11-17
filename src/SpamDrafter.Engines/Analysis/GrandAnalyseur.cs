@@ -148,7 +148,17 @@ public sealed record AnalysisReport(
     IReadOnlyDictionary<string, double> PeakLevels,
     int Duels,
     int Errors,
-    TimeSpan Elapsed);
+    TimeSpan Elapsed)
+{
+    /// <summary>
+    /// Mesure de référence de la force, celle de la note sur 100 (D-074) : la même pour la proposition du Cuisinier, la fiche
+    /// et l'analyse complète, donc la même note partout. Absente (null) : la note utilise <see cref="Strength"/>.
+    /// </summary>
+    public Measured? NoteStrength { get; init; }
+
+    /// <summary>La mesure sur laquelle repose la note.</summary>
+    public Measured ForNote => NoteStrength ?? Strength;
+}
 
 public enum AnalysisStage { Calibration, Strength, Talents, Roles, Dangers, Done }
 public sealed record AnalysisProgress(AnalysisStage Stage, double Fraction);
@@ -169,6 +179,18 @@ public static class GrandAnalyseur
     private static readonly ConcurrentDictionary<(SimKnowledge, ulong, int, int, string), double[]> PoolRatings = new();
     /// <summary>Classements des decks de référence entre eux, gardés en mémoire (clé : leur contenu).</summary>
     private static readonly ConcurrentDictionary<(SimKnowledge, string, ulong, int, string), double[]> MetaRatings = new();
+
+    /// <summary>
+    /// Mesure de référence de la force d'un deck (D-074) : le joueur fin contre la méta (ou des decks au hasard), avec les
+    /// réglages et la graine de <paramref name="s"/>. C'est exactement le calcul de la « Force » de <see cref="Analyse"/> :
+    /// avec les mêmes réglages, le résultat est identique à <c>AnalysisReport.Strength</c>.
+    /// </summary>
+    public static Measured MeasureStrength(SimKnowledge kb, IReadOnlyList<DuelSlot> deck, AnalysisSettings s, CancellationToken cancel = default)
+    {
+        var field = s.Meta is { Count: >= 2 } meta ? ReferenceField.Of(meta.Select(m => m.Deck)) : ReferenceField.Random(kb, s.Opponents, s.FieldSeed);
+        var main = new EvaluationSettings { Player = s.Player, PairsPerOpponent = s.Pairs, Seed = s.Seed, Parallel = s.Parallel };
+        return Measured.OfScores(Outcomes(DeckEvaluator.EvaluateMany(kb, [deck], field, main, cancel)[0]));
+    }
 
     public static AnalysisReport Analyse(SimKnowledge kb, IReadOnlyList<DuelSlot> deck, AnalysisSettings? settings = null,
         CancellationToken cancel = default, IProgress<AnalysisProgress>? progress = null)

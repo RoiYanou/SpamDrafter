@@ -41,6 +41,9 @@ public static partial class ReportWriter
 
         // Force
         sb.AppendLine("## Force");
+        if (r.UsesMeta && r.NoteStrength is { } reference && reference != r.Strength)
+            sb.AppendLine($"- Note sur 100 : **{DeckNote.From(reference.Value, reference.Margin95).Text}**, mesurée comme dans la fiche et dans les propositions " +
+                          $"({reference.Games} duels, {Pct(reference.Value)} de victoires). Les chiffres ci-dessous viennent de cette analyse, plus poussée : ils peuvent un peu différer.");
         if (r.UsesMeta)
         {
             sb.AppendLine($"- Contre les {r.Matchups.Count} {s.MetaPlural} ({r.Strength.Games} duels, joueur « {s.Player} »), ce deck marque " +

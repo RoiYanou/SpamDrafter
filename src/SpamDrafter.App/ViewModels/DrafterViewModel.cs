@@ -14,9 +14,22 @@ public sealed class DrafterViewModel : ViewModelBase
     private readonly Dictionary<string, CardItem> _byId;
     private string _message = "";
 
-    public DrafterViewModel(CardBrowser browser, IReadOnlyList<CardItem> items, KnowledgeBase kb, DeckLibrary library)
+    private readonly DeckBuilderViewModel? _builder;
+
+    /// <summary>
+    /// Sans <paramref name="builder"/> : tous les decks de la bibliothèque. Avec : les decks tels que « Mes decks » du Builder les affiche
+    /// (mêmes recherche, tri et filtres, partagés entre les deux onglets).
+    /// </summary>
+    public DrafterViewModel(CardBrowser browser, IReadOnlyList<CardItem> items, KnowledgeBase kb, DeckLibrary library, DeckBuilderViewModel? builder = null)
     {
-        Browser = browser; _kb = kb; _library = library;
+        Browser = browser; _kb = kb; _library = library; _builder = builder;
+        if (builder is not null)
+            builder.SavedDecks.CollectionChanged += (_, _) =>
+            {
+                if (_searchPending) return;
+                _searchPending = true;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { _searchPending = false; Search(); });
+            };
         _byId = items.ToDictionary(i => i.Card.Id);
         AddCommand = new RelayCommand(_ => AddSelected());
         RemoveCommand = new RelayCommand(p => { if (p is CardItem c) { Wanted.Remove(c); Search(); } });
@@ -26,6 +39,10 @@ public sealed class DrafterViewModel : ViewModelBase
         Search();
     }
 
+    private bool _searchPending;
+    /// <summary>Recherche, tri et filtres des decks (ceux du Builder) ; null hors de l'application complète.</summary>
+    public DeckBuilderViewModel? Decks => _builder;
+    private IReadOnlyList<Deck> Source => _builder is null ? _library.Decks.ToList() : _builder.SavedDecks.ToList();
     public CardBrowser Browser { get; }
     public ObservableCollection<CardItem> Wanted { get; } = new();
     public ObservableCollection<DrafterResult> Results { get; } = new();
@@ -55,18 +72,23 @@ public sealed class DrafterViewModel : ViewModelBase
     {
         Results.Clear();
         Raise(nameof(WantedText));
-        if (Wanted.Count == 0)
-        {
-            Message = _library.Decks.Count == 0
-                ? "Aucun deck sauvegardé pour l'instant : crée-en un dans le Deck builder."
-                : "Choisis 1 à 4 cartes pour retrouver les decks qui les contiennent.";
-            return;
-        }
-        foreach (var m in DeckSearch.Find(_library.Decks, Wanted.Select(w => w.Card.Id).ToList()))
+        var source = Source;
+        IEnumerable<DeckMatch> matches = Wanted.Count == 0
+            ? source.Select(d => new DeckMatch(d, d.Slots.Count == Deck.MaxCards))      // aucune carte choisie : tous les decks
+            : DeckSearch.Find(source, Wanted.Select(w => w.Card.Id).ToList())
+                .OrderBy(m => source.ToList().FindIndex(d => d.Id == m.Deck.Id));           // l'ordre choisi dans « Mes decks »
+        foreach (var m in matches)
             Results.Add(new DrafterResult(m.Deck, m.Deck.Name,
                 (m.IsComplete ? "Complet" : $"Brouillon · {m.Deck.Slots.Count} carte(s)") +
                 (m.Deck.Origin == DeckOrigin.Generated ? " · généré" : " · créé à la main"),
                 m.Deck.Slots.Select(Describe).ToList()));
+        if (Wanted.Count == 0)
+        {
+            Message = _library.Decks.Count == 0
+                ? "Aucun deck sauvegardé pour l'instant : crée-en un dans le Deck builder."
+                : $"{Results.Count} deck(s). Choisis 1 à 4 cartes pour affiner.";
+            return;
+        }
         Message = Results.Count > 0
             ? $"{Results.Count} deck(s) trouvé(s)."
             : _library.Decks.Count == 0

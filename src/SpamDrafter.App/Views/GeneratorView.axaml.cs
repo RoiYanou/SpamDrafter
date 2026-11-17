@@ -8,6 +8,7 @@ public partial class GeneratorView : UserControl
     public GeneratorView()
     {
         InitializeComponent();
+        PanelLayout.Attach(RootGrid, "generator", ResetLayout);
         Picker.CardActivated += (_, _) => (DataContext as GeneratorViewModel)?.AddCommand.Execute(null);
     }
 }

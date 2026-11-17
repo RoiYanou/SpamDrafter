@@ -27,11 +27,24 @@ public static class SheetWriter
         // Verdict
         sb.AppendLine("VERDICT");
         if (r.UsesMeta)
-            sb.AppendLine($"{MetaLevel(r.Strength.Value)} : il gagne {Pct(r.Strength.Value)} de ses duels contre les {r.Matchups.Count} {r.Settings.MetaPlural} " +
+        {
+            // Note sur 100 (D-072) : le pourcentage de duels simulés gagnés contre la méta ; 50 = au niveau de la méta.
+            var m = r.ForNote;
+            var note = DeckNote.From(m.Value, m.Margin95);
+            sb.AppendLine($"Note : {note.Text} — {note.Label}" + (note.NeedsConfirmation ? " (à confirmer : peu de duels)" : ""));
+            sb.AppendLine($"Le deck gagne {Pct(m.Value)} de ses duels simulés contre les {r.Matchups.Count} {r.Settings.MetaPlural} " +
+                          $"(la note va de 0 à 100 : 100 = au niveau d'un deck de la méta) " +
                           $"et se classe devant {Pct(r.Percentile)} d'entre eux.");
+        }
         else
+        {
+            // Données sans méta (développement) : la note existe aussi, contre des decks tirés au hasard.
+            var m = r.ForNote;
+            var note = DeckNote.From(m.Value, m.Margin95);
+            sb.AppendLine($"Note : {note.Text} — {note.Label}" + (note.NeedsConfirmation ? " (à confirmer : peu de duels)" : ""));
             sb.AppendLine($"{Level(r.Percentile)} : meilleur que {Pct(r.Percentile)} des decks tirés au hasard " +
-                          $"(il gagne {Pct(r.Strength.Value)} de ses duels contre eux).");
+                          $"(il gagne {Pct(m.Value)} de ses duels contre eux).");
+        }
         sb.AppendLine();
 
         // Pourquoi ça marche (lot G) : mesures de simulation + profils lus dans les données.
@@ -156,15 +169,6 @@ public static class SheetWriter
         }
         return lines;
     }
-
-    /// <summary>Qualificatif selon le score contre les decks de référence (seuils de présentation, pas du jeu).</summary>
-    public static string MetaLevel(double score) => score switch
-    {
-        >= 0.60 => "Deck au-dessus de la méta",
-        >= 0.50 => "Deck au niveau de la méta",
-        >= 0.40 => "Deck un peu en dessous de la méta",
-        _ => "Deck nettement en dessous de la méta",
-    };
 
     /// <summary>Qualificatif selon le rang parmi des decks tirés au hasard (seuils de présentation, pas du jeu).</summary>
     public static string Level(double percentile) => percentile switch

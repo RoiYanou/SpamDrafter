@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace SpamDrafter.Core.Decks;
 
 public enum DeckOrigin { Manual, Generated }
@@ -20,5 +21,18 @@ public sealed class Deck
     /// </summary>
     public bool IsReference { get; set; }
     public string GameVersion { get; set; } = "";
+    /// <summary>Deck mis en favori (phase 12, lot A). Absent des anciens fichiers : faux.</summary>
+    public bool Favorite { get; set; }
+    /// <summary>Étiquettes libres (« ranked », « essai »…). Absentes des anciens fichiers : liste vide.</summary>
+    public List<string> Tags { get; set; } = new();
+    /// <summary>Dernière sauvegarde (UTC) ; null pour les decks d'avant la phase 12.</summary>
+    public DateTime? ModifiedUtc { get; set; }
     public List<DeckSlot> Slots { get; set; } = new();
+
+    /// <summary>Pour l'affichage : le deck vient du générateur (le badge reste après un renommage).</summary>
+    [JsonIgnore] public bool IsGenerated => Origin == DeckOrigin.Generated;
+    /// <summary>Pour l'affichage : une mise à jour de SPAM touche ce deck (calculé par le Deck builder, jamais enregistré).</summary>
+    [JsonIgnore] public bool VersionImpacted { get; set; }
+    /// <summary>Pour l'affichage : étiquettes sous la forme « # ranked  # essai ».</summary>
+    [JsonIgnore] public string TagsLabel => string.Join("  ", Tags.Select(t => "# " + t));
 }

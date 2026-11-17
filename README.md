@@ -66,6 +66,7 @@ Variables utiles pour les essais :
 |---|---|
 | `SPAMDRAFTER_KNOWLEDGE` | Dossier des données du jeu |
 | `SPAMDRAFTER_DECKS` | Autre dossier de decks |
+| `SPAMDRAFTER_SETTINGS` | Autre fichier de réglages (onglet, fenêtre, filtres) |
 | `SPAMDRAFTER_DATA` | Autre dossier de données installées |
 | `SPAMDRAFTER_UPDATE_SOURCE` | Autre source de mises à jour (dossier ou adresse web) |
 

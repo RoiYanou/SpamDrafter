@@ -4,7 +4,17 @@
         xmlns:v="using:SpamDrafter.App.Views"
         x:Class="SpamDrafter.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
+        Classes.reduce="{Binding ReduceAnimations}"
         Title="SpamDrafter (non officiel)" Icon="/Assets/SpamDrafter.ico" Width="1280" Height="800" MinWidth="1000" MinHeight="640">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Escape" Command="{Binding QuickDetail.CloseOverlayCommand}" />
+    <KeyBinding Gesture="Ctrl+1" Command="{Binding SelectTabCommand}" CommandParameter="4" />
+    <KeyBinding Gesture="Ctrl+2" Command="{Binding SelectTabCommand}" CommandParameter="0" />
+    <KeyBinding Gesture="Ctrl+3" Command="{Binding SelectTabCommand}" CommandParameter="1" />
+    <KeyBinding Gesture="Ctrl+4" Command="{Binding SelectTabCommand}" CommandParameter="2" />
+    <KeyBinding Gesture="Ctrl+5" Command="{Binding SelectTabCommand}" CommandParameter="3" />
+  </Window.KeyBindings>
+  <LayoutTransformControl LayoutTransform="{Binding UiTransform}">
   <DockPanel>
     <DockPanel DockPanel.Dock="Top" Margin="14,6">
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" DataContext="{Binding Updater}">
@@ -13,34 +23,133 @@
                 IsVisible="{Binding UpdateReady}" FontSize="12" Padding="8,2" />
         <Button Content="Rechercher une mise à jour" Command="{Binding CheckCommand}"
                 IsVisible="{Binding IsInstalled}" FontSize="12" Padding="8,2" />
+        <Button Content="Réglages" FontSize="12" Padding="8,2" DataContext="{Binding $parent[Window].DataContext}">
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <ScrollViewer MaxHeight="600" Width="310">
+              <StackPanel Spacing="8" Margin="0,0,14,0" x:DataType="vm:MainViewModel">
+                <TextBlock Classes="title" Text="Réglages" FontSize="20" />
+                <TextBlock Classes="title glow" Text="Couleurs" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <StackPanel Spacing="2"><TextBlock Text="Thème de couleur" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding ThemeIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                <TextBlock Classes="title glow" Text="Accessibilité" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <StackPanel Spacing="2"><TextBlock Text="Taille de l'interface" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding UiScaleOptions}" SelectedIndex="{Binding UiScaleIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                <CheckBox Content="Contraste élevé" IsChecked="{Binding HighContrast}" />
+                <TextBlock Classes="title glow" Text="Sons" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <CheckBox Content="Effets sonores" IsChecked="{Binding SoundsEnabled}" />
+                <StackPanel Spacing="2"><TextBlock Text="Volume" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding SoundVolume}" /></StackPanel>
+                <TextBlock Classes="title glow" Text="Animations" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <CheckBox Content="Réduire les animations" IsChecked="{Binding ReduceAnimations}" />
+                <TextBlock Classes="title glow" Text="Fond étoilé" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <StackPanel Spacing="2"><TextBlock Text="Vitesse du scintillement" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0.1" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding StarSpeed}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Nombre d'étoiles" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0" Maximum="400" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding StarCount}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Taille des étoiles" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0.3" Maximum="4" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding StarSize}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Couleur des étoiles" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding StarColorOptions}" SelectedIndex="{Binding StarColorIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+              </StackPanel>
+              </ScrollViewer>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+        <Button Content="?" FontSize="12" Padding="9,2" ToolTip.Tip="Raccourcis clavier">
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <StackPanel Spacing="4" Width="300">
+                <TextBlock Classes="title" Text="Raccourcis clavier" FontSize="20" />
+                <TextBlock Text="Ctrl+1 à Ctrl+5 : Accueil, Biblio, Builder, Drafter, Générateur" TextWrapping="Wrap" />
+                <TextBlock Text="Ctrl+F : aller à la recherche" TextWrapping="Wrap" />
+                <TextBlock Text="Échap : fermer la fiche d'une carte, vider la recherche" TextWrapping="Wrap" />
+                <TextBlock Text="Double-clic sur une carte : l'ajouter" TextWrapping="Wrap" />
+                <TextBlock Text="Deck builder : Ctrl+S sauvegarder, Ctrl+N nouveau, Ctrl+D dupliquer, Ctrl+Z annuler, Ctrl+Y rétablir" TextWrapping="Wrap" />
+                <TextBlock Text="Flèches ▲ ▼ dans « Mes decks » : choisir l'ordre des decks" TextWrapping="Wrap" />
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
         <Button Content="Importer des données…" Click="ImportData_Click" FontSize="12" Padding="8,2"
                 ToolTip.Tip="Installer un fichier SpamDrafter-donnees-….zip (sans connexion)" />
         <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="12">
-        <Image Source="/Assets/banniere.png" Height="40" VerticalAlignment="Center" IsVisible="{Binding IsLoaded}"
-               RenderOptions.BitmapInterpolationMode="HighQuality" ToolTip.Tip="SpamDrafter (non officiel)" />
+        <TextBlock Classes="title glow" Text="SpamDrafter" FontSize="26" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center"
+                   IsVisible="{Binding IsLoaded}" ToolTip.Tip="SpamDrafter (non officiel)" />
         <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
       </StackPanel>
     </DockPanel>
     <!-- Sans données (premier lancement, erreur) : la bannière en grand au lieu d'une fenêtre vide. -->
-    <Image DockPanel.Dock="Top" Source="/Assets/banniere.png" MaxHeight="220" Margin="14,40,14,0"
-           HorizontalAlignment="Center" IsVisible="{Binding !IsLoaded}" RenderOptions.BitmapInterpolationMode="HighQuality" />
+    <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="SpamDrafter" FontSize="64" Foreground="{StaticResource BrushYellow}" Margin="14,60,14,0"
+               HorizontalAlignment="Center" IsVisible="{Binding !IsLoaded}" />
+    <!-- Quoi de neuf : SPAM a changé de version (phase 12, lot E) -->
+    <Border DockPanel.Dock="Top" DataContext="{Binding WhatsNew}" IsVisible="{Binding IsVisible}" Margin="14,0,14,6"
+            Background="#22E0B040" BorderBrush="#E0B040" BorderThickness="1" CornerRadius="6" Padding="10" x:DataType="vm:WhatsNewViewModel">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" FontSize="12" />
+        <ScrollViewer MaxHeight="160" IsVisible="{Binding DetailVisible}">
+          <ItemsControl ItemsSource="{Binding Lines}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Text="{Binding StringFormat='• {0}'}" FontSize="12" TextWrapping="Wrap" Opacity="0.9" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <WrapPanel ItemSpacing="8" LineSpacing="6">
+          <Button Content="{Binding DetailButtonLabel}" Command="{Binding ToggleDetailCommand}" FontSize="12" Padding="8,2" />
+          <Button Content="{Binding ImpactedLabel}" Command="{Binding ShowImpactedCommand}" IsVisible="{Binding HasImpactedDecks}" FontSize="12" Padding="8,2" />
+          <Button Content="Fermer" Command="{Binding DismissCommand}" FontSize="12" Padding="8,2" />
+        </WrapPanel>
+      </StackPanel>
+    </Border>
     <TextBlock DockPanel.Dock="Top" Text="{Binding LoadError}" IsVisible="{Binding HasError}"
                Foreground="#E07070" Margin="14" TextWrapping="Wrap" />
-    <TabControl IsVisible="{Binding IsLoaded}" SelectedIndex="{Binding SelectedTab}">
-      <TabItem Header="Bibliothèque">
-        <v:LibraryView DataContext="{Binding Library}" />
-      </TabItem>
-      <TabItem Header="Deck builder">
-        <v:DeckBuilderView DataContext="{Binding DeckBuilder}" />
-      </TabItem>
-      <TabItem Header="Drafter">
-        <v:DrafterView DataContext="{Binding Drafter}" />
-      </TabItem>
-      <TabItem Header="Génération de deck" IsEnabled="{Binding HasGenerator}" ToolTip.Tip="{Binding GeneratorError}">
-        <v:GeneratorView DataContext="{Binding Generator}" />
-      </TabItem>
-    </TabControl>
+    <!-- Colonne d'icônes (opaque) + contenu sur panneau semi-transparent, devant le fond étoilé (phase 13, D-078). -->
+    <Grid IsVisible="{Binding IsLoaded}" ColumnDefinitions="Auto,*">
+      <v:StarField Grid.ColumnSpan="2" />
+      <Border Background="{StaticResource BrushRail}" Width="84" Padding="6,12">
+        <StackPanel Spacing="8">
+          <Button Classes="toggle rail" Classes.on="{Binding IsTab4}" Command="{Binding SelectTabCommand}" CommandParameter="4" ToolTip.Tip="Accueil">
+            <StackPanel Spacing="4">
+              <Path Data="M3 11l9-8 9 8 M5 10v10h5v-6h4v6h5V10" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
+              <TextBlock Text="Accueil" FontSize="11" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="toggle rail" Classes.on="{Binding IsTab0}" Command="{Binding SelectTabCommand}" CommandParameter="0" ToolTip.Tip="Bibliothèque">
+            <StackPanel Spacing="4">
+              <Path Data="M6 3h12a1 1 0 0 1 1 1v14H7a2 2 0 0 0-2 2V4a1 1 0 0 1 1-1z M5 20a2 2 0 0 0 2 2h12 M9 8h6 M9 12h4" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
+              <TextBlock Text="Biblio" FontSize="11" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="toggle rail" Classes.on="{Binding IsTab1}" Command="{Binding SelectTabCommand}" CommandParameter="1" ToolTip.Tip="Deck builder">
+            <StackPanel Spacing="4">
+              <Path Data="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
+              <TextBlock Text="Builder" FontSize="11" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="toggle rail" Classes.on="{Binding IsTab2}" Command="{Binding SelectTabCommand}" CommandParameter="2" ToolTip.Tip="Drafter">
+            <StackPanel Spacing="4">
+              <Path Data="M3 7h4l10 10h4 M3 17h4l3-3 M14 10l3-3h4 M18 4l3 3-3 3 M18 14l3 3-3 3" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
+              <TextBlock Text="Drafter" FontSize="11" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Classes="toggle rail" Classes.on="{Binding IsTab3}" Command="{Binding SelectTabCommand}" CommandParameter="3" IsEnabled="{Binding HasGenerator}" ToolTip.Tip="{Binding GeneratorError}">
+            <StackPanel Spacing="4">
+              <Path Data="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
+              <TextBlock Text="Générateur" FontSize="11" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" Classes="panel" Margin="12" Padding="0">
+        <Panel>
+          <v:HomeView Classes="page" DataContext="{Binding Home}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab4}" />
+          <v:LibraryTabsView Classes="page" DataContext="{Binding LibraryTabs}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab0}" />
+          <v:DeckBuilderView Classes="page" DataContext="{Binding DeckBuilder}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab1}" />
+          <v:DrafterView Classes="page" DataContext="{Binding Drafter}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab2}" />
+          <v:GeneratorView Classes="page" DataContext="{Binding Generator}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab3}" />
+        </Panel>
+      </Border>
+      <!-- Fiche d'une carte ouverte par un clic droit : par-dessus l'onglet en cours, sans le quitter. -->
+      <v:CardDetailView Grid.ColumnSpan="2" DataContext="{Binding QuickDetail}" />
+    </Grid>
   </DockPanel>
+  </LayoutTransformControl>
 </Window>

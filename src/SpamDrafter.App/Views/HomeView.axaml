@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+  <Grid>
+  <ScrollViewer>
+    <StackPanel Margin="24" Spacing="14">
+      <StackPanel Spacing="2">
+        <TextBlock Classes="title" Text="{Binding Greeting}" FontSize="{StaticResource FontSizeTitle}" />
+        <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource BrushTextSecondary}" />
+      </StackPanel>
+      <Border Classes="panel" IsVisible="{Binding HasResume}">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+          <TextBlock Text="Tu travaillais avant de fermer l'application." VerticalAlignment="Center" />
+          <Button Classes="primary" Content="{Binding ResumeLabel}" Command="{Binding ResumeCommand}" Padding="14,6" />
+        </StackPanel>
+      </Border>
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+        <!-- Carte du jour à gauche : elle s'incline avec la souris comme dans la fiche ; seuls le nom, la bordure et l'illustrateur s'affichent. -->
+        <Border Classes="panel">
+          <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Classes="title glow" Text="Carte du jour" FontSize="20" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" />
+            <Border x:Name="CardOfDayBox" Width="280" Height="412" Cursor="Hand" Background="Transparent" ToolTip.Tip="Cliquer pour voir la carte en grand">
+              <v:CardFace Item="{Binding CardOfDay}" ImageOverride="{Binding CardOfDayImage}" Credit="{Binding CardOfDayCredit}"
+                          ShowName="True" ShowElement="False" ShowIncome="False" ShowRarity="False" HoverZoom="False" Holo="True" />
+            </Border>
+          </StackPanel>
+        </Border>
+        <!-- Un deck de la collection au hasard (changé à chaque démarrage), agrandi pour remplir la bulle. -->
+        <Border Grid.Column="1" Classes="panel">
+          <StackPanel Spacing="12" VerticalAlignment="Center">
+            <TextBlock Text="{Binding DeckMention}" Classes="hot" FontSize="17" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding HasLastDeck}" />
+            <TextBlock Classes="title glow" Text="{Binding LastDeckTitle}" FontSize="22" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" IsVisible="{Binding HasLastDeck}" />
+            <Viewbox Stretch="Uniform" MaxHeight="440" IsVisible="{Binding HasLastDeck}">
+              <ItemsControl ItemsSource="{Binding LastDeckChips}" ItemTemplate="{StaticResource DeckChipHome}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="14" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </Viewbox>
+            <Button Classes="primary" Content="Ouvrir le deck" Command="{Binding OpenLastDeckCommand}" HorizontalAlignment="Center" Padding="16,8" IsVisible="{Binding HasLastDeck}" />
+            <StackPanel Spacing="14" HorizontalAlignment="Center" IsVisible="{Binding HasNoDeck}">
+              <TextBlock Text="Pas de deck ? Essaye d'en créer un !" Classes="title glow" FontSize="24" Foreground="{StaticResource BrushYellow}" TextAlignment="Center" TextWrapping="Wrap" />
+              <Button Classes="primary" Content="Aller au Deck builder" Command="{Binding OpenBuilderCommand}" HorizontalAlignment="Center" Padding="20,10" FontSize="16" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Grid>
+      <Border Classes="panel">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Classes="title glow" Text="Astuce" FontSize="{StaticResource FontSizeLead}" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Tip}" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+        <Border Classes="panel">
+          <StackPanel Spacing="6">
+            <TextBlock Classes="title" Text="Nouveautés" FontSize="{StaticResource FontSizeLead}" />
+            <ItemsControl ItemsSource="{Binding News}">
+              <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,0,0,4" /></DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Classes="panel">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="title" Text="Succès" FontSize="{StaticResource FontSizeLead}" />
+            <ItemsControl ItemsSource="{Binding Achievements}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:Achievement">
+                  <Border Classes="badge" Classes.done="{Binding Done}" Margin="0,0,6,6" Padding="10,3" CornerRadius="14" BorderThickness="1">
+                    <TextBlock Text="{Binding Text}" FontSize="12" />
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+    <!-- Carte du jour en grand : excellente qualité, reflet holographique ; un clic en dehors ferme la fenêtre. -->
+    <Border x:Name="ZoomBackdrop" Background="#B0120A24" IsVisible="{Binding ZoomOpen}">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+        <TextBlock Text="Carte du jour" Classes="title glow" FontSize="24" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" />
+        <Border x:Name="ZoomBox" Width="400" Height="590" Background="Transparent">
+          <v:CardFace Item="{Binding CardOfDay}" ImageOverride="{Binding CardOfDayImage}" Credit="{Binding CardOfDayCredit}" ShowName="True" ShowElement="False"
+                      ShowIncome="False" ShowRarity="False" HoverZoom="False" Holo="True" />
+        </Border>
+        <WrapPanel ItemSpacing="10" HorizontalAlignment="Center">
+          <Button Classes="primary" Content="Ouvrir la fiche" Command="{Binding OpenCardOfDayCommand}" Padding="16,8" />
+          <Button Content="Fermer" Command="{Binding CloseZoomCommand}" Padding="16,8" />
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

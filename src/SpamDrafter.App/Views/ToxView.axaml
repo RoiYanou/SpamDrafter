@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.ToxView"
+             x:DataType="vm:ToxViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.shop"><Setter Property="Foreground" Value="#7BC67B" /></Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="360,*" Margin="12" ColumnSpacing="16">
+    <DockPanel>
+      <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+        <TextBox Text="{Binding Search}" PlaceholderText="Rechercher un Tox…" />
+        <ComboBox ItemsSource="{Binding RarityOptions}" SelectedIndex="{Binding RarityIndex}" HorizontalAlignment="Stretch" />
+        <TextBlock Text="{Binding CountText}" Opacity="0.7" FontSize="12" />
+      </StackPanel>
+      <ListBox Classes="rows" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ToxFamilyRow">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+              <Border Width="34" Height="34" CornerRadius="6" Background="#22000000" ClipToBounds="True">
+                <Image Source="{Binding Image}" Stretch="Uniform" Margin="2" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <TextBlock Grid.Column="2" Text="{Binding Variants, StringFormat='{}{0} variante(s)'}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Spacing="8" Margin="0,0,12,0">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+          <Border Width="72" Height="72" CornerRadius="10" Background="#22000000" ClipToBounds="True" IsVisible="{Binding HasSelection}">
+            <Image Source="{Binding Image}" Stretch="Uniform" Margin="6" />
+          </Border>
+          <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="Bold" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Variants}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ToxVariantRow">
+              <Border BorderBrush="{Binding Border}" BorderThickness="3,0,0,0" Background="#14808080" CornerRadius="4" Padding="12,8" Margin="0,0,0,8">
+                <StackPanel Spacing="3">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Image Source="{Binding RarityIcon}" Height="20" Stretch="Uniform" IsVisible="{Binding IsRated}" />
+                    <TextBlock Text="{Binding RarityName}" FontWeight="SemiBold" Foreground="{Binding TextColor}" />
+                  </StackPanel>
+                  <WrapPanel ItemSpacing="18" LineSpacing="2">
+                    <TextBlock Text="{Binding Value}" FontSize="13" />
+                    <TextBlock Text="{Binding Price}" FontSize="13" Classes.shop="{Binding InShop}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Innate}" FontSize="12" Opacity="0.7" />
+                  </WrapPanel>
+                  <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="12" Opacity="0.85" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Text="{Binding CardsTitle}" FontWeight="SemiBold" Margin="0,10,0,0" IsVisible="{Binding HasSelection}" />
+        <ItemsControl ItemsSource="{Binding InnateCards}" ItemTemplate="{StaticResource CardLinkRow}" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

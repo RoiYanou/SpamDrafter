@@ -8,6 +8,7 @@ public partial class DrafterView : UserControl
     public DrafterView()
     {
         InitializeComponent();
+        PanelLayout.Attach(RootGrid, "drafter", ResetLayout);
         Picker.CardActivated += (_, _) => (DataContext as DrafterViewModel)?.AddCommand.Execute(null);
     }
 }
