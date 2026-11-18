@@ -7,12 +7,21 @@
   <!-- Liste de cartes en grand quadrillage (phase 13) : filtres en une barre, cartes en vignettes qui remplissent la largeur. -->
   <DockPanel>
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+      <Grid x:Name="SearchRow" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
         <TextBox x:Name="SearchBox" Text="{Binding Search}" PlaceholderText="Rechercher une carte, une capacité ou un talent…" />
-        <Button Grid.Column="1" Content="{Binding FiltersToggleText}" Click="ToggleFilters_Click" Padding="10,6" ToolTip.Tip="Réduire ou afficher le menu de tri et de filtres" />
+        <Button Grid.Column="1" Click="ToggleFilters_Click" Padding="10,6" ToolTip.Tip="Réduire ou afficher le menu de tri et de filtres">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding FiltersToggleText}" />
+            <TextBlock Text="● actif" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding AnyFilterActive}" />
+          </StackPanel>
+        </Button>
         <Button Grid.Column="2" Content="Réinitialiser" Click="ClearFilters_Click" Padding="10,6" />
       </Grid>
-      <StackPanel Spacing="6" IsVisible="{Binding FiltersVisible}">
+      <!-- Filtres (éléments, raretés, tri…) : un menu flottant par-dessus la liste de cartes, de la largeur de la barre de recherche, sur un fond translucide. -->
+      <Popup x:Name="FilterPopup" Placement="Bottom" IsLightDismissEnabled="True" IsOpen="{Binding FiltersVisible, Mode=OneWay}">
+        <LayoutTransformControl x:Name="FilterScale">
+          <Border x:Name="FilterFrame" CornerRadius="12" BorderThickness="1.5" Padding="12" BoxShadow="0 6 18 0 #99000000">
+      <StackPanel Spacing="8">
       <!-- Éléments et raretés : cases à cocher, combinables à volonté (aucune cochée = toutes). -->
       <ItemsControl ItemsSource="{Binding ElementChoices}">
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -34,14 +43,20 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <Expander Header="{Binding AdvancedHeader}" HorizontalAlignment="Stretch" FontSize="12" Padding="0">
-        <StackPanel Spacing="8" Margin="10,8,10,10">
+              <StackPanel Spacing="8">
           <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" HorizontalAlignment="Stretch" />
           <!-- « Filtrer par » : un seul menu avec des sous-menus (Régions, Espèces, Périodes) construits dans le code. -->
-          <Button x:Name="LoreButton" Content="{Binding LoreSummary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="10,7" />
+          <Button x:Name="LoreButton" Classes="combo">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding LoreSummary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <Path Grid.Column="1" Data="M1,1.5 L4.5,5 L8,1.5" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.2" Width="10" Height="6" Stretch="Uniform" VerticalAlignment="Center" />
+            </Grid>
+          </Button>
         </StackPanel>
-      </Expander>
-      </StackPanel>
+            </StackPanel>
+          </Border>
+        </LayoutTransformControl>
+      </Popup>
       <TextBlock Text="{Binding CountText}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" />
     </StackPanel>
     <ListBox x:Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Classes="grid">
@@ -49,7 +64,7 @@
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vm:CardItem">
           <!-- Le nom est écrit sur la carte (en haut au centre), plus besoin de le répéter dessous. -->
-          <ContentControl Width="{Binding $parent[v:CardGridPanel].TileWidth}" Height="{Binding $parent[v:CardGridPanel].TileHeight}"
+          <ContentControl ClipToBounds="False" Width="{Binding $parent[v:CardGridPanel].FitWidth}" Height="{Binding $parent[v:CardGridPanel].FitHeight}"
                           Content="{Binding}" ContentTemplate="{StaticResource CardThumb}" />
         </DataTemplate>
       </ListBox.ItemTemplate>

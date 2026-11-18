@@ -27,19 +27,25 @@
     <!-- 1. Sélection des cartes -->
     <Border Classes="panel" Padding="14">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Cartes" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,10" />
-        <Button DockPanel.Dock="Bottom" Content="Ajouter au deck (ou double-clic)" Command="{Binding AddCommand}" IsEnabled="{Binding CanEditCards}"
-                Classes="soft" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,10,0,0" Padding="10,8" />
-        <v:CardGridPanel x:Name="Picker" DataContext="{Binding Browser}" TileWidth="104" TileHeight="148" />
+        <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Cartes" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+        <v:CardGridPanel x:Name="Picker" ClickToAdd="True" DataContext="{Binding Browser}" TileWidth="104" TileHeight="148" />
       </DockPanel>
     </Border>
-    <GridSplitter Grid.Column="1" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+    <GridSplitter Classes="vgrip" Grid.Column="1" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" ToolTip.Tip="Tirer pour régler la largeur des colonnes" />
 
-    <!-- 2. Construction du deck : tout l'essentiel en haut, les 4 cartes visibles sans défiler, le reste dans « Détails et décor ». -->
+    <!-- 2. Construction du deck : tout l'essentiel en haut, les 4 cartes visibles sans défiler, le reste dans « Détails et repères ». -->
     <Border Grid.Column="2" Classes="panel" Padding="14">
-    <DockPanel>
-      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Deck en cours" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,8" />
-      <StackPanel DockPanel.Dock="Top" Spacing="6">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" MinHeight="170" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <TextBlock Grid.Row="0" Classes="title glow" Text="Deck en cours" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-4" />
+      <StackPanel Grid.Row="1" Spacing="6">
         <Border IsVisible="{Binding ConfirmVisible}" Background="#33E0A050" BorderBrush="#E0A050" BorderThickness="1"
                 CornerRadius="8" Padding="12">
           <StackPanel Spacing="10">
@@ -52,43 +58,93 @@
           </StackPanel>
         </Border>
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-          <TextBox x:Name="NameBox" Text="{Binding Name}" PlaceholderText="Nom du deck" FontSize="17" RenderTransformOrigin="50%,50%" />
+          <TextBox x:Name="NameBox" Text="{Binding Name}" PlaceholderText="Nom du deck" FontSize="17" RenderTransformOrigin="50%,50%" Padding="22,5,6,5" />
+          <!-- Barre de la couleur de repère choisie pour ce deck (la même que dans « Mes decks »). -->
+          <Border Width="5" Margin="9,8" CornerRadius="3" HorizontalAlignment="Left" IsHitTestVisible="False" Background="{Binding DeckColorBrush}" />
           <Button Grid.Column="1" Content="Sauvegarder" Command="{Binding SaveCommand}" Classes="primary" Padding="12,6" ToolTip.Tip="Ctrl+S" />
         </Grid>
-        <WrapPanel ItemSpacing="10" LineSpacing="2">
-          <TextBlock Text="{Binding SlotsText}" Classes="value" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding DirtyText}" Classes="warn" FontSize="12" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Status}" Classes="good" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" />
-        </WrapPanel>
-        <ItemsControl ItemsSource="{Binding Problems}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="x:String">
-              <TextBlock Text="{Binding StringFormat='• {0}'}" Classes="warn" FontSize="12" TextWrapping="Wrap" />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+      </StackPanel>
+      <!-- Boutons du deck au-dessus des cartes (gain de place en bas) ; le compteur « 4 / 4 cartes » et la liste d'erreurs n'existent plus ici. -->
+      <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,0">
         <WrapPanel ItemSpacing="6" LineSpacing="6">
           <Button Content="↶" Command="{Binding UndoCommand}" Padding="9,3" ToolTip.Tip="Annuler (Ctrl+Z)" />
           <Button Content="↷" Command="{Binding RedoCommand}" Padding="9,3" ToolTip.Tip="Rétablir (Ctrl+Y)" />
           <Button Content="{Binding FavoriteLabel}" Command="{Binding ToggleFavoriteCommand}" FontSize="12" Padding="9,4" />
-          <Button Content="Présenter" Classes="info" Click="Present_Click" FontSize="12" Padding="9,4" ToolTip.Tip="Met le deck en scène et l'enregistre en image" />
+          <Button Content="Présenter" Classes="showcase" Click="Present_Click" FontSize="12" Padding="9,4" ToolTip.Tip="Met le deck en scène et l'enregistre en image" />
           <Button Content="Copier" Classes="info" Command="{Binding CopyTextCommand}" FontSize="12" Padding="9,4"
                   ToolTip.Tip="Place le deck en texte dans le presse-papiers" />
         </WrapPanel>
-        <Border IsVisible="{Binding IsLocked}" Background="#223080C0" BorderBrush="#3080C0" BorderThickness="1" CornerRadius="6" Padding="8">
-          <TextBlock Text="{Binding LockedNotice}" TextWrapping="Wrap" FontSize="12" />
-        </Border>
       </StackPanel>
-      <Expander DockPanel.Dock="Bottom" Header="Détails et décor" HorizontalAlignment="Stretch" FontSize="12" Margin="0,8,0,0">
-        <ScrollViewer MaxHeight="300">
-        <StackPanel Spacing="8" Margin="10,8,14,10">
-          <TextBox Text="{Binding TagsText}" PlaceholderText="Étiquettes, séparées par des virgules (ex. ranked, essai)" FontSize="13" />
-          <!-- Décor du deck : emoji à choisir dans une liste, et couleur de sa barre dans « Mes decks ». -->
-          <WrapPanel ItemSpacing="8" LineSpacing="6">
-            <TextBlock Text="Décor :" VerticalAlignment="Center" Classes="hot" />
+      <WrapPanel Grid.Row="3" ItemSpacing="10" LineSpacing="2" Margin="0,6,0,0">
+        <TextBlock Text="{Binding DirtyText}" Classes="warn" FontSize="12" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Status}" Classes="good" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" />
+      </WrapPanel>
+      <Grid Grid.Row="4" Margin="0,8,0,8">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <!-- Les 4 cartes occupent toute la hauteur restante ; boutons et messages sont au-dessus, donc les ✕ ne bougent jamais. -->
+        <ItemsControl ItemsSource="{Binding Slots}" Margin="0,0,6,0" VerticalAlignment="Top">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:SlotViewModel">
+              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="10,12,10,8" Margin="4">
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                  <!-- La même carte qu'en Bibliothèque, sans agrandissement au survol. Le ✕ est dans le coin haut droit de la case, jamais sur la carte. -->
+                  <ContentControl Width="112" Height="165" HorizontalAlignment="Center" Content="{Binding Card}" ContentTemplate="{StaticResource CardThumbFlat}" />
+                  <Button Content="✕" Classes="danger" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-6,0" Padding="7,2" FontSize="12" ZIndex="5"
+                          ToolTip.Tip="Retirer cette carte du deck"
+                          IsEnabled="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).CanEditCards}"
+                          Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).RemoveCommand}"
+                          CommandParameter="{Binding}" />
+                  <ComboBox Grid.Row="1" ItemsSource="{Binding TalentOptions}" SelectedItem="{Binding Talent}" HorizontalAlignment="Stretch" IsEnabled="{Binding IsEditable}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        </ScrollViewer>
+        <!-- Deck généré : information en pop-up par-dessus le haut des cartes, que le joueur peut fermer (elle revient à chaque deck généré ouvert). -->
+        <Border IsVisible="{Binding GeneratedInfoVisible}" VerticalAlignment="Top" Margin="6,6,6,0" Padding="12,10" CornerRadius="10" ZIndex="10"
+                Background="#F0301C5E" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" BoxShadow="0 8 24 0 #AA000000">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <StackPanel Spacing="4">
+              <TextBlock Text="⚙ Deck généré" Classes="title" FontSize="16" Foreground="{StaticResource BrushYellow}" />
+              <TextBlock Text="{Binding LockedNotice}" TextWrapping="Wrap" FontSize="13" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="✕" VerticalAlignment="Top" Padding="8,2" FontSize="12" ToolTip.Tip="Fermer cette information"
+                    Command="{Binding CloseGeneratedInfoCommand}" />
+          </Grid>
+        </Border>
+      </Grid>
+
+      <!-- « Détails et repères » : un menu qui s'ouvre vers le haut, par-dessus les cartes du deck en cours. -->
+      <Button x:Name="DetailsButton" Grid.Row="5" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,8" FontSize="13" Margin="0,0,0,0">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <TextBlock Text="Détails et repères" VerticalAlignment="Center" />
+          <!-- N'apparaît qu'après un essai de sauvegarde qui a échoué. -->
+          <TextBlock Grid.Column="1" Text="{Binding ErrorSummary}" Foreground="#FF9A9A" FontWeight="Bold" IsVisible="{Binding HasErrorSummary}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="2" Text="▴" HorizontalAlignment="Right" VerticalAlignment="Center" />
+        </Grid>
+        <Button.Flyout>
+          <Flyout Placement="Top" FlyoutPresenterClasses="tight">
+        <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" x:DataType="vm:DeckBuilderViewModel">
+        <StackPanel Spacing="8" Margin="10,8,10,10">
+          <Border IsVisible="{Binding HasErrorSummary}" Background="#33E85A6A" BorderBrush="#E07070" BorderThickness="1" CornerRadius="8" Padding="10,8">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding ErrorSummary}" Foreground="#FF9A9A" FontWeight="Bold" />
+              <ItemsControl ItemsSource="{Binding Problems}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding StringFormat='• {0}'}" FontSize="12" TextWrapping="Wrap" /></DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <TextBox Text="{Binding TagsText}" PlaceholderText="Tags, séparés par des virgules (ex. ranked, essai)" FontSize="13" />
+          <!-- Repères du deck : emoji à choisir dans une liste, et couleur de sa barre dans « Mes decks ». -->
+          <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Left"><StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Repères :" VerticalAlignment="Center" Classes="hot" />
             <Button x:Name="EmojiButton" Padding="10,3" MinWidth="48" ToolTip.Tip="Choisir un emoji pour ce deck">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="{Binding DeckEmoji}" FontSize="18" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DeckEmoji}" FontFamily="Segoe UI Emoji" FontSize="18" VerticalAlignment="Center" />
                 <TextBlock Text="Emoji ▾" FontSize="12" VerticalAlignment="Center" />
               </StackPanel>
               <Button.Flyout>
@@ -99,7 +155,7 @@
                       <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="x:String">
-                          <Button Content="{Binding}" Tag="{Binding}" Click="Emoji_Click" FontSize="20" Width="40" Height="40" Padding="0" Margin="2"
+                          <Button Content="{Binding}" Tag="{Binding}" Click="Emoji_Click" FontFamily="Segoe UI Emoji" FontSize="20" Width="40" Height="40" Padding="0" Margin="2"
                                   HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
@@ -109,22 +165,27 @@
                 </Flyout>
               </Button.Flyout>
             </Button>
-            <ItemsControl ItemsSource="{Binding DeckColors}" VerticalAlignment="Center">
-              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl ItemsSource="{Binding DeckColorChoices}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="x:String">
-                  <Button Width="24" Height="24" Padding="0" CornerRadius="12" Background="{Binding}" BorderBrush="White" BorderThickness="1"
-                          Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).SetDeckColorCommand}" CommandParameter="{Binding}" />
+                <DataTemplate x:DataType="vm:ColorChoice">
+                  <!-- Un anneau blanc épais entoure la couleur choisie pour le deck ouvert. -->
+                  <Grid Width="32" Height="32">
+                    <Border IsVisible="{Binding IsSelected}" CornerRadius="16" BorderBrush="White" BorderThickness="3" />
+                    <Button Width="22" Height="22" Padding="0" CornerRadius="11" Background="{Binding Color}" BorderBrush="#99FFFFFF" BorderThickness="1"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).SetDeckColorCommand}" CommandParameter="{Binding Color}" />
+                  </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <Button Content="✕" Padding="7,1" FontSize="11" ToolTip.Tip="Enlever la couleur"
                     Command="{Binding SetDeckColorCommand}" CommandParameter="" />
-          </WrapPanel>
+          </StackPanel></Viewbox>
           <Border IsVisible="{Binding HasStats}" Background="#14808080" CornerRadius="8" Padding="10">
             <StackPanel Spacing="3">
-              <WrapPanel ItemSpacing="8" LineSpacing="2">
-                <TextBlock Text="Éléments :" FontSize="12" Classes="hot" VerticalAlignment="Center" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="Éléments :" FontSize="12" Classes="hot" />
                 <ItemsControl ItemsSource="{Binding ElementIcons}">
                   <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
@@ -136,10 +197,10 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-              </WrapPanel>
+              </StackPanel>
               <TextBlock Text="{Binding TotalsText}" Classes="value" FontSize="12" TextWrapping="Wrap" />
-              <WrapPanel ItemSpacing="8" LineSpacing="2">
-                <TextBlock Text="Résistances moyennes :" FontSize="12" Classes="hot" VerticalAlignment="Center" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="Résistances moyennes :" FontSize="12" Classes="hot" />
                 <ItemsControl ItemsSource="{Binding ResistanceIcons}">
                   <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
@@ -151,7 +212,7 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-              </WrapPanel>
+              </StackPanel>
               <TextBlock Text="{Binding WeaknessText}" FontSize="12" TextWrapping="Wrap" Classes="warn" />
             </StackPanel>
           </Border>
@@ -172,40 +233,26 @@
           </StackPanel>
         </StackPanel>
         </ScrollViewer>
-      </Expander>
-      <ScrollViewer Margin="0,8,0,0">
-        <ItemsControl ItemsSource="{Binding Slots}" Margin="0,0,8,0">
-          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:SlotViewModel">
-              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="8" Margin="4">
-                <StackPanel Spacing="6">
-                  <Grid>
-                    <ContentControl Width="84" Height="120" HorizontalAlignment="Center" Content="{Binding Card}" ContentTemplate="{StaticResource CardThumbQuiet}" />
-                    <Button Content="✕" Classes="danger" HorizontalAlignment="Right" VerticalAlignment="Top" Padding="8,3" ToolTip.Tip="Retirer cette carte du deck"
-                            IsEnabled="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).CanEditCards}"
-                            Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).RemoveCommand}"
-                            CommandParameter="{Binding}" />
-                  </Grid>
-                  <TextBlock Text="{Binding Card.Name}" Classes="title" FontSize="14" TextWrapping="Wrap" TextAlignment="Center" />
-                  <ComboBox ItemsSource="{Binding TalentOptions}" SelectedItem="{Binding Talent}" HorizontalAlignment="Stretch" IsEnabled="{Binding IsEditable}" />
-                </StackPanel>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
-    </DockPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+    </Grid>
     </Border>
-    <GridSplitter Grid.Column="3" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+    <GridSplitter Classes="vgrip" Grid.Column="3" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" ToolTip.Tip="Tirer pour régler la largeur des colonnes" />
 
     <!-- 3. Collection de decks -->
     <Border Grid.Column="4" Classes="panel" Padding="14">
     <DockPanel>
-      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Mes decks" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,10" />
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Mes decks" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
       <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,10">
         <TextBox x:Name="DeckSearchBox" Text="{Binding DeckFilter}" PlaceholderText="Rechercher un deck…" />
-        <Expander Header="Tri et filtres supplémentaires" HorizontalAlignment="Stretch" FontSize="12" Padding="0">
+        <v:Collapse HorizontalAlignment="Stretch" FontSize="12" Padding="0">
+          <v:Collapse.Header>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="Tri et filtres" />
+              <TextBlock Text="● filtre actif" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
+            </StackPanel>
+          </v:Collapse.Header>
           <StackPanel Spacing="8" Margin="10,8,10,10">
             <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" HorizontalAlignment="Stretch" />
             <ComboBox ItemsSource="{Binding OriginOptions}" SelectedItem="{Binding OriginFilter}" HorizontalAlignment="Stretch" />
@@ -220,10 +267,12 @@
               <Button Grid.Column="1" Content="Réinitialiser" Command="{Binding ClearDeckFiltersCommand}" FontSize="12" Padding="10,4" VerticalAlignment="Top" />
             </Grid>
           </StackPanel>
-        </Expander>
+        </v:Collapse>
         <TextBlock Text="{Binding DeckCountText}" Classes="hint" />
       </StackPanel>
-      <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="8" LineSpacing="8" Margin="0,10,0,0">
+      <!-- Gestion des decks : repliée de base pour gagner de la place. -->
+      <v:Collapse DockPanel.Dock="Bottom" OpensUp="True" Header="Gérer les decks" HorizontalAlignment="Stretch" FontSize="12" Margin="0,8,0,0">
+      <WrapPanel ItemSpacing="8" LineSpacing="8" Margin="0,6,0,2">
         <Button Content="Nouveau  (Ctrl+N)" Command="{Binding NewCommand}" Classes="soft" Padding="12,6" />
         <Button Content="Dupliquer" Command="{Binding DuplicateCommand}" Padding="12,6" ToolTip.Tip="Ctrl+D : enregistre une copie du deck en cours sous un nouveau nom" />
         <Button Content="Coller…" Click="Paste_Click" Padding="12,6" ToolTip.Tip="Crée un deck à partir d'un texte copié (voir « Copier le deck »)" />
@@ -231,33 +280,49 @@
         <Button Content="Sauvegarder mes decks…" Click="Backup_Click" FontSize="12" Padding="10,5" ToolTip.Tip="Enregistre tous tes decks dans un fichier .zip" />
         <Button Content="Restaurer…" Click="Restore_Click" FontSize="12" Padding="10,5" ToolTip.Tip="Remet les decks d'un fichier .zip (rien n'est supprimé)" />
       </WrapPanel>
-      <ListBox x:Name="DeckList" ItemsSource="{Binding SavedDecks}" SelectedItem="{Binding SelectedSaved}">
+      </v:Collapse>
+      <ListBox x:Name="DeckList" Classes="decks" ItemsSource="{Binding SavedDecks}" SelectedItem="{Binding ListSelection}">
+        <ListBox.Styles>
+          <!-- Les cartes du deck ne sont visibles que pour le deck présélectionné. -->
+          <Style Selector="StackPanel.deckdetail"><Setter Property="IsVisible" Value="False" /></Style>
+          <Style Selector="ListBoxItem:selected StackPanel.deckdetail"><Setter Property="IsVisible" Value="True" /></Style>
+        </ListBox.Styles>
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="d:Deck">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-            <Border BorderBrush="{Binding Id, Converter={x:Static vm:DeckDecor.ColorBrush}}" BorderThickness="5,0,0,0" Padding="10,4,0,4">
-            <StackPanel Spacing="2">
-              <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="6">
-                <TextBlock Text="★" Foreground="#E0B040" IsVisible="{Binding Favorite}" />
-                <TextBlock Grid.Column="1" Text="⚙" IsVisible="{Binding IsGenerated}" ToolTip.Tip="Deck issu du générateur" />
-                <TextBlock Grid.Column="2" Text="⚠" Foreground="#E0A050" IsVisible="{Binding VersionImpacted}"
-                           ToolTip.Tip="Touché par une mise à jour de SPAM : ouvre le deck pour voir les différences" />
-                <TextBlock Grid.Column="3" Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontSize="20" />
-                <TextBlock Grid.Column="4" Classes="title" Text="{Binding Name}" FontSize="17" TextTrimming="CharacterEllipsis" />
+            <StackPanel>
+              <!-- Le deck comme un bouton : fond fait des illustrations de ses cartes, coupées et recollées en diagonale. -->
+              <Grid Height="60" ClipToBounds="True">
+                <v:DeckStrip Chips="{Binding Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" />
+                <Border Width="4" Margin="14,9,0,9" CornerRadius="2" HorizontalAlignment="Left" Background="{Binding Id, Converter={x:Static vm:DeckDecor.ColorBrush}}" />
+                <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
+                  <TextBlock Text="★" Foreground="#FFD35A" IsVisible="{Binding Favorite}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="⚙" IsVisible="{Binding IsGenerated}" ToolTip.Tip="Deck issu du générateur" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="⚠" Foreground="#FFB050" IsVisible="{Binding VersionImpacted}" VerticalAlignment="Center"
+                             ToolTip.Tip="Touché par une mise à jour de SPAM : ouvre le deck pour voir les différences" />
+                  <TextBlock Grid.Column="3" Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" />
+                  <v:MarqueeText Grid.Column="4" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"
+                                 ToolTip.Tip="{Binding Name}">
+                    <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>
+                  </v:MarqueeText>
+                </Grid>
               </Grid>
-              <ItemsControl ItemsSource="{Binding Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" ItemTemplate="{StaticResource DeckChipLarge}" Margin="0,8,0,12">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="12" LineSpacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-              </ItemsControl>
-              <TextBlock Text="{Binding TagsLabel}" Classes="hint" IsVisible="{Binding Tags.Count}" />
+              <!-- Deck présélectionné : ses cartes juste dessous, et de quoi l'ouvrir ou le déplacer. -->
+              <StackPanel Classes="deckdetail" Spacing="8" Margin="12,10,12,12">
+                <ItemsControl ClipToBounds="False" ItemsSource="{Binding Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" ItemTemplate="{StaticResource DeckChipLarge}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="12" LineSpacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <TextBlock Classes="hint" Text="{Binding TagsLabel}" IsVisible="{Binding Tags.Count}" />
+                <WrapPanel ItemSpacing="8" LineSpacing="6">
+                  <Button Content="Ouvrir dans « Deck en cours »" Classes="primary" Padding="12,6"
+                          Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).OpenDeckCommand}" CommandParameter="{Binding}"
+                          ToolTip.Tip="Clic droit sur le nom : même chose" />
+                  <Button Content="▲" Padding="8,3" FontSize="12" ToolTip.Tip="Faire passer ce deck au-dessus"
+                          Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).MoveUpCommand}" CommandParameter="{Binding}" />
+                  <Button Content="▼" Padding="8,3" FontSize="12" ToolTip.Tip="Faire passer ce deck en dessous"
+                          Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).MoveDownCommand}" CommandParameter="{Binding}" />
+                </WrapPanel>
+              </StackPanel>
             </StackPanel>
-            </Border>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
-              <Button Content="▲" Padding="8,3" FontSize="12" ToolTip.Tip="Faire passer ce deck au-dessus"
-                      Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).MoveUpCommand}" CommandParameter="{Binding}" />
-              <Button Content="▼" Padding="8,3" FontSize="12" ToolTip.Tip="Faire passer ce deck en dessous"
-                      Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).MoveDownCommand}" CommandParameter="{Binding}" />
-            </StackPanel>
-            </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
@@ -271,7 +336,7 @@
         <StackPanel Spacing="12">
           <TextBlock Text="Supprimer ce deck ?" Classes="title glow" FontSize="22" Foreground="{StaticResource BrushYellow}" />
           <TextBlock Text="{Binding DeleteConfirmText}" Classes="hot" FontSize="17" TextWrapping="Wrap" />
-          <ItemsControl ItemsSource="{Binding DeleteConfirmChips}" ItemTemplate="{StaticResource DeckChipLarge}" HorizontalAlignment="Center">
+          <ItemsControl ClipToBounds="False" ItemsSource="{Binding DeleteConfirmChips}" ItemTemplate="{StaticResource DeckChipLarge}" HorizontalAlignment="Center">
             <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="10" LineSpacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
           </ItemsControl>
           <TextBlock Text="{Binding DeleteConfirmDetail}" Classes="hint" TextWrapping="Wrap" />

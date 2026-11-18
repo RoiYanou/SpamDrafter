@@ -25,16 +25,25 @@ public class Phase13Tests : IDisposable
     }
 
     [Theory]
-    [InlineData(SoundKind.Click)] [InlineData(SoundKind.Select)] [InlineData(SoundKind.Tab)] [InlineData(SoundKind.Success)] [InlineData(SoundKind.Error)]
+    [InlineData(SoundKind.Click)] [InlineData(SoundKind.Select)] [InlineData(SoundKind.Tab)] [InlineData(SoundKind.Success)] [InlineData(SoundKind.Error)] [InlineData(SoundKind.Pop)] [InlineData(SoundKind.Page)] [InlineData(SoundKind.Title1)] [InlineData(SoundKind.Title2)] [InlineData(SoundKind.Title3)] [InlineData(SoundKind.Metal1)] [InlineData(SoundKind.Metal2)] [InlineData(SoundKind.Metal3)]
     public void Chaque_son_est_un_fichier_wav_court_et_discret(SoundKind kind)
     {
         var wav = Sounds.Build(kind, 1.0);
         Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(wav, 0, 4));
         Assert.Equal("WAVE", System.Text.Encoding.ASCII.GetString(wav, 8, 4));
         var samples = (wav.Length - 44) / 2;
-        Assert.InRange(samples * 1000 / 22050, 40, 400);                               // moins de 400 ms (directives §5)
+        Assert.InRange(samples * 1000L / BitConverter.ToInt32(wav, 24), 40, 400);   // fréquence lue dans l en-tête du fichier                               // moins de 400 ms (directives §5)
         var peak = Enumerable.Range(0, samples).Max(i => Math.Abs(BitConverter.ToInt16(wav, 44 + i * 2)));
         Assert.InRange(peak, 1, short.MaxValue * 0.4);                                 // jamais fort, même volume à fond
+    }
+
+    [Theory]
+    [InlineData("select_007")] [InlineData("toggle_004")] [InlineData("toggle_002")] [InlineData("pluck_001")] [InlineData("pluck_002")]
+    [InlineData("confirmation_001")] [InlineData("error_008")]
+    public void Les_sons_de_la_banque_libre_sont_embarques(string file)
+    {
+        Assert.Contains($"Sounds/{file}.wav", typeof(Sounds).Assembly.GetManifestResourceNames());
+        Assert.NotEqual(Sounds.Build(SoundKind.Page, 1.0).Length, Sounds.Build(SoundKind.Click, 1.0).Length);   // le clic vient bien du fichier, pas de la note de secours
     }
 
     [Fact]
@@ -147,11 +156,8 @@ public class Phase13Tests : IDisposable
     [Fact]
     public void Les_themes_par_element_et_le_decor_des_decks()
     {
-        Assert.Equal("fire", SpamDrafter.App.Views.ThemeManager.ForElement("element-fire"));
-        Assert.Equal("water", SpamDrafter.App.Views.ThemeManager.ForElement("water"));
-        Assert.Equal("default", SpamDrafter.App.Views.ThemeManager.ForElement("divine"));
-        Assert.Equal("default", SpamDrafter.App.Views.ThemeManager.ForElement(null));
-        Assert.Equal(8, SpamDrafter.App.Views.ThemeManager.Options.Count);
+        Assert.Equal(7, SpamDrafter.App.Views.ThemeManager.Options.Count);   // violet + les 6 éléments
+        Assert.DoesNotContain(SpamDrafter.App.Views.ThemeManager.Options, o => o.Id == "auto");
         var s = new AppSettings();
         Assert.Equal(1.3, s.UiScale); Assert.Equal(90, s.StarCount); Assert.False(s.HighContrast); Assert.Equal("default", s.ElementTheme);
         Directory.CreateDirectory(_dir);

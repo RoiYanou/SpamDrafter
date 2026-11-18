@@ -8,7 +8,7 @@ using SpamDrafter.App.ViewModels;
 namespace SpamDrafter.App.Views;
 
 /// <summary>
-/// Fiche détaillée d'une carte. La grande carte de la fiche « vitrine » s'incline selon la souris (±14°) et se retourne en 300 ms
+/// Fiche détaillée d'une carte. La grande carte de la fiche « vitrine » s'incline selon la souris (±14°) et se retourne en 700 ms
 /// quand on passe de la carte de base au skin. « Réduire les animations » (<see cref="Motion.Reduce"/>) coupe les deux.
 /// </summary>
 public partial class CardDetailView : UserControl
@@ -27,6 +27,9 @@ public partial class CardDetailView : UserControl
         {
             if (ReferenceEquals(e.Source, Backdrop)) { _vm?.CloseOverlayCommand.Execute(null); e.Handled = true; }
         };
+        Backdrop.PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) { CardFace.SuppressZoom = Backdrop.IsVisible; if (Backdrop.IsVisible) CardFace.DismissAllZooms(); }  };
+        // Clic sur la grande carte : un bruitage métallique, tiré au hasard parmi trois.
+        Hero.PointerPressed += (_, e) => { if (e.GetCurrentPoint(Hero).Properties.IsLeftButtonPressed) Sounds.PlayAnyMetal(); };
         Hero.PointerMoved += (_, e) =>
         {
             if (Motion.Reduce || _flip.IsEnabled) return;
@@ -37,7 +40,7 @@ public partial class CardDetailView : UserControl
         Hero.PointerExited += (_, _) => { if (!_flip.IsEnabled) { _rotation.AngleX = 0; _rotation.AngleY = 0; } };
         _flip.Tick += (_, _) =>
         {
-            var t = (DateTime.UtcNow - _flipStart).TotalMilliseconds / 300;
+            var t = (DateTime.UtcNow - _flipStart).TotalMilliseconds / 700;
             if (t >= 1) { _flip.Stop(); _rotation.AngleY = 0; _rotation.AngleX = 0; return; }
             var ease = 1 - Math.Pow(1 - t, 3);            // départ rapide, arrivée douce
             _rotation.AngleY = -90 * (1 - ease);
@@ -53,6 +56,7 @@ public partial class CardDetailView : UserControl
     private void Flip()
     {
         if (Motion.Reduce) return;
+        Sounds.Play(SoundKind.Page);   // bruit de page qui se tourne
         _flipStart = DateTime.UtcNow;
         _flip.Start();
     }

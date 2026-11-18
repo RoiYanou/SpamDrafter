@@ -56,6 +56,17 @@ public static class Icons
     /// <summary>Icône du Spamton (la monnaie du jeu), à côté du revenu d'une carte ; null si la base ne la contient pas.</summary>
     public static Bitmap? Spamton(KnowledgeBase kb, int height = 40) => Load(kb, "images/icons/spamton.webp", height);
 
+    /// <summary>Couleur d'interface d'un élément (choix de présentation, absent de nos données) ; blanc si inconnu.</summary>
+    public static IBrush ElementAccent(string? elementId) => new SolidColorBrush(Color.Parse(elementId switch
+    {
+        "fire" => "#FF7043", "water" => "#4FB3FF", "earth" => "#C08A55", "nature" => "#6FD65A",
+        "light" => "#FFD84A", "shadow" => "#A57BFF", "divine" => "#FF9AE6", _ => "#FFFFFF",
+    }));
+
+    /// <summary>La même couleur avec une transparence donnée (0 à 255).</summary>
+    public static IBrush WithAlpha(IBrush brush, byte alpha) =>
+        brush is ISolidColorBrush b ? new SolidColorBrush(Color.FromArgb(alpha, b.Color.R, b.Color.G, b.Color.B)) : brush;
+
     private static IBrush Brush(string? hex, string fallback) =>
         new SolidColorBrush(Color.TryParse(hex ?? fallback, out var c) ? c : Color.Parse(fallback));
 }

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="using:SpamDrafter.App.Views"
              xmlns:vm="using:SpamDrafter.App.ViewModels"
              x:Class="SpamDrafter.App.Views.CardListPanel"
              x:DataType="vm:CardBrowser">
@@ -28,7 +29,7 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
       </Grid>
-      <Expander Header="{Binding AdvancedHeader}" HorizontalAlignment="Stretch" FontSize="12" Padding="0">
+      <v:Collapse Header="{Binding AdvancedHeader}" HorizontalAlignment="Stretch" FontSize="12" Padding="0">
         <StackPanel Spacing="6" Margin="0,4,0,0">
           <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" HorizontalAlignment="Stretch" />
           <ComboBox ItemsSource="{Binding SpeciesOptions}" SelectedItem="{Binding Species}" HorizontalAlignment="Stretch" />
@@ -36,7 +37,7 @@
           <ComboBox ItemsSource="{Binding ChronologyOptions}" SelectedItem="{Binding Chronology}" HorizontalAlignment="Stretch" />
           <Button Content="Réinitialiser les filtres" Click="ClearFilters_Click" FontSize="12" Padding="8,2" />
         </StackPanel>
-      </Expander>
+      </v:Collapse>
       <TextBlock Text="{Binding CountText}" Opacity="0.7" FontSize="12" />
     </StackPanel>
     <ListBox x:Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"

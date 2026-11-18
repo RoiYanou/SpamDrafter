@@ -279,7 +279,7 @@ public class Phase12LotETests : IDisposable
         var kb = KnowledgeBase.Load(f.NewDir);
         var items = kb.Cards.Select(c => new CardItem(c, kb)).ToList();
         var library = new DeckLibrary(new DeckStore(Path.Combine(_root, "decks")));
-        return new Builder(new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, library), library, kb, cs, f);
+        return new Builder(new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, library) { AllowIncompleteDecks = true }, library, kb, cs, f);
     }
 
     private static Deck Saved(DeckLibrary lib, string name, string version, params (string Card, string? Talent)[] slots)

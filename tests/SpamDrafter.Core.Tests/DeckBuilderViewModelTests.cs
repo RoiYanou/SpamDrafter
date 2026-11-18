@@ -24,7 +24,7 @@ public class DeckBuilderViewModelTests : IDisposable
     private DeckBuilderViewModel Make(KnowledgeBase kb)
     {
         var items = kb.Cards.Select(c => new CardItem(c, kb)).ToList();
-        return new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, new DeckLibrary(new DeckStore(_dir)));
+        return new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, new DeckLibrary(new DeckStore(_dir))) { AllowIncompleteDecks = true };
     }
 
     private static void Add(DeckBuilderViewModel vm, CardItem c) { vm.Browser.Selected = c; vm.AddCommand.Execute(null); }
@@ -72,6 +72,22 @@ public class DeckBuilderViewModelTests : IDisposable
         vm.SaveCommand.Execute(null);
         Assert.Contains("incomplet", vm.Status);
         Assert.NotEmpty(vm.Problems);
+        Assert.Single(vm.SavedDecks);
+    }
+
+    [Fact]
+    public void Un_deck_de_moins_de_4_cartes_ne_peut_pas_etre_sauvegarde()
+    {
+        if (Kb() is not { } kb) return;
+        var vm = Make(kb);
+        vm.AllowIncompleteDecks = false;   // le comportement réel de l'application
+        Add(vm, vm.Browser.Items[0]);
+        vm.SaveCommand.Execute(null);
+        Assert.Contains("doit contenir 4 cartes", vm.Status);
+        Assert.Empty(vm.SavedDecks);
+        for (var i = 1; i < 4; i++) Add(vm, vm.Browser.Items[i]);
+        vm.SaveCommand.Execute(null);
+        Assert.Equal("Deck sauvegardé.", vm.Status);
         Assert.Single(vm.SavedDecks);
     }
 

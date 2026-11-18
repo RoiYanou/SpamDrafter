@@ -75,7 +75,7 @@ public class DrafterViewModelTests : IDisposable
         var items = kb.Cards.Select(c => new CardItem(c, kb)).ToList();
         var lib = new DeckLibrary(new DeckStore(_dir));
         return (new DrafterViewModel(new CardBrowser(items, kb), items, kb, lib),
-                new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, lib), items);
+                new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, lib) { AllowIncompleteDecks = true }, items);
     }
 
     [Fact]

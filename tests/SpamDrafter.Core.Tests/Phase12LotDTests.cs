@@ -26,7 +26,7 @@ public class Phase12LotDTests : IDisposable
         if (FindKnowledge() is not { } p) return null;
         var kb = KnowledgeBase.Load(p);
         var items = kb.Cards.Select(c => new CardItem(c, kb)).ToList();
-        var vm = new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, new DeckLibrary(new DeckStore(Path.Combine(_dir, "decks"))));
+        var vm = new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, new DeckLibrary(new DeckStore(Path.Combine(_dir, "decks")))) { AllowIncompleteDecks = true };
         return (vm, kb, items);
     }
 

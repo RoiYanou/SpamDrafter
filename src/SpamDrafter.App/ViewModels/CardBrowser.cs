@@ -170,6 +170,8 @@ public sealed class CardBrowser : ViewModelBase
     private bool _filtersCollapsed = true;   // réduit de base
     public bool FiltersCollapsed { get => _filtersCollapsed; set { if (Set(ref _filtersCollapsed, value)) { Raise(nameof(FiltersVisible)); Raise(nameof(FiltersToggleText)); } } }
     public bool FiltersVisible => !_filtersCollapsed;
+    /// <summary>Au moins un filtre (recherche, élément, rareté, lore) est actif.</summary>
+    public bool AnyFilterActive => _search.Trim().Length > 0 || Checked(ElementChoices).Count > 0 || Checked(RarityChoices).Count > 0 || HasLoreFilter;
     public string FiltersToggleText => _filtersCollapsed ? "Filtres ▾" : "Filtres ▴";
     public CardItem? Selected { get => _selected; set => Set(ref _selected, value); }
     /// <summary>Retrouve les filtres élément et rareté retenus (un identifiant disparu est ignoré).</summary>
@@ -216,7 +218,7 @@ public sealed class CardBrowser : ViewModelBase
         var shown = _all.Where(c => (els.Count == 0 || els.Contains(c.Card.Element)) && (ras.Count == 0 || ras.Contains(c.Card.Rarity))
                                     && c.Matches(_search, null, null, _species?.Id, _region?.Id, _chronology?.Id));
         foreach (var c in Sorted(shown)) Items.Add(c);
-        Raise(nameof(CountText)); Raise(nameof(HasLoreFilter)); Raise(nameof(AdvancedHeader)); Raise(nameof(LoreSummary));
+        Raise(nameof(CountText)); Raise(nameof(HasLoreFilter)); Raise(nameof(AdvancedHeader)); Raise(nameof(LoreSummary)); Raise(nameof(AnyFilterActive)); Raise(nameof(FiltersToggleText));
     }
 
     /// <summary>Tri choisi. À valeur égale, l'ordre du jeu : le résultat ne dépend jamais du hasard.</summary>

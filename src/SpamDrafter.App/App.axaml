@@ -69,6 +69,17 @@
       <DataTemplate x:Key="CardThumbMedium" x:DataType="vm:CardItem">
         <v:CardFace Item="{Binding}" ShowElement="True" ShowRarity="True" ShowIncome="True" />
       </DataTemplate>
+      <!-- Même carte que CardThumb, sans agrandissement au survol (cartes du deck en cours). -->
+      <DataTemplate x:Key="CardThumbFlat" x:DataType="vm:CardItem">
+        <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" HoverZoom="False" />
+      </DataTemplate>
+      <!-- Mini carte (liste « Mes decks », à droite du nom). -->
+      <DataTemplate x:Key="DeckChipMini" x:DataType="vm:DeckChip">
+        <Grid Width="26" Height="37" ToolTip.Tip="{Binding TalentName}">
+          <Border IsVisible="{Binding IsEmpty}" BorderBrush="{StaticResource BrushViolet}" BorderThickness="1" CornerRadius="4" Opacity="0.8" />
+          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" ShowRarity="False" HoverZoom="False" />
+        </Grid>
+      </DataTemplate>
       <!-- Carte discrète : cadre et symbole de rareté seulement. -->
       <DataTemplate x:Key="CardThumbQuiet" x:DataType="vm:CardItem">
         <v:CardFace Item="{Binding}" ShowRarity="True" />
@@ -91,7 +102,7 @@
       <DataTemplate x:Key="DeckChipHome" x:DataType="vm:DeckChip">
         <Grid Width="118" Height="168" ToolTip.Tip="{Binding TalentName}">
           <Border IsVisible="{Binding IsEmpty}" BorderBrush="{StaticResource BrushViolet}" BorderThickness="2" CornerRadius="12" Opacity="0.8" />
-          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowName="True" ShowElement="True" ShowRarity="True" HoverZoom="False" />
+          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" ImageOverride="{Binding HomeImage}" TalentTag="{Binding TalentTag}" ShowName="True" ShowElement="False" ShowRarity="True" HoverZoom="False" />
         </Grid>
       </DataTemplate>
 
@@ -108,7 +119,7 @@
                 HorizontalContentAlignment="Left" ToolTip.Tip="Ouvrir la fiche de la carte">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
             <Grid Width="96" Height="136">
-              <v:CardFace Item="{Binding Card}" ImageOverride="{Binding SkinThumbnail}" ShowElement="True" ShowRarity="True" ShowIncome="True" />
+              <v:CardFace Item="{Binding Card}" ImageOverride="{Binding SkinThumbnail}" ShowElement="True" ShowRarity="True" ShowIncome="True" HoverZoom="False" />
             </Grid>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
               <TextBlock Text="{Binding Card.Name}" Classes="title" FontSize="16" />

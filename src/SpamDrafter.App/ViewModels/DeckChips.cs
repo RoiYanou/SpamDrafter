@@ -14,6 +14,8 @@ public sealed record DeckChip(CardItem? Card, string TalentTag, string TalentNam
     public bool HasCard => Card is not null;
     public bool IsEmpty => Card is null;
     public bool HasTalent => TalentTag.Length > 0;
+    /// <summary>Illustration en bonne qualité pour les pastilles agrandies de l'accueil (la miniature serait floue).</summary>
+    public Avalonia.Media.Imaging.Bitmap? HomeImage => Card?.MediumImage;
 }
 
 /// <summary>Transforme les emplacements d'un deck en pastilles (toujours 4 : les emplacements libres sont vides).</summary>

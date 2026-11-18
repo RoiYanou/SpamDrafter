@@ -8,6 +8,13 @@ using SpamDrafter.Core.Versions;
 
 namespace SpamDrafter.App.ViewModels;
 
+/// <summary>Une pastille de couleur de repère : sa couleur « #RRGGBB » et si c'est celle du deck ouvert.</summary>
+public sealed record ColorChoice(string Color, bool IsSelected)
+{
+    /// <summary>Épaisseur du contour : épais (et blanc) pour la couleur choisie.</summary>
+    public double Ring => IsSelected ? 3 : 1;
+}
+
 public sealed record TalentOption(string? Id, string Label)
 {
     public override string ToString() => Label;
@@ -100,12 +107,12 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         };
         _sort = SortOptions[0];
         _originFilter = OriginOptions[0];
-        TagOptions = new ObservableCollection<DeckListOption> { new("", "Toutes les étiquettes") };
+        TagOptions = new ObservableCollection<DeckListOption> { new("", "Tous les tags") };
         _tagFilter = TagOptions[0];
 
         NewCommand = new RelayCommand(_ => RequestLeave(NewDeck, "Créer un nouveau deck"));
         SaveCommand = new RelayCommand(_ => Save());
-        DeleteCommand = new RelayCommand(_ => DeleteSelected(), _ => _selectedSaved is not null);
+        DeleteCommand = new RelayCommand(_ => DeleteSelected(), _ => ListSelection is not null || _selectedSaved is not null);
         AddCommand = new RelayCommand(_ => AddSelectedCard());
         RemoveCommand = new RelayCommand(p =>
         {
@@ -259,7 +266,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     public string Name { get => _name; set { if (Set(ref _name, value)) OnEdited(nameEdit: true); } }
     public string Status { get => _status; private set => Set(ref _status, value); }
 
-    /// <summary>Étiquettes du deck en cours, séparées par des virgules.</summary>
+    /// <summary>Tags du deck en cours, séparées par des virgules.</summary>
     public string TagsText { get => _tagsText; set { if (Set(ref _tagsText, value)) OnEdited(); } }
     public bool Favorite { get => _favorite; private set { if (Set(ref _favorite, value)) Raise(nameof(FavoriteLabel)); } }
     public string FavoriteLabel => _favorite ? "★ Favori" : "☆ Favori";
@@ -274,6 +281,29 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     public bool ConfirmCanSave { get => _confirmCanSave; private set => Set(ref _confirmCanSave, value); }
 
     // ----- Liste « Mes decks » -----
+    // Liste « Mes decks » : uniquement les noms. Un clic sur un nom le présélectionne (un seul à la fois) et montre ses cartes juste dessous,
+    // sans l'ouvrir ; un second clic le désélectionne ; le bouton « Ouvrir » ou un clic droit l'ouvre dans « Deck en cours ».
+    // La présélection est retenue par identifiant : elle survit à un changement de décor ou à tout rafraîchissement de la liste.
+    private Guid? _previewId;
+    private bool _refreshing;
+    public Deck? ListSelection
+    {
+        get => _previewId is { } id ? SavedDecks.FirstOrDefault(d => d.Id == id) : null;
+        set
+        {
+            if (_refreshing) return;   // la liste se reconstruit : ce n'est pas un choix du joueur
+            if (_previewId == value?.Id) return;
+            _previewId = value?.Id; Raise(); DeleteCommand.RaiseCanExecuteChanged();
+        }
+    }
+    private RelayCommand? _openDeck;
+    /// <summary>Ouvre un deck de la liste dans la zone « Deck en cours » (avec la confirmation habituelle s'il y a des modifications en cours).</summary>
+    public RelayCommand OpenDeckCommand => _openDeck ??= new RelayCommand(p => { if (p is Deck d) SelectedSaved = d; });
+
+    /// <summary>Titre du menu « Tri et filtres » : indique quand un filtre (ou la recherche) est actif.</summary>
+    public bool DeckFiltersActive => TextSearch.Normalize(_deckFilter).Length > 0 || _favoritesOnly || _impactedOnly
+                                     || !ReferenceEquals(_originFilter, OriginOptions[0]) || _tagFilter.Id.Length > 0;
+    public string DeckFiltersHeader => DeckFiltersActive ? "Tri et filtres  ●  filtre actif" : "Tri et filtres";
     public string DeckFilter { get => _deckFilter; set { if (Set(ref _deckFilter, value)) RefreshDeckList(); } }
     public bool FavoritesOnly { get => _favoritesOnly; set { if (Set(ref _favoritesOnly, value)) RefreshDeckList(); } }
     /// <summary>Ne montre que les decks touchés par une mise à jour de SPAM (lot E).</summary>
@@ -309,7 +339,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     /// <summary>Un deck venu du générateur ne se modifie pas (cartes et talents) ; son nom, ses étiquettes et son favori restent libres.</summary>
     public bool IsLocked => _current.Origin == DeckOrigin.Generated;
     public bool CanEditCards => !IsLocked;
-    public string LockedNotice => "⚙ Deck généré : ses cartes et ses talents sont verrouillés. Tu peux le renommer, l'étiqueter, " +
+    public string LockedNotice => "⚙ Deck généré : ses cartes et ses talents sont verrouillés. Tu peux le renommer, lui ajouter des tags, " +
                                    "le mettre en favori, ou le dupliquer pour en faire une copie modifiable.";
     private const string LockedMessage = "Ce deck vient du générateur : ses cartes et ses talents ne se modifient pas. " +
                                          "Utilise « Dupliquer » pour en faire une copie modifiable.";
@@ -325,6 +355,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         Slots.Clear();
         _tagsText = ""; Raise(nameof(TagsText));
         Favorite = false;
+        _errorsShown = false;
         _name = "Nouveau deck"; Raise(nameof(Name));
         _loading = false;
         SetSelected(null);
@@ -335,8 +366,16 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     }
 
     /// <summary>Ouvre un deck sauvegardé (aussi appelé par le Drafter, via <see cref="RequestOpen"/>).</summary>
+    private bool _generatedInfo;
+    /// <summary>Pop-up d'information, affiché à chaque ouverture d'un deck généré ; le joueur peut le fermer.</summary>
+    public bool GeneratedInfoVisible { get => _generatedInfo; set => Set(ref _generatedInfo, value); }
+    private RelayCommand? _closeGeneratedInfo;
+    public RelayCommand CloseGeneratedInfoCommand => _closeGeneratedInfo ??= new RelayCommand(_ => GeneratedInfoVisible = false);
+
     public void OpenDeck(Deck d)
     {
+        GeneratedInfoVisible = d.Origin == DeckOrigin.Generated;
+        _errorsShown = false;
         _loading = true;
         _current = d;
         Slots.Clear();
@@ -467,7 +506,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         _pending = go;
         ConfirmText = $"Le deck « {(_name.Trim().Length > 0 ? _name.Trim() : "sans nom")} » a des modifications non sauvegardées. " +
                       $"{what} les perdra.";
-        ConfirmCanSave = DeckValidator.Validate(BuildDeck(), _kb, requireComplete: false).Count == 0 && !NameTaken();
+        ConfirmCanSave = DeckValidator.Validate(BuildDeck(), _kb, requireComplete: !AllowIncompleteDecks).Count == 0 && !NameTaken();
         Raise(nameof(ConfirmVisible));
     }
 
@@ -507,26 +546,46 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         Slots = Slots.Select(s => new DeckSlot(s.Card.Card.Id, s.Talent.Id)).ToList(),
     };
 
+    private bool _errorsShown;
+    /// <summary>« 2 erreurs détectées » : affiché sur « Détails et repères » seulement après un essai de sauvegarde refusé.</summary>
+    public string ErrorSummary => !_errorsShown || Problems.Count == 0 ? ""
+        : Problems.Count == 1 ? "● 1 erreur détectée" : $"● {Problems.Count} erreurs détectées";
+    public bool HasErrorSummary => ErrorSummary.Length > 0;
+    private void ShowErrors() { _errorsShown = true; Revalidate(); }
+
     private void Revalidate()
     {
         Problems.Clear();
         foreach (var p in DeckValidator.Validate(BuildDeck(), _kb)) Problems.Add(p);
         if (Name.Trim().Length > 0 && NameTaken())
             Problems.Add("Un autre deck porte déjà ce nom (les accents et les majuscules ne comptent pas).");
+        Raise(nameof(ErrorSummary)); Raise(nameof(HasErrorSummary));
     }
+
+    /// <summary>Interrupteur réservé aux essais automatiques : par défaut, un deck de moins de 4 cartes ne peut pas être sauvegardé.</summary>
+    public bool AllowIncompleteDecks { get; set; }
 
     private bool Save()
     {
         var deck = BuildDeck();
-        // Un brouillon incomplet peut être sauvegardé ; seules les erreurs de fond bloquent.
-        var blocking = DeckValidator.Validate(deck, _kb, requireComplete: false);
-        if (blocking.Count > 0) { Status = "Sauvegarde impossible : " + blocking[0]; ValidationFailed?.Invoke(); return false; }
-        if (NameTaken())
+        // Un deck contient toujours 4 cartes : plus de brouillon incomplet.
+        if (Slots.Count < Deck.MaxCards && !AllowIncompleteDecks)
         {
-            Status = $"Sauvegarde impossible : un autre deck s'appelle déjà « {deck.Name} ». Choisis un autre nom.";
+            Status = $"Sauvegarde impossible : un deck doit contenir {Deck.MaxCards} cartes ({Slots.Count} choisie{(Slots.Count > 1 ? "s" : "")}).";
+            ShowErrors();
             ValidationFailed?.Invoke();
             return false;
         }
+        var blocking = DeckValidator.Validate(deck, _kb, requireComplete: !AllowIncompleteDecks);
+        if (blocking.Count > 0) { Status = "Sauvegarde impossible : " + blocking[0]; ShowErrors(); ValidationFailed?.Invoke(); return false; }
+        if (NameTaken())
+        {
+            Status = $"Sauvegarde impossible : un autre deck s'appelle déjà « {deck.Name} ». Choisis un autre nom.";
+            ShowErrors();
+            ValidationFailed?.Invoke();
+            return false;
+        }
+        _errorsShown = false;
         _library.Save(deck);
         _current = _library.Decks.FirstOrDefault(d => d.Id == deck.Id) ?? deck;
         SetSelected(_library.Decks.FirstOrDefault(d => d.Id == deck.Id) is { } shown && SavedDecks.Contains(shown) ? shown : null);
@@ -548,8 +607,9 @@ public sealed class DeckBuilderViewModel : ViewModelBase
 
     private void DeleteSelected()
     {
-        if (_selectedSaved is null) return;
-        _deleteTarget = _selectedSaved;
+        // Le bouton « Supprimer » vise le deck présélectionné dans « Mes decks » ; sans présélection, le deck ouvert.
+        _deleteTarget = ListSelection ?? _selectedSaved;
+        if (_deleteTarget is null) return;
         RaiseDeleteConfirm();
     }
 
@@ -558,7 +618,9 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         if (_deleteTarget is not { } d) return;
         EndDelete();
         _library.Delete(d.Id);
-        NewDeck();
+        if (_previewId == d.Id) { _previewId = null; Raise(nameof(ListSelection)); }
+        if (d.Id == _current.Id) NewDeck();   // le deck ouvert disparaît : on repart d'un deck neuf ; sinon l'éditeur n'est pas touché
+        DeleteCommand.RaiseCanExecuteChanged();
         Status = $"Deck « {d.Name} » supprimé.";
     }
 
@@ -690,6 +752,13 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     private RelayCommand? _moveUp, _moveDown;
 
     public IReadOnlyList<string> DeckColors => DeckDecor.Colors;
+    /// <summary>Les pastilles de couleur, avec la couleur du deck ouvert marquée.</summary>
+    public IReadOnlyList<ColorChoice> DeckColorChoices =>
+        DeckDecor.Colors.Select(c => new ColorChoice(c, string.Equals(c, DeckDecor.StyleOf(_current.Id)?.Color, StringComparison.OrdinalIgnoreCase))).ToList();
+    /// <summary>Couleur de repère du deck ouvert (transparente s'il n'en a pas) : une barre à côté de son nom.</summary>
+    public Avalonia.Media.IBrush DeckColorBrush =>
+        DeckDecor.StyleOf(_current.Id)?.Color is { } c && Avalonia.Media.Color.TryParse(c, out var col)
+            ? new Avalonia.Media.SolidColorBrush(col) : Avalonia.Media.Brushes.Transparent;
     /// <summary>Emojis proposés pour décorer un deck (le joueur en choisit un, ou aucun).</summary>
     public IReadOnlyList<string> DeckEmojis => DeckDecor.Emojis;
     /// <summary>Emoji du deck ouvert (un ou deux caractères).</summary>
@@ -709,6 +778,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         var style = _settings.DeckStyles.TryGetValue(key, out var s) ? s : new DeckStyle();
         change(style);
         if (style.Color is null && style.Emoji is null) _settings.DeckStyles.Remove(key); else _settings.DeckStyles[key] = style;
+        RaiseDecor();
         RefreshDeckList();
         SettingsChanged?.Invoke();
     }
@@ -767,7 +837,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         if (!TagOptions.Skip(1).Select(o => o.Id).SequenceEqual(tags))
         {
             TagOptions.Clear();
-            TagOptions.Add(new DeckListOption("", "Toutes les étiquettes"));
+            TagOptions.Add(new DeckListOption("", "Tous les tags"));
             foreach (var t in tags) TagOptions.Add(new DeckListOption(t, "# " + t));
             _tagFilter = TagOptions.FirstOrDefault(o => o.Id == keepTag) ?? TagOptions[0];
             Raise(nameof(TagFilter));
@@ -799,8 +869,10 @@ public sealed class DeckBuilderViewModel : ViewModelBase
             _ => q.OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase),
         };
         var list = q.ToList();
-        SavedDecks.Clear();
-        foreach (var d in list) SavedDecks.Add(d);
+        _refreshing = true;
+        try { SavedDecks.Clear(); foreach (var d in list) SavedDecks.Add(d); }
+        finally { _refreshing = false; }
+        Raise(nameof(ListSelection)); Raise(nameof(DeckFiltersActive)); Raise(nameof(DeckFiltersHeader));
         // La sélection suit le deck ouvert (l'objet a été rechargé depuis le disque).
         _selectedSaved = SavedDecks.FirstOrDefault(d => d.Id == _current.Id);
         Raise(nameof(SelectedSaved));
@@ -811,7 +883,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     /// <summary>Affiche un message dans la zone d'état du deck.</summary>
     public void Notify(string text) => Status = text;
 
-    private void RaiseDecor() { Raise(nameof(DeckEmoji)); }
+    private void RaiseDecor() { Raise(nameof(DeckEmoji)); Raise(nameof(DeckColorBrush)); Raise(nameof(DeckColorChoices)); }
 
     /// <summary>Carte et talent d'une place : la recherche dans « Mes decks » trouve aussi par carte ou talent.</summary>
     private string SlotText(DeckSlot s) =>

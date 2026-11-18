@@ -46,7 +46,7 @@ public sealed record ToxEntry(string Uuid, string AssetName, string Title, strin
 public sealed record ArtistEntry(string Id, string Name, string? Link);
 
 /// <summary>Précision, critiques et recharge d'une capacité de carte (🃏 données du jeu).</summary>
-public sealed record AbilityStats(double ChanceOfMiss, bool CanCrit, double CritChance, double CritRatio, int Cooldown)
+public sealed record AbilityStats(double ChanceOfMiss, bool CanCrit, double CritChance, double CritRatio, int Cooldown, string? Element = null)
 {
     /// <summary>Précision en % : 100 − chance de rater.</summary>
     public double Precision => 100 - ChanceOfMiss;

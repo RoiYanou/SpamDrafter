@@ -150,7 +150,7 @@ public static class DeckEvaluator
         }
 
         if (s.Parallel)
-            System.Threading.Tasks.Parallel.For(0, records.Length, new ParallelOptions { CancellationToken = cancel }, Play);
+            SpamDrafter.Simulator.ComputeLimits.For(records.Length, Play, cancel);
         else
             for (var k = 0; k < records.Length; k++) Play(k);
         var elapsed = watch.Elapsed;

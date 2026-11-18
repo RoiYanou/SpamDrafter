@@ -35,13 +35,13 @@ public sealed class AppSettings
     public double SoundVolume { get; set; } = 0.5;
     /// <summary>« Réduire les animations » : coupe l'inclinaison, le retournement, le reflet, les étoiles et les transitions.</summary>
     public bool ReduceAnimations { get; set; }
-    /// <summary>Thème de couleur : « default » (violet), « auto » (selon l'élément de la carte choisie) ou un élément : fire, light, earth, nature, shadow, water.</summary>
+    /// <summary>Thème de couleur : « default » (violet), un élément : fire, light, earth, nature, shadow, water.</summary>
     public string ElementTheme { get; set; } = "default";
     /// <summary>Fond étoilé : vitesse du scintillement (1 = normal), nombre, taille (1 = normale) et couleur (#RRGGBB).</summary>
     public double StarSpeed { get; set; } = 1;
     public int StarCount { get; set; } = 90;
     public double StarSize { get; set; } = 1;
-    public string StarColor { get; set; } = "#FFFFFF";
+    public string StarColor { get; set; } = "auto";   // « auto » : couleurs propres au thème
     /// <summary>Accessibilité : taille de l'interface (1, 1,15 ou 1,3) et contraste élevé.</summary>
     public double UiScale { get; set; } = 1.3;
     /// <summary>Vrai une fois la taille d'interface passée à 130 % par défaut (réglage ajouté en phase 13, ajusté sur demande) : on ne le refait pas.</summary>

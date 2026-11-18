@@ -8,6 +8,8 @@
        intégré au bas du cadre. Reflet holographique (fiche détaillée seulement) ; au survol, un exemplaire agrandi flotte au-dessus. -->
   <Border x:Name="Root" Classes="cardface" Background="Transparent" ToolTip.Tip="{Binding TooltipText}">
     <Grid>
+      <!-- Le corps de la carte laisse en bas la place de la moitié du logo de rareté : le logo est donc TOUJOURS dans l'espace de la carte (rien ne peut le rogner ni le faire chevaucher la carte voisine). -->
+      <Grid Margin="{Binding BodyReserve}">
       <Grid Margin="{Binding BodyMargin}">
         <Border Margin="{Binding ImageMargin}" CornerRadius="{Binding ImageCorner}" ClipToBounds="True" Background="#33000000">
           <Grid>
@@ -18,9 +20,10 @@
             <Border x:Name="HoloLayer" IsHitTestVisible="False" Opacity="0">
               <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.18" /></Transitions></Border.Transitions>
             </Border>
-            <Border IsVisible="{Binding Credit, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                    Margin="{Binding CreditMargin}" Background="#B0000000" CornerRadius="4" Padding="6,2" IsHitTestVisible="False">
-              <TextBlock Text="{Binding Credit}" FontSize="{Binding CreditSize}" FontStyle="Italic" Foreground="White" TextTrimming="CharacterEllipsis" />
+            <Border IsVisible="{Binding Credit, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" x:Name="CreditBox" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                    Margin="{Binding CreditMargin}" Background="#B0000000" CornerRadius="4" Padding="6,2" IsHitTestVisible="False" Cursor="Hand">
+              <!-- Le TextBlock rogne ce qui dépasse de sa propre zone : l'italique dépasse un peu de la dernière lettre, d'où une marge intérieure (Padding) et non extérieure. -->
+              <TextBlock Text="{Binding Credit}" FontSize="{Binding CreditSize}" FontStyle="Italic" Foreground="White" TextTrimming="CharacterEllipsis" Padding="1,0,5,0" />
             </Border>
             <Border IsVisible="{Binding ShowName}" VerticalAlignment="Top" IsHitTestVisible="False" Padding="4,4,4,12">
               <Border.Background>
@@ -34,24 +37,37 @@
             </Border>
           </Grid>
         </Border>
-        <Border CornerRadius="{Binding Corner}" BorderBrush="{Binding Item.RarityBrush}" BorderThickness="{Binding FrameThickness}" IsHitTestVisible="False" />
+        <!-- Profondeur : ombre portée autour de la carte et ombre rentrante le long du cadre ; cadre métallique (reflets de la couleur de rareté). -->
+        <Border CornerRadius="{Binding Corner}" BorderBrush="{Binding FrameShine}" BorderThickness="{Binding FrameThickness}" IsHitTestVisible="False"
+                BoxShadow="0 3 9 0 #80000000, inset 0 0 12 2 #A0000000" />
         <Border IsVisible="{Binding ShowElement}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding OverlayMargin}"
                 Width="{Binding Glyph}" Height="{Binding Glyph}" CornerRadius="999" Background="#B0120A24" IsHitTestVisible="False">
           <Image Source="{Binding Item.ElementIcon}" Margin="3" Stretch="Uniform" />
         </Border>
         <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding OverlayMargin}" Spacing="3" IsHitTestVisible="False">
-          <Border IsVisible="{Binding ShowIncome}" HorizontalAlignment="Right" Background="#C0120A24" CornerRadius="999" Padding="4,1,7,1">
-            <StackPanel Orientation="Horizontal" Spacing="3">
-              <Image Source="{Binding Item.SpamtonIcon}" Height="{Binding TagSize}" Stretch="Uniform" />
-              <TextBlock Text="{Binding Item.IncomeText}" FontSize="{Binding TagSize}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
-            </StackPanel>
-          </Border>
+          <Grid IsVisible="{Binding ShowIncome}" HorizontalAlignment="Right" Width="{Binding Glyph}" Height="{Binding Glyph}">
+            <Image Source="{Binding Item.SpamtonIcon}" Stretch="Uniform" />
+            <TextBlock Text="{Binding Item.IncomeText}" FontSize="{Binding IncomeFont}" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" Foreground="#6E3B14"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
           <Border IsVisible="{Binding TopTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" HorizontalAlignment="Right"
                   Background="{StaticResource BrushYellow}" CornerRadius="999" Padding="6,0">
             <TextBlock Text="{Binding TopTag}" FontSize="{Binding TagSize}" FontWeight="Bold" Foreground="{StaticResource BrushOnYellow}" />
           </Border>
         </StackPanel>
         <!-- Talent en bas à gauche (présentation d'un deck) : « T1 » puis son nom, en gras. -->
+        <!-- PV dans le coin bas gauche : un cœur vert puis « 500 PV », sans fond. L'ombre est faite avec un double texte noir (pas d'effet : un effet rend le texte
+             plus fin et transparent quand la carte est agrandie ou inclinée au survol). -->
+        <Grid IsVisible="{Binding HpVisible}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HpMargin}" IsHitTestVisible="False">
+          <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,1,0,0" Opacity="0.85">
+            <TextBlock Text="♥" Foreground="Black" FontSize="{Binding HpSize}" FontWeight="Black" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Item.HpText}" Foreground="Black" FontWeight="Black" FontSize="{Binding HpSize}" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="3">
+            <TextBlock Text="♥" Foreground="#5FD86B" FontSize="{Binding HpSize}" FontWeight="Black" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Item.HpText}" Foreground="White" FontWeight="Black" FontSize="{Binding HpSize}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Grid>
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding BottomLeftMargin}" Spacing="3" IsHitTestVisible="False"
                     IsVisible="{Binding BottomTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
           <Border HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" CornerRadius="999" Padding="7,0">
@@ -63,12 +79,11 @@
           </Border>
         </StackPanel>
       </Grid>
-      <!-- Symbole de rareté : un médaillon posé sur le milieu du bord inférieur du cadre, dans sa couleur. -->
-      <!-- Symbole de rareté posé directement sur le milieu du bord inférieur du cadre (sans cercle). -->
-      <Image IsVisible="{Binding ShowRarity}" Source="{Binding Item.RarityIcon}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding RarityMargin}"
-             Width="{Binding RarityBadge}" Height="{Binding RarityBadge}" Stretch="Uniform" IsHitTestVisible="False">
-        <Image.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="4" Color="#000000" Opacity="0.8" /></Image.Effect>
-      </Image>
+      <!-- Symbole de rareté : une arche sombre (même fond que l'icône d'élément) au contour du cadre, posée sur le bord bas et reliée à lui. -->
+      </Grid>
+      <!-- Logo de la rareté, seul, centré sur le bord bas du corps de la carte : la moitié du logo est sous le cadre, dans l'espace réservé. -->
+      <Image IsVisible="{Binding ShowRarity}" Source="{Binding Item.RarityIcon}" Width="{Binding RarityLogo}" Height="{Binding RarityLogoHeight}" Stretch="Uniform"
+             HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding RarityLogoMargin}" IsHitTestVisible="False" />
     </Grid>
   </Border>
 </UserControl>

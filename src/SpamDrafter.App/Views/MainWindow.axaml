@@ -29,21 +29,24 @@
               <ScrollViewer MaxHeight="600" Width="310">
               <StackPanel Spacing="8" Margin="0,0,14,0" x:DataType="vm:MainViewModel">
                 <TextBlock Classes="title" Text="Réglages" FontSize="20" />
-                <TextBlock Classes="title glow" Text="Couleurs" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <TextBlock Classes="title glow" Text="Couleurs" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <StackPanel Spacing="2"><TextBlock Text="Thème de couleur" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding ThemeIndex}" HorizontalAlignment="Stretch" /></StackPanel>
-                <TextBlock Classes="title glow" Text="Accessibilité" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <TextBlock Classes="title glow" Text="Accessibilité" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <StackPanel Spacing="2"><TextBlock Text="Taille de l'interface" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding UiScaleOptions}" SelectedIndex="{Binding UiScaleIndex}" HorizontalAlignment="Stretch" /></StackPanel>
                 <CheckBox Content="Contraste élevé" IsChecked="{Binding HighContrast}" />
-                <TextBlock Classes="title glow" Text="Sons" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <TextBlock Classes="title glow" Text="Sons" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <CheckBox Content="Effets sonores" IsChecked="{Binding SoundsEnabled}" />
                 <StackPanel Spacing="2"><TextBlock Text="Volume" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding SoundVolume}" /></StackPanel>
-                <TextBlock Classes="title glow" Text="Animations" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
+                <TextBlock Classes="title glow" Text="Animations" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <CheckBox Content="Réduire les animations" IsChecked="{Binding ReduceAnimations}" />
-                <TextBlock Classes="title glow" Text="Fond étoilé" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="0,6,0,0" />
-                <StackPanel Spacing="2"><TextBlock Text="Vitesse du scintillement" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0.1" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding StarSpeed}" /></StackPanel>
-                <StackPanel Spacing="2"><TextBlock Text="Nombre d'étoiles" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0" Maximum="400" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding StarCount}" /></StackPanel>
-                <StackPanel Spacing="2"><TextBlock Text="Taille des étoiles" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0.3" Maximum="4" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding StarSize}" /></StackPanel>
-                <StackPanel Spacing="2"><TextBlock Text="Couleur des étoiles" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding StarColorOptions}" SelectedIndex="{Binding StarColorIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Classes="title glow" Text="Particules" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
+                  <Button Grid.Column="1" Content="Réglages par défaut" Command="{Binding ResetParticlesCommand}" IsVisible="{Binding ParticlesModified}" VerticalAlignment="Center" FontSize="11" Padding="8,2" />
+                </Grid>
+                <StackPanel Spacing="2"><TextBlock Text="Vitesse des particules" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0.1" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding StarSpeed}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Nombre de particules" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0" Maximum="400" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding StarCount}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Taille des particules" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0.3" Maximum="4" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding StarSize}" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Couleur des particules" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding StarColorOptions}" SelectedIndex="{Binding StarColorIndex}" HorizontalAlignment="Stretch" /></StackPanel>
               </StackPanel>
               </ScrollViewer>
             </Flyout>
@@ -57,7 +60,7 @@
                 <TextBlock Text="Ctrl+1 à Ctrl+5 : Accueil, Biblio, Builder, Drafter, Générateur" TextWrapping="Wrap" />
                 <TextBlock Text="Ctrl+F : aller à la recherche" TextWrapping="Wrap" />
                 <TextBlock Text="Échap : fermer la fiche d'une carte, vider la recherche" TextWrapping="Wrap" />
-                <TextBlock Text="Double-clic sur une carte : l'ajouter" TextWrapping="Wrap" />
+                <TextBlock Text="Clic sur une carte (Builder, Drafter, Générateur) : l'ajouter" TextWrapping="Wrap" />
                 <TextBlock Text="Deck builder : Ctrl+S sauvegarder, Ctrl+N nouveau, Ctrl+D dupliquer, Ctrl+Z annuler, Ctrl+Y rétablir" TextWrapping="Wrap" />
                 <TextBlock Text="Flèches ▲ ▼ dans « Mes decks » : choisir l'ordre des decks" TextWrapping="Wrap" />
               </StackPanel>
@@ -69,13 +72,13 @@
         <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="12">
-        <TextBlock Classes="title glow" Text="SpamDrafter" FontSize="26" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center"
+        <TextBlock x:Name="AppTitle" Classes="title glow apptitle" Text="SpamDrafter" FontSize="26" VerticalAlignment="Center"
                    IsVisible="{Binding IsLoaded}" ToolTip.Tip="SpamDrafter (non officiel)" />
         <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
       </StackPanel>
     </DockPanel>
     <!-- Sans données (premier lancement, erreur) : la bannière en grand au lieu d'une fenêtre vide. -->
-    <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="SpamDrafter" FontSize="64" Foreground="{StaticResource BrushYellow}" Margin="14,60,14,0"
+    <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="SpamDrafter" FontSize="64" Foreground="{StaticResource BrushYellow}" Margin="-10,48,-10,-12"
                HorizontalAlignment="Center" IsVisible="{Binding !IsLoaded}" />
     <!-- Quoi de neuf : SPAM a changé de version (phase 12, lot E) -->
     <Border DockPanel.Dock="Top" DataContext="{Binding WhatsNew}" IsVisible="{Binding IsVisible}" Margin="14,0,14,6"
@@ -140,11 +143,15 @@
       </Border>
       <Border Grid.Column="1" Classes="panel" Margin="12" Padding="0">
         <Panel>
-          <v:HomeView Classes="page" DataContext="{Binding Home}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab4}" />
-          <v:LibraryTabsView Classes="page" DataContext="{Binding LibraryTabs}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab0}" />
-          <v:DeckBuilderView Classes="page" DataContext="{Binding DeckBuilder}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab1}" />
-          <v:DrafterView Classes="page" DataContext="{Binding Drafter}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab2}" />
-          <v:GeneratorView Classes="page" DataContext="{Binding Generator}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab3}" />
+          <v:HomeView x:Name="PageHome" v:PageFx.Enter="True" DataContext="{Binding Home}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab4}" />
+          <v:LibraryTabsView x:Name="PageLibrary" v:PageFx.Enter="True" DataContext="{Binding LibraryTabs}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab0}" />
+          <v:DeckBuilderView x:Name="PageBuilder" v:PageFx.Enter="True" DataContext="{Binding DeckBuilder}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab1}" />
+          <v:DrafterView x:Name="PageDrafter" v:PageFx.Enter="True" DataContext="{Binding Drafter}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab2}" />
+          <v:GeneratorView x:Name="PageGenerator" v:PageFx.Enter="True" DataContext="{Binding Generator}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab3}" />
+          <!-- Voile de démarrage : cache les pages pendant leur préchargement (elles sont affichées une fraction de seconde), puis s'efface en fondu. -->
+          <Border x:Name="PrewarmCover" ZIndex="100" Background="{StaticResource BrushPanelSolid}" CornerRadius="{StaticResource RadiusPanel}">
+            <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.3" /></Transitions></Border.Transitions>
+          </Border>
         </Panel>
       </Border>
       <!-- Fiche d'une carte ouverte par un clic droit : par-dessus l'onglet en cours, sans le quitter. -->

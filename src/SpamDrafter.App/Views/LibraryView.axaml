@@ -5,8 +5,6 @@
              x:Class="SpamDrafter.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
   <Grid Margin="12">
-    <v:CardGridPanel DataContext="{Binding Browser}" TileWidth="140" TileHeight="200" />
-    <!-- La fiche s'affiche en fenêtre au centre, sur un fond assombri qui laisse voir les cartes ; un clic en dehors la ferme (phase 13). -->
-    <v:CardDetailView />
+    <v:CardGridPanel ClickOpensDetail="True" DataContext="{Binding Browser}" TileWidth="140" TileHeight="200" />
   </Grid>
 </UserControl>

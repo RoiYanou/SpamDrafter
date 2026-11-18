@@ -24,7 +24,7 @@ public class DeckManagementTests : IDisposable
     private DeckBuilderViewModel Make(KnowledgeBase kb)
     {
         var items = kb.Cards.Select(c => new CardItem(c, kb)).ToList();
-        return new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, new DeckLibrary(new DeckStore(_dir)));
+        return new DeckBuilderViewModel(new CardBrowser(items, kb), items, kb, new DeckLibrary(new DeckStore(_dir))) { AllowIncompleteDecks = true };
     }
 
     private static void Add(DeckBuilderViewModel vm, int index)

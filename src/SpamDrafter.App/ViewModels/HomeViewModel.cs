@@ -33,9 +33,62 @@ public static class Tips
     public static string Any() => All[Rng.Next(All.Count)];
 }
 
+public enum TipKind { Text, Card, Ability, Talent, Tox }
+
+/// <summary>Un morceau d'astuce : du texte simple, ou un nom (carte, compétence, talent, Tox) coloré et cliquable vers la Bibliothèque.</summary>
+public sealed record TipSegment(string Text, TipKind Kind = TipKind.Text, string? Id = null)
+{
+    public bool IsLink => Kind != TipKind.Text && Id is not null;
+}
+
 /// <summary>
-/// Page d'accueil (phase 13, D-078) : le dernier deck, la carte du jour, les nouveautés, les succès, une astuce et « Reprendre là où
-/// j'en étais ». Tout est calculé à partir de ce que l'application sait déjà : rien de plus n'est enregistré.
+/// Astuces du bandeau de l'accueil (demande de l'utilisateur, 17/11/2026). Les noms sont écrits <c>{carte:id}</c>, <c>{competence:id}</c>,
+/// <c>{talent:id}</c>, <c>{tox:clé}</c> : le nom affiché est lu dans les textes du jeu (donc toujours celui de la Bibliothèque).
+/// </summary>
+public static class HomeTips
+{
+    public static IReadOnlyList<string> All { get; } = new[]
+    {
+        "Une carte avec le tox {tox:Immunity} est insensible à la compétence {competence:Veuve noire} de {carte:75491473-57fa-4b8f-aced-9d61d0404e65}.",
+        "Une carte avec le tox {tox:Tenacite} survivra à 1 PV aux compétences {competence:Veuve noire} et {competence:Avalement}.",
+        "Le tox {tox:Aoe} partage aussi les points de vie que la carte se soigne aux alliés adjacents (par exemple avec les tox {tox:Life Steal} et {tox:Primitive heal}).",
+        "As-tu déjà entendu parler des vecteurs de scaling ? Diversifie tes augmentations de dégâts !",
+        "Certaines illustrations de carte cachent des secrets, ouvrez l’œil !",
+        "Le tox {tox:Phoenix} ne peut pas ressusciter une carte qui a 0 point de vie maximum (par exemple à cause de la brûlure après le tour 20).",
+        "N’abandonne jamais un combat ! Un événement insoupçonné pourrait te redonner une chance…",
+        "Au début de ton tour, tu gagnes des Spamtons bonus en fonction du tour actuel ! (Tour 1 → +1 Spamton, tour 2 → +2 Spamtons…)",
+        "La mort d’une carte donne 50 Spamtons à son propriétaire ! (Augmenté à 100 avec le talent {talent:Heritage})",
+    };
+
+    private static readonly System.Text.RegularExpressions.Regex Marker = new(@"\{(carte|competence|talent|tox):([^}]+)\}");
+
+    /// <summary>Découpe une astuce en morceaux ; un nom introuvable reste du texte simple (jamais de lien cassé).</summary>
+    public static IReadOnlyList<TipSegment> Parse(string tip, KnowledgeBase kb, IReadOnlyList<CardItem> items)
+    {
+        var result = new List<TipSegment>();
+        var pos = 0;
+        foreach (System.Text.RegularExpressions.Match m in Marker.Matches(tip))
+        {
+            if (m.Index > pos) result.Add(new TipSegment(tip[pos..m.Index]));
+            var id = m.Groups[2].Value;
+            var seg = m.Groups[1].Value switch
+            {
+                "carte" => items.FirstOrDefault(i => i.Card.Id == id) is { } c ? new TipSegment(c.Name, TipKind.Card, id) : null,
+                "competence" => items.Any(i => i.Card.Abilities.Contains(id)) ? new TipSegment(kb.AbilityName(id), TipKind.Ability, id) : null,
+                "talent" => kb.FindTalent(id) is not null ? new TipSegment(kb.TalentName(id), TipKind.Talent, id) : null,
+                _ => kb.AllTox.FirstOrDefault(t => DescriptionFormatter.ToxKey(t) == id) is { } t ? new TipSegment(kb.ToxName(t), TipKind.Tox, id) : null,
+            };
+            result.Add(seg ?? new TipSegment(id));
+            pos = m.Index + m.Length;
+        }
+        if (pos < tip.Length) result.Add(new TipSegment(tip[pos..]));
+        return result;
+    }
+}
+
+/// <summary>
+/// Page d'accueil (phase 13, D-078) : le dernier deck, la carte du jour, les nouveautés, les succès, et une astuce.
+/// Tout est calculé à partir de ce que l'application sait déjà : rien de plus n'est enregistré.
 /// La carte du jour est la même pour tous les joueurs et change à 00:00 heure de Paris (<see cref="CardOfTheDay"/>).
 /// </summary>
 public sealed class HomeViewModel : ViewModelBase
@@ -46,16 +99,16 @@ public sealed class HomeViewModel : ViewModelBase
     private readonly Func<DateTime> _utcNow;
     private DateOnly _day;
     private int _doneCount;
-    private Action? _resume;
 
     public HomeViewModel(KnowledgeBase kb, IReadOnlyList<CardItem> items, DeckLibrary decks, Action<Deck> openDeck, Action<CardItem> openCard,
         Func<DateTime>? utcNow = null)
     {
         _kb = kb; _items = items; _decks = decks; _utcNow = utcNow ?? (() => DateTime.UtcNow);
         _day = ParisClock.Today(_utcNow());
+        _tipIndex = Random.Shared.Next(HomeTips.All.Count);
+        TipSegments = HomeTips.Parse(HomeTips.All[_tipIndex], kb, items);
         OpenLastDeckCommand = new RelayCommand(_ => { if (LastDeck is { } d) openDeck(d); }, _ => LastDeck is not null);
         OpenCardOfDayCommand = new RelayCommand(_ => { if (CardOfDay is { } c) openCard(c); }, _ => CardOfDay is not null);
-        ResumeCommand = new RelayCommand(_ => _resume?.Invoke(), _ => _resume is not null);
         decks.Changed += (_, _) => Refresh();
         foreach (var i in items) i.SkinChanged += _ => { Raise(nameof(Achievements)); CheckAchievements(); };
         _doneCount = Achievements.Count(a => a.Done);
@@ -72,11 +125,10 @@ public sealed class HomeViewModel : ViewModelBase
     public RelayCommand OpenBuilderCommand => _openBuilder ??= new RelayCommand(_ => OpenBuilder?.Invoke());
     private RelayCommand? _openBuilder;
     public RelayCommand OpenCardOfDayCommand { get; }
-    public RelayCommand ResumeCommand { get; }
 
     private static readonly string[] Mentions =
     {
-        "Tu te rappelles de ce deck ?", "La carte à gauche est magnifique, tu trouves pas ?", "Et si t'essayais ce deck aujourd'hui ?",
+        "Tu te rappelles de ce deck ?", "La carte de gauche est magnifique, tu trouves pas ?", "Et si tu essayais ce deck aujourd'hui ?",
         "Tu trouves pas le regard de la carte de droite un peu vicieux ?", "Si tu gagnes avec ce deck, je t'offre un cookie !",
         "Ça c'est du deck qui deckapote !",
     };
@@ -84,16 +136,6 @@ public sealed class HomeViewModel : ViewModelBase
     private readonly string _mention = Mentions[Random.Shared.Next(Mentions.Length)];
 
     public string Greeting => "Bon retour !";
-    public string Subtitle => "Reprends là où tu t'étais arrêté.";
-
-    /// <summary>« Reprendre : Deck builder » : revient à l'onglet où le joueur travaillait avant de fermer l'application.</summary>
-    public string ResumeLabel { get; private set; } = "";
-    public bool HasResume => _resume is not null;
-    public void SetResume(string? label, Action? go)
-    {
-        _resume = go; ResumeLabel = label is null ? "" : "Reprendre : " + label;
-        Raise(nameof(ResumeLabel)); Raise(nameof(HasResume)); ResumeCommand.RaiseCanExecuteChanged();
-    }
 
     public Deck? LastDeck { get; private set; }
     public bool HasLastDeck => LastDeck is not null;
@@ -145,7 +187,18 @@ public sealed class HomeViewModel : ViewModelBase
     public RelayCommand CloseZoomCommand => _closeZoom ??= new RelayCommand(_ => SetZoom(false));
     private RelayCommand? _openZoom, _closeZoom;
     private void SetZoom(bool open) { ZoomOpen = open; Raise(nameof(ZoomOpen)); }
-    public string Tip => Tips.OfTheDay(_day);
+    /// <summary>L'astuce du bandeau : tirée au hasard à chaque démarrage de l'application.</summary>
+    public IReadOnlyList<TipSegment> TipSegments { get; }
+    private int _tipIndex;
+    /// <summary>Une nouvelle astuce au hasard (jamais deux fois de suite la même) : le bandeau l'appelle à chaque passage.</summary>
+    public IReadOnlyList<TipSegment> NextTip()
+    {
+        if (HomeTips.All.Count > 1) _tipIndex = (_tipIndex + 1 + Random.Shared.Next(HomeTips.All.Count - 1)) % HomeTips.All.Count;
+        return HomeTips.Parse(HomeTips.All[_tipIndex], _kb, _items);
+    }
+    /// <summary>Un clic sur un nom coloré de l'astuce : le branchement vers la Bibliothèque est fait par la fenêtre principale.</summary>
+    public Action<TipSegment>? OpenTipTarget { get; set; }
+    public void OpenTip(TipSegment segment) { if (segment.IsLink) OpenTipTarget?.Invoke(segment); }
 
     public IReadOnlyList<string> News => new[]
     {
@@ -175,7 +228,7 @@ public sealed class HomeViewModel : ViewModelBase
         var today = ParisClock.Today(_utcNow());
         if (today == _day) return;
         _day = today;
-        foreach (var n in new[] { nameof(CardOfDay), nameof(CardOfDayName), nameof(CardOfDayCredit), nameof(CardOfDayImage), nameof(Tip) }) Raise(n);
+        foreach (var n in new[] { nameof(CardOfDay), nameof(CardOfDayName), nameof(CardOfDayCredit), nameof(CardOfDayImage) }) Raise(n);
         OpenCardOfDayCommand.RaiseCanExecuteChanged();
     }
 

@@ -57,7 +57,7 @@ public sealed class CardItem : ViewModelBase
     /// <summary>Icône de l'élément de la carte (null sans icône dans la base).</summary>
     public Bitmap? ElementIcon => Icons.Element(_kb, Card.Element, 32);
     /// <summary>Icône de la rareté de la carte.</summary>
-    public Bitmap? RarityIcon => Icons.Rarity(_kb, Card.Rarity, 32);
+    public Bitmap? RarityIcon => Icons.Rarity(_kb, Card.Rarity, 128);
     /// <summary>Couleur du cadre de la carte : celle de sa rareté dans le jeu (phase 13).</summary>
     public Avalonia.Media.IBrush RarityBrush => Icons.FrameBrush(_kb, Card.Rarity);   // couleur de la rareté, éclaircie ; commune : le gris du jeu (#333) est invisible sur le fond violet, on prend son gris clair
     private int RarityOrder => _kb.Rarity(Card.Rarity)?.Order ?? 1;
@@ -69,6 +69,17 @@ public sealed class CardItem : ViewModelBase
     /// <summary>Icône du Spamton et revenu de la carte (affichés en haut à droite).</summary>
     public Bitmap? SpamtonIcon => Icons.Spamton(_kb);
     public string IncomeText => Card.GoldIncome.ToString();
+    /// <summary>Illustration de bonne qualité (560 px de haut), gardée en mémoire : decks agrandis de l'accueil. Refaite si le skin change.</summary>
+    public Bitmap? MediumImage
+    {
+        get
+        {
+            if (_medium is null || _mediumSkin != _skinId) { _medium = LoadFullImage(560); _mediumSkin = _skinId; }
+            return _medium;
+        }
+    }
+    private Bitmap? _medium; private string? _mediumSkin;
+
     /// <summary>Illustration complète décodée à la hauteur demandée (carte du jour : excellente qualité).</summary>
     public Bitmap? LoadFullImage(int height)
     {

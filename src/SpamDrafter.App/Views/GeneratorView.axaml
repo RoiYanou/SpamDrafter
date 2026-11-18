@@ -18,22 +18,20 @@
     <!-- Sélecteur de cartes -->
     <Border Classes="panel" Padding="14">
     <DockPanel>
-      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Cartes" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,10" />
-      <Button DockPanel.Dock="Bottom" Content="Imposer cette carte (ou double-clic)" Command="{Binding AddCommand}"
-              Classes="soft" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,10,0,0" Padding="10,8" />
-      <v:CardGridPanel x:Name="Picker" DataContext="{Binding Browser}" TileWidth="104" TileHeight="148" />
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Cartes" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+      <v:CardGridPanel x:Name="Picker" ClickToAdd="True" DataContext="{Binding Browser}" TileWidth="104" TileHeight="148" />
     </DockPanel>
     </Border>
-    <GridSplitter Grid.Column="1" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+    <GridSplitter Classes="vgrip" Grid.Column="1" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" ToolTip.Tip="Tirer pour régler la largeur des colonnes" />
 
     <!-- Sélection, réglage, propositions -->
     <Border Grid.Column="2" Classes="panel" Padding="14">
     <DockPanel>
-      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Générateur" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,10" />
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Générateur" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
       <StackPanel DockPanel.Dock="Top" Spacing="8">
-        <Expander Header="Comment ça marche ?" HorizontalAlignment="Stretch">
+        <v:Collapse Header="Comment ça marche ?" HorizontalAlignment="Stretch">
           <TextBlock Text="{Binding HowItWorks}" TextWrapping="Wrap" FontSize="12" Opacity="0.9" />
-        </Expander>
+        </v:Collapse>
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Text="{Binding FixedText}" Classes="hot" VerticalAlignment="Center" />
           <Button Grid.Column="1" Content="Tout effacer" Command="{Binding ClearCommand}" Classes="danger" Padding="10,5" />
@@ -110,14 +108,14 @@
       </ScrollViewer>
     </DockPanel>
     </Border>
-    <GridSplitter Grid.Column="3" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+    <GridSplitter Classes="vgrip" Grid.Column="3" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" ToolTip.Tip="Tirer pour régler la largeur des colonnes" />
 
     <!-- Rapport -->
     <Border Grid.Column="4" Classes="panel" Padding="14">
     <DockPanel>
-      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Rapport" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="0,0,0,10" />
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Rapport" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
       <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
-        <Expander Header="{Binding HistoryTitle}" HorizontalAlignment="Stretch">
+        <v:Collapse Header="{Binding HistoryTitle}" HorizontalAlignment="Stretch">
           <StackPanel Spacing="6">
             <ListBox ItemsSource="{Binding HistoryItems}" MaxHeight="200">
               <ListBox.ItemTemplate>
@@ -139,7 +137,7 @@
             </ListBox>
             <Button Content="Vider l'historique" Command="{Binding ClearHistoryCommand}" FontSize="12" Padding="8,2" />
           </StackPanel>
-        </Expander>
+        </v:Collapse>
         <TextBlock Text="Analyser un deck sauvegardé (4 cartes)" Classes="hot" />
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
           <ComboBox ItemsSource="{Binding CompleteDecks}" SelectedItem="{Binding SavedToAnalyse}" HorizontalAlignment="Stretch"
@@ -159,7 +157,7 @@
         </StackPanel>
       </StackPanel>
       <ScrollViewer IsVisible="{Binding HasReport}">
-        <SelectableTextBlock Text="{Binding Report}" TextWrapping="Wrap" FontSize="13" Margin="0,0,10,0" />
+        <v:RichReport Source="{Binding Report}" TextWrapping="Wrap" FontSize="13" LineHeight="21" Margin="0,0,10,0" />
       </ScrollViewer>
     </DockPanel>
     </Border>

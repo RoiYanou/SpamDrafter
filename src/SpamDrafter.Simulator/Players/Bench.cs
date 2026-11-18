@@ -84,7 +84,7 @@ public static class Bench
                 }
             }
         }
-        if (parallel) Parallel.For(0, pairs, PlayPair);
+        if (parallel) ComputeLimits.For(pairs, PlayPair);
         else for (var i = 0; i < pairs; i++) PlayPair(i);
         watch.Stop();
 

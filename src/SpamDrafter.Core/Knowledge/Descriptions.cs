@@ -14,7 +14,8 @@ public sealed record AbilityAction(string Effect, double Min, double Max);
 /// </summary>
 public sealed record AbilityRecord(string Id, IReadOnlyList<AbilityAction> Actions, int Duration, int NumberOfActivation,
     double ChanceOfResetCooldown, IReadOnlyList<string> ChainAbilities, bool ChoiceSelector,
-    double ChanceOfMiss = 0, bool CanCrit = false, double ChanceOfCrit = 0, double CritDamageRatio = 1, int Cooldown = 0);
+    double ChanceOfMiss = 0, bool CanCrit = false, double ChanceOfCrit = 0, double CritDamageRatio = 1, int Cooldown = 0, string? Element = null,
+    IReadOnlyList<string>? Passives = null);
 
 /// <summary>
 /// Descriptions chiffrées des capacités et des talents (phase 12, lot C, KI-021).
@@ -69,7 +70,9 @@ public sealed class DescriptionFormatter
                     chain.AddRange(ch.EnumerateArray().Select(x => x.GetString()).OfType<string>());
                 result[id] = new AbilityRecord(id, actions, (int)Num(e, "duration"), (int)Num(e, "numberOfActivation"),
                     Num(e, "chanceOfResetCooldown"), chain, Str(e, "target") == "ChoiceSelector",
-                    Num(e, "chanceOfMiss"), Bool(e, "canCrit"), Num(e, "chanceOfCrit"), Num(e, "critDamageRatio"), (int)Num(e, "cooldown"));
+                    Num(e, "chanceOfMiss"), Bool(e, "canCrit"), Num(e, "chanceOfCrit"), Num(e, "critDamageRatio"), (int)Num(e, "cooldown"),
+                    Str(e, "element") is { Length: > 0 } el ? el : null,
+                    e.TryGetProperty("passives", out var ps) && ps.ValueKind == JsonValueKind.Array ? ps.EnumerateArray().Select(x => x.GetString()).OfType<string>().ToList() : null);
             }
         }
         catch (Exception e) when (e is JsonException or IOException or InvalidOperationException) { result.Clear(); }
@@ -83,9 +86,34 @@ public sealed class DescriptionFormatter
     /// <summary>Description d'une capacité de carte, chiffrée ; vide si le jeu n'en donne pas.</summary>
     public string Ability(string id) => Describe("Card.AbilityDesc." + id, id, _abilities.Value, new HashSet<string>());
 
+    /// <summary>
+    /// La même description, avec chaque repère d'élément remplacé par <see cref="ElementOpen"/> + identifiant de l'élément + <see cref="ElementClose"/>
+    /// (au lieu de son nom) : l'écran y met l'icône et la couleur de l'élément.
+    /// </summary>
+    public string AbilityRich(string id) => Describe("Card.AbilityDesc." + id, id, _abilities.Value, new HashSet<string>(), rich: true);
+
+    /// <summary>Tox (passifs) appliqués par une capacité et par ses capacités enchaînées : ceux dont le nom apparaît dans sa description.</summary>
+    public IReadOnlyList<ToxEntry> AbilityTox(string id)
+    {
+        var result = new List<ToxEntry>();
+        var seen = new HashSet<string>();
+        void Visit(string a)
+        {
+            if (!seen.Add(a) || !_abilities.Value.TryGetValue(a, out var r)) return;
+            foreach (var uuid in r.Passives ?? Array.Empty<string>())
+                if (_kb.Tox(uuid) is { } t) result.Add(t);
+            foreach (var c in r.ChainAbilities) Visit(c);
+        }
+        Visit(id);
+        return result;
+    }
+
+    public const char ElementOpen = '';
+    public const char ElementClose = '';
+
     /// <summary>Précision, critiques et recharge d'une capacité de carte ; null si la capacité est inconnue.</summary>
     public AbilityStats? Stats(string abilityId) => _abilities.Value.TryGetValue(abilityId, out var r)
-        ? new AbilityStats(r.ChanceOfMiss, r.CanCrit, r.ChanceOfCrit, r.CritDamageRatio, r.Cooldown) : null;
+        ? new AbilityStats(r.ChanceOfMiss, r.CanCrit, r.ChanceOfCrit, r.CritDamageRatio, r.Cooldown, r.Element) : null;
 
     /// <summary>
     /// Description d'un Tox, comme le jeu (<c>StatusData.GetDesc</c>) : texte « Card.PassifDesc.&lt;titre avant le « _ »&gt; » dont
@@ -105,12 +133,12 @@ public sealed class DescriptionFormatter
     /// <summary>Description d'un talent, chiffrée.</summary>
     public string Talent(string id) => Describe("Talent.Description." + id, id, _talents.Value, new HashSet<string>());
 
-    private string Describe(string textKey, string id, Dictionary<string, AbilityRecord> source, HashSet<string> visited)
+    private string Describe(string textKey, string id, Dictionary<string, AbilityRecord> source, HashSet<string> visited, bool rich = false)
     {
         var raw = _kb.Text(textKey);
         if (raw == textKey) raw = "";   // pas de texte dans le jeu
         source.TryGetValue(id, out var record);
-        var text = raw.Length == 0 ? "" : Resolve(raw, record);
+        var text = raw.Length == 0 ? "" : Resolve(raw, record, rich);
         // Capacités enchaînées : leur description s'ajoute à la suite (comme dans le jeu).
         if (record is { ChainAbilities.Count: > 0 } && visited.Add(id))
         {
@@ -120,7 +148,7 @@ public sealed class DescriptionFormatter
             var sb = new StringBuilder(text);
             foreach (var chainId in record.ChainAbilities)
             {
-                var chain = Describe("Card.AbilityDesc." + chainId, chainId, _abilities.Value, visited);
+                var chain = Describe("Card.AbilityDesc." + chainId, chainId, _abilities.Value, visited, rich);
                 if (string.IsNullOrWhiteSpace(chain)) continue;
                 if (sb.Length > 0) sb.Append(record.ChoiceSelector && n > 0 ? "\n" + or + "\n" : "\n");
                 sb.Append(chain);
@@ -132,7 +160,7 @@ public sealed class DescriptionFormatter
     }
 
     /// <summary>Remplace les emplacements de valeurs, les repères d'éléments, puis retire les balises de mise en forme.</summary>
-    public string Resolve(string description, AbilityRecord? record)
+    public string Resolve(string description, AbilityRecord? record, bool rich = false)
     {
         var d = description.Replace("\r\n", "\n");
         if (record is not null)
@@ -160,7 +188,7 @@ public sealed class DescriptionFormatter
         d = d.Replace("<missingHpBonusD>", "X");
 
         foreach (var (tag, element) in ElementTags)
-            d = Regex.Replace(d, @"(?:\s?\p{L}+)?" + Regex.Escape("[" + tag + "]"), " " + _kb.ElementName(element));
+            d = Regex.Replace(d, @"(?:\s?\p{L}+)?" + Regex.Escape("[" + tag + "]"), " " + (rich ? ElementOpen + element + ElementClose : _kb.ElementName(element)));
         d = d.Replace("[CRITIQUE]", " critique ").Replace("[PRECISION]", " précision ");
 
         // Balises de mise en forme du jeu (couleurs, icônes, barré, gras…) : du texte simple.

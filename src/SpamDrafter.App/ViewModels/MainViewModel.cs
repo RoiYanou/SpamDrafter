@@ -61,6 +61,7 @@ public sealed class MainViewModel : ViewModelBase
             LibraryTabs = new LibraryTabsViewModel(Library, new TalentsViewModel(kb, items), new ToxViewModel(kb, items), new ArtistsViewModel(kb, items));
             LibraryTabs.SelectRandomRows();
             QuickDetail = new LibraryViewModel(new CardBrowser(items, kb), kb, decks, items);
+            LibraryTabs.CardOpener = OpenCardDetail;   // un clic sur une carte dans Talents, Tox, Artistes ou une astuce ouvre la même fiche que le clic droit
             DeckBuilder = new DeckBuilderViewModel(_browsers["builder"], items, kb, decks);
             DeckBuilder.ApplySettings(Settings);
             DeckBuilder.SettingsChanged += () => Settings.TrySave(SettingsPath);
@@ -91,10 +92,24 @@ public sealed class MainViewModel : ViewModelBase
             }
             var revision = installed is { } i && i.Directory == dir ? $" · données révision {i.Manifest.Revision}" : "";
             Header = $"SPAM {kb.Manifest.GameVersion} · {kb.Cards.Count} cartes{revision}";
-            Home = new HomeViewModel(kb, items, decks, deck => { DeckBuilder.RequestOpen(deck); SelectedTab = 1; }, card => { Library.Browser.ClearFilters(); Library.Browser.Selected = card; LibraryTabs.SelectedTab = 0; SelectedTab = 0; });
+            Home = new HomeViewModel(kb, items, decks, deck => { DeckBuilder.RequestOpen(deck); SelectedTab = 1; }, card => OpenCardDetail(card));
             Home.OpenBuilder = () => SelectedTab = 1;
+            // Nom de l'illustrateur cliqué dans une fiche : l'artiste s'ouvre dans la Bibliothèque (la fiche rapide d'un autre onglet est fermée).
+            Library.OpenArtistRequested += id => { LibraryTabs.ShowArtist(id); SelectedTab = 0; };
+            QuickDetail.OpenArtistRequested += id => { QuickDetail.CloseOverlayCommand.Execute(null); LibraryTabs.ShowArtist(id); SelectedTab = 0; };
+            // Noms colorés de l'astuce : carte, talent et Tox ouvrent leur fiche ; une compétence ouvre la première carte qui l'a (c'est là qu'elle est décrite).
+            Home.OpenTipTarget = seg =>
+            {
+                switch (seg.Kind)
+                {
+                    case TipKind.Card: if (items.FirstOrDefault(i => i.Card.Id == seg.Id) is { } c) LibraryTabs.ShowCard(c); break;
+                    case TipKind.Ability: if (items.FirstOrDefault(i => i.Card.Abilities.Contains(seg.Id!)) is { } a) LibraryTabs.ShowCard(a); break;
+                    case TipKind.Talent: LibraryTabs.ShowTalent(seg.Id!); break;
+                    case TipKind.Tox: LibraryTabs.ShowTox(seg.Id!); break;
+                }
+                SelectedTab = 0;
+            };
             // Thème « selon la carte choisie » : la couleur suit l'élément de la carte ouverte dans la Bibliothèque.
-            Library.Browser.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(CardBrowser.Selected)) ApplyTheme(); };
             _lastWorkTab = Settings.SelectedTab is >= 0 and <= 3 && (Settings.SelectedTab != 3 || HasGenerator) ? Settings.SelectedTab : 0;
             // Sons : sauvegarde d'un deck, fin d'une génération.
             decks.Changed += (_, _) => { if (_ready) Sounds.Play(SoundKind.Success); };
@@ -103,7 +118,6 @@ public sealed class MainViewModel : ViewModelBase
             _ready = true;
             // Toujours l'accueil au démarrage ; le travail en cours n'est pas perdu : « Reprendre là où j'en étais » ramène à l'onglet d'avant.
             SelectedTab = 4;
-            UpdateResume();
         }
         catch (Exception e) when (e is IOException or InvalidDataException or System.Text.Json.JsonException)
         {
@@ -115,16 +129,11 @@ public sealed class MainViewModel : ViewModelBase
     private readonly Dictionary<string, CardBrowser> _browsers = new();
     private bool _ready;
     private int _lastWorkTab;
-    private static readonly string[] TabNames = { "Bibliothèque", "Deck builder", "Drafter", "Générateur" };
 
-    private void UpdateResume() =>
-        Home?.SetResume(TabNames[_lastWorkTab], () => SelectedTab = _lastWorkTab);
-
-    /// <summary>Applique le thème de couleur choisi (ou celui de la carte ouverte en mode « selon la carte »).</summary>
+    /// <summary>Applique le thème de couleur choisi (un ancien réglage « selon la carte » retombe sur le thème par défaut).</summary>
     private void ApplyTheme()
     {
         var theme = Settings.ElementTheme;
-        if (theme == "auto") theme = SpamDrafter.App.Views.ThemeManager.ForElement(Library?.Browser.Selected?.Card.Element);
         SpamDrafter.App.Views.ThemeManager.Apply(theme, Settings.HighContrast);
     }
 
@@ -154,15 +163,37 @@ public sealed class MainViewModel : ViewModelBase
     {
         SpamDrafter.App.Views.StarSettings.Set(Settings.StarCount, Settings.StarSize, Settings.StarSpeed, Settings.StarColor);
         Settings.TrySave(SettingsPath);
+        Raise(nameof(ParticlesModified));
     }
+
+    /// <summary>Vrai si un réglage des particules n'est pas celui par défaut : le bouton « Réglages par défaut » n'apparaît alors seulement.</summary>
+    public bool ParticlesModified
+    {
+        get
+        {
+            var d = new SpamDrafter.Core.Settings.AppSettings();
+            return Settings.StarCount != d.StarCount || Math.Abs(Settings.StarSize - d.StarSize) > 0.01
+                || Math.Abs(Settings.StarSpeed - d.StarSpeed) > 0.01 || !string.Equals(Settings.StarColor, d.StarColor, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private RelayCommand? _resetParticles;
+    public RelayCommand ResetParticlesCommand => _resetParticles ??= new RelayCommand(_ =>
+    {
+        var d = new SpamDrafter.Core.Settings.AppSettings();
+        Settings.StarCount = d.StarCount; Settings.StarSize = d.StarSize; Settings.StarSpeed = d.StarSpeed; Settings.StarColor = d.StarColor;
+        foreach (var n in new[] { nameof(StarCount), nameof(StarSize), nameof(StarSpeed), nameof(StarColorIndex) }) Raise(n);
+        UpdateStars();
+    });
     public double StarSpeed { get => Settings.StarSpeed; set { Settings.StarSpeed = Math.Round(value, 1); Raise(nameof(StarSpeed)); UpdateStars(); } }
     public double StarCount { get => Settings.StarCount; set { Settings.StarCount = (int)Math.Round(value); Raise(nameof(StarCount)); UpdateStars(); } }
     public double StarSize { get => Settings.StarSize; set { Settings.StarSize = Math.Round(value, 1); Raise(nameof(StarSize)); UpdateStars(); } }
-    public IReadOnlyList<string> StarColorOptions { get; } = new[] { "Blanc", "Jaune", "Bleu", "Rose", "Vert" };
-    private static readonly string[] StarColors = { "#FFFFFF", "#FFC93C", "#8FB8FF", "#FF9ED8", "#9BF0B5" };
+    public IReadOnlyList<string> StarColorOptions { get; } = new[] { "Selon le thème", "Blanc", "Jaune", "Bleu", "Rose", "Vert" };
+    // « auto » : chaque thème garde ses couleurs propres (pluie bleue, braises orange…) ; une autre couleur teinte les particules de TOUS les thèmes.
+    private static readonly string[] StarColors = { "auto", "#FFFFFD", "#FFC93C", "#8FB8FF", "#FF9ED8", "#9BF0B5" };
     public int StarColorIndex
     {
-        get => Math.Max(0, Array.IndexOf(StarColors, Settings.StarColor.ToUpperInvariant()));
+        get => Math.Max(0, Array.FindIndex(StarColors, c => string.Equals(c, Settings.StarColor, StringComparison.OrdinalIgnoreCase)));
         set { Settings.StarColor = StarColors[Math.Clamp(value, 0, StarColors.Length - 1)]; Raise(nameof(StarColorIndex)); UpdateStars(); }
     }
 
@@ -225,7 +256,7 @@ public sealed class MainViewModel : ViewModelBase
         set
         {
             if (!Set(ref _selectedTab, value)) return;
-            if (value != 4) { _lastWorkTab = value; UpdateResume(); }
+            if (value != 4) _lastWorkTab = value;
             foreach (var n in new[] { nameof(IsTab0), nameof(IsTab1), nameof(IsTab2), nameof(IsTab3), nameof(IsTab4) }) Raise(n);
             if (_ready) Sounds.Play(SoundKind.Tab);
         }

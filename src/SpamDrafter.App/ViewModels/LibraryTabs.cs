@@ -49,9 +49,37 @@ public sealed class LibraryTabsViewModel : ViewModelBase
     /// <summary>0 = Cartes, 1 = Talents, 2 = Tox, 3 = Artistes.</summary>
     public int SelectedTab { get => _selectedTab; set => Set(ref _selectedTab, value); }
 
-    /// <summary>Ouvre une carte dans le sous-onglet « Cartes » (les filtres sont remis à zéro pour qu'elle soit dans la liste).</summary>
+    /// <summary>Ouvre un talent dans le sous-onglet « Talents » (la recherche est vidée pour qu'il soit dans la liste).</summary>
+    public void ShowTalent(string id)
+    {
+        Talents.Search = "";
+        if (Talents.Rows.FirstOrDefault(r => r.Id == id) is { } row) { Talents.Selected = row; SelectedTab = 1; }
+    }
+
+    /// <summary>Ouvre un artiste dans le sous-onglet « Artistes » (recherche vidée, tri alphabétique conservé).</summary>
+    public void ShowArtist(string id)
+    {
+        Artists.Search = "";
+        if (Artists.Rows.FirstOrDefault(r => r.Id == id) is { } row) { Artists.Selected = row; SelectedTab = 3; }
+    }
+
+    /// <summary>Ouvre un Tox (par sa clé de famille) dans le sous-onglet « Tox » (recherche et rareté remises à zéro).</summary>
+    public void ShowTox(string key)
+    {
+        Tox.Search = ""; Tox.RarityIndex = 0;
+        if (Tox.Rows.FirstOrDefault(r => r.Key == key) is { } row) { Tox.Selected = row; SelectedTab = 2; }
+    }
+
+    /// <summary>
+    /// Ouvreur de la fiche de carte de la fenêtre principale (celle du clic droit, par-dessus tout : on ne peut plus changer d'onglet pendant
+    /// qu'elle est affichée). Renseigné par l'application ; sans lui (tests), la carte s'ouvre dans le sous-onglet « Cartes ».
+    /// </summary>
+    public Action<CardItem>? CardOpener { get; set; }
+
+    /// <summary>Ouvre la fiche d'une carte (toujours la même que le clic droit) ; à défaut d'ouvreur, dans le sous-onglet « Cartes ».</summary>
     public void ShowCard(CardItem card)
     {
+        if (CardOpener is { } open) { open(card); return; }
         Cards.Browser.ClearFilters();
         Cards.Browser.Selected = card;
         SelectedTab = 0;
@@ -131,7 +159,7 @@ public sealed class TalentsViewModel : ViewModelBase
 
 // ================= Tox =================
 
-public sealed record ToxFamilyRow(string Key, string Name, Bitmap? Image, int Variants);
+public sealed record ToxFamilyRow(string Key, string Name, Bitmap? Image, int Variants, IBrush? Frame = null);
 
 /// <summary>Un Tox d'une famille pour une rareté : valeur, prix à la boutique, description.</summary>
 public sealed record ToxVariantRow(string RarityName, Bitmap? RarityIcon, IBrush Border, IBrush TextColor, bool IsRated, string Value, string Price,
@@ -165,7 +193,7 @@ public sealed class ToxViewModel : ViewModelBase
             {
                 var first = kv.Value.FirstOrDefault(t => t.Image is not null) ?? kv.Value[0];
                 var name = duplicated.Contains(kv.Key) ? $"{names[kv.Key]} ({kv.Key})" : names[kv.Key];
-                return new ToxFamilyRow(kv.Key, name, Icons.Tox(kb, first, 64), kv.Value.Count);
+                return new ToxFamilyRow(kv.Key, name, Icons.Tox(kb, first, 64), kv.Value.Count, FrameFor(kb, kv.Value));
             })
             .OrderBy(f => TextSearch.Normalize(f.Name), StringComparer.Ordinal).ThenBy(f => f.Key, StringComparer.Ordinal).ToList();
         Rows = new ObservableCollection<ToxFamilyRow>(_all);
@@ -174,6 +202,18 @@ public sealed class ToxViewModel : ViewModelBase
         _rarityIds = kb.Rarities.Where(r => present.Contains(r.Id)).Select(r => r.Id).ToList();
         RarityOptions = new[] { "Toutes les raretés" }.Concat(_rarityIds.Select(kb.RarityName)).ToList();
         OpenCardCommand = new RelayCommand(p => { if (p is CardLink l) OpenCardRequested?.Invoke(l.Card); });
+    }
+
+    /// <summary>Cadre multicolore d'un Tox : un dégradé des couleurs des raretés où il existe (une seule couleur s'il n'a qu'une rareté).</summary>
+    private static IBrush FrameFor(KnowledgeBase kb, IEnumerable<ToxEntry> family)
+    {
+        var colours = family.Select(t => t.Rarity).Distinct().Select(r => (kb.Rarity(r ?? "")?.Order ?? int.MaxValue, r))
+            .OrderBy(x => x.Item1).Select(x => ((SolidColorBrush)Icons.FrameBrush(kb, x.r)).Color).ToList();
+        if (colours.Count == 0) colours.Add(Color.Parse("#666666"));
+        if (colours.Count == 1) return new SolidColorBrush(colours[0]);
+        var g = new LinearGradientBrush { StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative), EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative) };
+        for (var i = 0; i < colours.Count; i++) g.GradientStops.Add(new GradientStop(colours[i], i / (double)(colours.Count - 1)));
+        return g;
     }
 
     public ObservableCollection<ToxFamilyRow> Rows { get; }
@@ -219,6 +259,7 @@ public sealed class ToxViewModel : ViewModelBase
     public bool HasSelection => _selected is not null;
     public string Title { get; private set; } = "Choisis un Tox dans la liste";
     public Bitmap? Image { get; private set; }
+    public IBrush? Frame => _selected?.Frame;
     public IReadOnlyList<ToxVariantRow> Variants { get; private set; } = Array.Empty<ToxVariantRow>();
     public string CardsTitle { get; private set; } = "";
     public IReadOnlyList<CardLink> InnateCards { get; private set; } = Array.Empty<CardLink>();
@@ -240,7 +281,7 @@ public sealed class ToxViewModel : ViewModelBase
             .ToList();
         CardsTitle = InnateCards.Count == 0 ? "Aucune carte ne le possède de base"
             : InnateCards.Count == 1 ? "Carte qui le possède de base" : $"Cartes qui le possèdent de base ({InnateCards.Count})";
-        foreach (var n in new[] { nameof(HasSelection), nameof(Title), nameof(Image), nameof(Variants), nameof(CardsTitle), nameof(InnateCards) }) Raise(n);
+        foreach (var n in new[] { nameof(HasSelection), nameof(Title), nameof(Image), nameof(Frame), nameof(Variants), nameof(CardsTitle), nameof(InnateCards) }) Raise(n);
     }
 
     private string RarityLabel(ToxEntry t) => t.Rarity is { } r ? _kb.RarityName(r) : "sans rareté";

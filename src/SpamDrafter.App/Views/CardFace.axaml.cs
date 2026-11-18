@@ -46,6 +46,16 @@ public partial class CardFace : UserControl
     public static readonly StyledProperty<CornerRadius> CornerProperty = AvaloniaProperty.Register<CardFace, CornerRadius>(nameof(Corner), new CornerRadius(10));
     public static readonly StyledProperty<double> NameSizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(NameSize), 11);
     public static readonly StyledProperty<double> GlyphProperty = AvaloniaProperty.Register<CardFace, double>(nameof(Glyph), 22);
+    public static readonly StyledProperty<double> RarityLogoProperty = AvaloniaProperty.Register<CardFace, double>(nameof(RarityLogo), 10);
+    public static readonly StyledProperty<Thickness> RarityLogoMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(RarityLogoMargin));
+    public static readonly StyledProperty<Thickness> BodyReserveProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(BodyReserve));
+    /// <summary>Espace réservé sous le corps de la carte pour la moitié basse du logo de rareté.</summary>
+    public Thickness BodyReserve { get => GetValue(BodyReserveProperty); private set => SetValue(BodyReserveProperty, value); }
+    public static readonly StyledProperty<double> RarityLogoHeightProperty = AvaloniaProperty.Register<CardFace, double>(nameof(RarityLogoHeight), 5);
+    /// <summary>Hauteur du logo : les images de rareté sont deux fois plus larges que hautes.</summary>
+    public double RarityLogoHeight { get => GetValue(RarityLogoHeightProperty); private set => SetValue(RarityLogoHeightProperty, value); }
+    public double RarityLogo { get => GetValue(RarityLogoProperty); private set => SetValue(RarityLogoProperty, value); }
+    public Thickness RarityLogoMargin { get => GetValue(RarityLogoMarginProperty); private set => SetValue(RarityLogoMarginProperty, value); }
     public static readonly StyledProperty<double> RarityBadgeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(RarityBadge), 26);
     public static readonly StyledProperty<double> TagSizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(TagSize), 11);
     public static readonly StyledProperty<double> TalentMaxWidthProperty = AvaloniaProperty.Register<CardFace, double>(nameof(TalentMaxWidth), 80);
@@ -66,10 +76,22 @@ public partial class CardFace : UserControl
     public bool TalentAtBottom { get => GetValue(TalentAtBottomProperty); set => SetValue(TalentAtBottomProperty, value); }
     public string? TopTag { get => GetValue(TopTagProperty); private set => SetValue(TopTagProperty, value); }
     public string? BottomTag { get => GetValue(BottomTagProperty); private set => SetValue(BottomTagProperty, value); }
+    public static readonly StyledProperty<Thickness> HpMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(HpMargin));
+    public Thickness HpMargin { get => GetValue(HpMarginProperty); private set => SetValue(HpMarginProperty, value); }
+    public static readonly StyledProperty<double> HpSizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(HpSize), 8);
+    public double HpSize { get => GetValue(HpSizeProperty); private set => SetValue(HpSizeProperty, value); }
+    public static readonly StyledProperty<bool> HpVisibleProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(HpVisible));
+    /// <summary>Les PV (« ♥ 500 PV ») s'affichent dans le coin bas gauche des cartes qui montrent leurs Spamtons, sauf là où l'étiquette d'un talent occupe ce coin.</summary>
+    public bool HpVisible { get => GetValue(HpVisibleProperty); private set => SetValue(HpVisibleProperty, value); }
     /// <summary>Épaisseur du cadre : la même pour toutes les raretés, proportionnelle à la taille d'affichage de la carte.</summary>
     public Thickness FrameThickness { get => GetValue(FrameThicknessProperty); private set => SetValue(FrameThicknessProperty, value); }
     /// <summary>L'illustration est rentrée sous le cadre (moitié de son épaisseur) et rognée un peu plus serré : ses coins ne dépassent jamais.</summary>
     /// <summary>Le symbole est remonté pour que son dessin (placé bas dans son image) chevauche le milieu du bord du cadre.</summary>
+    public static readonly StyledProperty<double> RarityHeightProperty = AvaloniaProperty.Register<CardFace, double>(nameof(RarityHeight));
+    public double RarityHeight { get => GetValue(RarityHeightProperty); private set => SetValue(RarityHeightProperty, value); }
+    public static readonly StyledProperty<IBrush?> FrameShineProperty = AvaloniaProperty.Register<CardFace, IBrush?>(nameof(FrameShine));
+    /// <summary>Cadre « métallique » : la couleur de la rareté avec des reflets clairs et sombres (un dégradé qui glisse au survol).</summary>
+    public IBrush? FrameShine { get => GetValue(FrameShineProperty); private set => SetValue(FrameShineProperty, value); }
     public Thickness RarityMargin { get => GetValue(RarityMarginProperty); private set => SetValue(RarityMarginProperty, value); }
     public Thickness ImageMargin { get => GetValue(ImageMarginProperty); private set => SetValue(ImageMarginProperty, value); }
     public CornerRadius ImageCorner { get => GetValue(ImageCornerProperty); private set => SetValue(ImageCornerProperty, value); }
@@ -82,6 +104,9 @@ public partial class CardFace : UserControl
     public double Glyph { get => GetValue(GlyphProperty); private set => SetValue(GlyphProperty, value); }
     public double RarityBadge { get => GetValue(RarityBadgeProperty); private set => SetValue(RarityBadgeProperty, value); }
     public double TagSize { get => GetValue(TagSizeProperty); private set => SetValue(TagSizeProperty, value); }
+    public static readonly StyledProperty<double> IncomeFontProperty = AvaloniaProperty.Register<CardFace, double>(nameof(IncomeFont), 10);
+    /// <summary>Taille du nombre écrit dans l'icône du Spamton.</summary>
+    public double IncomeFont { get => GetValue(IncomeFontProperty); private set => SetValue(IncomeFontProperty, value); }
     public double TalentMaxWidth { get => GetValue(TalentMaxWidthProperty); private set => SetValue(TalentMaxWidthProperty, value); }
     public Thickness OverlayMargin { get => GetValue(OverlayMarginProperty); private set => SetValue(OverlayMarginProperty, value); }
     public Thickness BodyMargin { get => GetValue(BodyMarginProperty); private set => SetValue(BodyMarginProperty, value); }
@@ -98,47 +123,196 @@ public partial class CardFace : UserControl
             new GradientStop(Color.FromArgb(0, 255, 255, 255), 1),
         },
     };
-    private Popup? _zoom;
-    private ScrollViewer? _scroll;
+    /// <summary>Referme tous les exemplaires agrandis (ex. quand une fiche détaillée s'ouvre par-dessus : sinon ils restent visibles un instant).</summary>
+    public static readonly StyledProperty<System.Windows.Input.ICommand?> CreditCommandProperty =
+        AvaloniaProperty.Register<CardFace, System.Windows.Input.ICommand?>(nameof(CreditCommand));
+    /// <summary>Si elle est donnée, un clic sur le nom de l'illustrateur l'exécute (fiche détaillée : ouvre l'artiste dans la Bibliothèque).</summary>
+    public System.Windows.Input.ICommand? CreditCommand { get => GetValue(CreditCommandProperty); set => SetValue(CreditCommandProperty, value); }
+    public static event Action? DismissZooms;
+    public static void DismissAllZooms() => DismissZooms?.Invoke();
+    private void DismissZoom() { HoloLayer.Opacity = 0; ResetZoom(); }
+    /// <summary>Vrai tant qu'une fiche détaillée est ouverte : aucun agrandissement au survol (il resterait visible par-dessus la fiche).</summary>
+    public static bool SuppressZoom { get; set; }
+    private LinearGradientBrush? _shine;
+    private Avalonia.Threading.DispatcherTimer? _shineTimer;
+    private DateTime _shineLast;
+    private double _phase;
 
-    private void OnScrolled(object? sender, ScrollChangedEventArgs e)
+    private static Color Mix(Color a, Color b, double k) =>
+        Color.FromRgb((byte)(a.R + (b.R - a.R) * k), (byte)(a.G + (b.G - a.G) * k), (byte)(a.B + (b.B - a.B) * k));
+
+    /// <summary>Dégradé du cadre : la couleur de la rareté, avec une bande claire, une bande plus sombre et un second reflet (aspect métal poli).</summary>
+    private void RebuildShine()
     {
-        if (_zoom?.IsOpen != true) return;
-        HideZoom();
-        Avalonia.Threading.DispatcherTimer.RunOnce(() => { if (Root.IsPointerOver && HoverZoom && !Motion.Reduce) ShowZoom(); }, TimeSpan.FromMilliseconds(40));
+        if (Item?.RarityBrush is not SolidColorBrush sb) { FrameShine = null; _shine = null; return; }
+        var c = sb.Color;
+        _shine = new LinearGradientBrush
+        {
+            SpreadMethod = GradientSpreadMethod.Repeat,
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(c, 0), new GradientStop(Mix(c, Colors.White, 0.6), 0.2), new GradientStop(c, 0.38),
+                new GradientStop(Mix(c, Colors.Black, 0.35), 0.62), new GradientStop(Mix(c, Colors.White, 0.3), 0.82), new GradientStop(c, 1),
+            },
+        };
+        FrameShine = _shine;
+    }
+
+    /// <summary>Fait glisser les reflets sur le cadre (survol, fiche détaillée) ; la couleur de la rareté ne change pas.</summary>
+    public void StartShine()
+    {
+        if (Motion.Reduce || _shine is null) return;
+        _shineTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _shineTimer.Tick -= ShineTick; _shineTimer.Tick += ShineTick;
+        _shineLast = DateTime.UtcNow;
+        _shineTimer.Start();
+    }
+    public void StopShine() => _shineTimer?.Stop();
+
+    private void ShineTick(object? sender, EventArgs e)
+    {
+        var now = DateTime.UtcNow;
+        _phase = (_phase + (now - _shineLast).TotalSeconds * 0.7) % 1;
+        _shineLast = now;
+        if (_shine is null) return;
+        _shine.StartPoint = new RelativePoint(_phase, _phase, RelativeUnit.Relative);
+        _shine.EndPoint = new RelativePoint(_phase + 1, _phase + 1, RelativeUnit.Relative);
+    }
+
+    // ----- Survol : la carte elle-même grossit en place (plus de fenêtre flottante ni d'exemplaire en double) -----
+    private ScaleTransform? _hoverScale;
+    private Rotate3DTransform? _tilt;
+    private Avalonia.Threading.DispatcherTimer? _anim;
+    private double _scaleNow = 1;
+    private bool _hovering;
+
+    // Tailles en proportion de la carte : départ 100 %, rebond jusqu'à 105 %, arrivée 104 % ; à la sortie, creux à 99 % puis retour à 100 %.
+    private const double HoverPeak = 1.05, HoverRest = 1.04, ExitDip = 0.99;
+
+    private void EnsureTransform()
+    {
+        if (_hoverScale is not null) return;
+        _hoverScale = new ScaleTransform(1, 1);
+        _tilt = new Rotate3DTransform { Depth = 700 };
+        var group = new TransformGroup();
+        group.Children.Add(_hoverScale);
+        group.Children.Add(_tilt);
+        Root.Transitions = null;   // les animations de survol sont faites ici, pas par le thème
+        Root.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+        Root.RenderTransform = group;
+    }
+
+    /// <summary>Anime la taille de la carte par étapes (valeur visée, durée en ms, retour doux) ; <paramref name="relaxTilt"/> ramène aussi l'inclinaison à plat.</summary>
+    private void Animate(bool relaxTilt, params (double To, double Ms, bool Soft)[] stages)
+    {
+        EnsureTransform();
+        _anim?.Stop();
+        var from = _scaleNow;
+        var tiltX = _tilt!.AngleX; var tiltY = _tilt.AngleY;
+        var start = DateTime.UtcNow;
+        var timer = _anim = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(8) };
+        var total = stages.Sum(x => x.Ms);
+        timer.Tick += (_, _) =>
+        {
+            var ms = (DateTime.UtcNow - start).TotalMilliseconds;
+            if (ms >= total)
+            {
+                timer.Stop();
+                SetScale(stages[^1].To);
+                if (relaxTilt) { _tilt.AngleX = 0; _tilt.AngleY = 0; }
+                if (!_hovering && Math.Abs(_scaleNow - 1) < 0.0005) { Root.RenderTransform = null; _hoverScale = null; _tilt = null; }
+                return;
+            }
+            double acc = 0, prev = from;
+            foreach (var st in stages)
+            {
+                if (ms < acc + st.Ms)
+                {
+                    var t = (ms - acc) / st.Ms;
+                    var e = st.Soft ? t * t * (3 - 2 * t) : 1 - Math.Pow(1 - t, 3);
+                    SetScale(prev + (st.To - prev) * e);
+                    break;
+                }
+                acc += st.Ms; prev = st.To;
+            }
+            if (relaxTilt && _tilt is not null) { var k = Math.Max(0, 1 - ms / stages[0].Ms); _tilt.AngleX = tiltX * k; _tilt.AngleY = tiltY * k; }
+        };
+        timer.Start();
+    }
+
+    private void SetScale(double k)
+    {
+        _scaleNow = k;
+        if (_hoverScale is not null) { _hoverScale.ScaleX = k; _hoverScale.ScaleY = k; }
+    }
+
+    private void HoverEnter()
+    {
+        _hovering = true;
+        if (!HoverZoom || Motion.Reduce || SuppressZoom) return;
+        Animate(false, (HoverPeak, 200, false), (HoverRest, 140, true));
+    }
+
+    private void HoverExit()
+    {
+        _hovering = false;
+        if (_hoverScale is null) return;
+        if (Motion.Reduce) { ResetZoom(); return; }
+        Animate(true, (ExitDip, 110, false), (1.0, 90, true));
+    }
+
+    /// <summary>Remet la carte à plat et à sa taille tout de suite (fiche ouverte, carte retirée de l'écran).</summary>
+    private void ResetZoom()
+    {
+        _anim?.Stop();
+        _hovering = false;
+        _scaleNow = 1;
+        _hoverScale = null; _tilt = null;
+        Root.RenderTransform = null;
     }
 
     public CardFace()
     {
         InitializeComponent();
+        ClipToBounds = false;   // la carte agrandie au survol déborde de sa case : rien ne doit la rogner
         Root.DataContext = this;
+        CreditBox.PointerPressed += (_, e) => { if (CreditCommand is { } c && c.CanExecute(null)) { c.Execute(null); e.Handled = true; } };
         HoloLayer.Background = _holo;
         Root.PointerEntered += (_, _) =>
         {
             if (Holo && !Motion.Reduce) HoloLayer.Opacity = 1;
-            if (HoverZoom && !Motion.Reduce) ShowZoom();
+            StartShine();
+            HoverEnter();
         };
-        Root.PointerExited += (_, _) => { HoloLayer.Opacity = 0; HideZoom(); };
+        Root.PointerExited += (_, _) => { HoloLayer.Opacity = 0; HoverExit(); if (!Holo) StopShine(); };
         Root.PointerMoved += (_, e) =>
         {
-            if (HoverZoom && !Motion.Reduce && _zoom?.IsOpen != true) ShowZoom();   // reprend après un défilement de la liste
+            // La carte s'incline doucement selon la position de la souris sur elle (±9°).
+            if (_hovering && HoverZoom && !Motion.Reduce && !SuppressZoom && Root.Bounds.Width > 1 && Root.Bounds.Height > 1)
+            {
+                EnsureTransform();
+                var q = e.GetPosition(Root);
+                _tilt!.AngleY = Math.Clamp(q.X / Root.Bounds.Width - 0.5, -0.5, 0.5) * 18;
+                _tilt.AngleX = -Math.Clamp(q.Y / Root.Bounds.Height - 0.5, -0.5, 0.5) * 18;
+                if (_anim is not { IsEnabled: true } && Math.Abs(_scaleNow - HoverRest) > 0.001) SetScale(HoverRest);
+            }
             if (!Holo || Motion.Reduce || Root.Bounds.Width < 1 || Root.Bounds.Height < 1) return;
             var p = e.GetPosition(Root);
             double rx = p.X / Root.Bounds.Width, ry = p.Y / Root.Bounds.Height;
             _holo.StartPoint = new RelativePoint(rx - 0.4, ry - 0.4, RelativeUnit.Relative);
             _holo.EndPoint = new RelativePoint(rx + 0.4, ry + 0.4, RelativeUnit.Relative);
         };
-        // Quand la liste défile sous la souris, l'exemplaire agrandi est replacé sur la carte qui se trouve alors sous le pointeur.
         AttachedToVisualTree += (_, _) =>
         {
-            _scroll = this.FindAncestorOfType<ScrollViewer>();
-            if (_scroll is not null) _scroll.ScrollChanged += OnScrolled;
+            DismissZooms += DismissZoom;
+            if (Holo) StartShine();
         };
         DetachedFromVisualTree += (_, _) =>
         {
-            HideZoom();
-            if (_scroll is not null) _scroll.ScrollChanged -= OnScrolled;
-            _scroll = null;
+            DismissZooms -= DismissZoom;
+            StopShine();
+            ResetZoom();
         };
         SizeChanged += (_, _) => Adapt();
     }
@@ -146,6 +320,10 @@ public partial class CardFace : UserControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == ItemProperty) RebuildShine();
+        if (change.Property == CreditCommandProperty) CreditBox.IsHitTestVisible = CreditCommand is not null;
+        if (change.Property == ShowIncomeProperty || change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
+            HpVisible = ShowIncome && !(TalentAtBottom && !string.IsNullOrEmpty(TalentTag));
         if (change.Property == ShowNameProperty || change.Property == ShowRarityProperty) Adapt();
         else if (change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
         {
@@ -154,50 +332,8 @@ public partial class CardFace : UserControl
         }
     }
 
-    /// <summary>Un exemplaire agrandi (×1,4) flotte au centre de la carte, devant tout le reste.</summary>
-    private void ShowZoom()
-    {
-        if (Item is null || Root.Child is not Panel host || TopLevel.GetTopLevel(this) is not { } top) return;
-        // Taille réellement affichée à l'écran (l'interface peut être agrandie à 130 % par une transformation de mise en page).
-        var m = Root.TransformToVisual(top);
-        if (m is null) return;
-        var a = m.Value.Transform(new Point(0, 0)); var b = m.Value.Transform(new Point(Root.Bounds.Width, Root.Bounds.Height));
-        double w = Math.Abs(b.X - a.X) * 1.15, h = Math.Abs(b.Y - a.Y) * 1.15;
-        if (w < 20) return;
-        var face = new CardFace
-        {
-            Item = Item, ImageOverride = ImageOverride, ShowName = true, ShowElement = true, ShowRarity = ShowRarity, ShowIncome = true,
-            TalentTag = TalentTag, TalentName = TalentName, Credit = Credit, HoverZoom = false, Holo = false, Width = w, Height = h, IsHitTestVisible = false,
-        };
-        if (_zoom is null)
-        {
-            _zoom = new Popup { PlacementTarget = Root, Placement = PlacementMode.Center, IsLightDismissEnabled = false, IsHitTestVisible = false };
-            host.Children.Add(_zoom);
-        }
-        _zoom.Child = face;
-        _zoom.IsOpen = true;
-        StartWatch();
-
-    }
-
-    private void HideZoom()
-    {
-        if (_zoom is { } z) z.IsOpen = false;
-        _watch?.Stop();
-    }
-
-    /// <summary>Tant que l'exemplaire agrandi est ouvert, on vérifie que la souris est toujours sur la carte : sinon il se referme (sécurité).</summary>
-    private Avalonia.Threading.DispatcherTimer? _watch;
-    private void StartWatch()
-    {
-        _watch ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
-        _watch.Tick -= WatchTick; _watch.Tick += WatchTick;
-        _watch.Start();
-    }
-    private void WatchTick(object? sender, EventArgs e)
-    {
-        if (!Root.IsPointerOver) HideZoom();
-    }
+    /// <summary>Rebond au clic : fait par la vignette de la liste (la carte agrandie est la carte elle-même) ; toujours faux ici.</summary>
+    public bool BounceZoom() => false;
 
     /// <summary>Tailles qui suivent la largeur de la carte : coins, nom, pastilles, médaillon de rareté.</summary>
     private void Adapt()
@@ -208,20 +344,30 @@ public partial class CardFace : UserControl
         Glyph = Math.Clamp(w / 6.2, 14, 40);
         RarityBadge = Math.Clamp(w / 4.2, 20, 60);   // le symbole chevauche le cadre : sa moitié est sur la bordure, devant
         TagSize = Math.Clamp(Glyph * 0.52, 9, 18);
+        IncomeFont = Math.Max(7, Glyph * 0.42);
         TalentMaxWidth = Math.Max(40, w * 0.62);
         var inset = Math.Clamp(w / 28, 3, 9);
         OverlayMargin = new Thickness(inset + 1, ShowName ? NameSize * 1.9 + inset : inset + 1, inset + 1, inset);
-        // Le corps de la carte s'arrête à mi-hauteur du médaillon : celui-ci chevauche le bas du cadre sans sortir de la carte.
-        BodyMargin = new Thickness(0, 0, 0, ShowRarity ? RarityBadge / 2 : 0);
+        // Le symbole (2 fois plus large que haut) est centré sur le bord bas du cadre ; la carte s'arrête exactement au bas du symbole : aucune marge en dessous.
+        BodyMargin = new Thickness(0);
         var t = Math.Clamp(w / 55, 1.5, 7);
         FrameThickness = new Thickness(t);
         ImageMargin = new Thickness(t * 0.6);
-        RarityMargin = new Thickness(0, 0, 0, RarityBadge * 0.3);
+        // Symbole au même endroit qu'à l'origine : son centre est à 0,3 × sa largeur au-dessus du bord bas du cadre (son bas touche presque le bord).
+        // Logo de rareté : petit, au milieu du bas de la carte, juste au-dessus du cadre.
+        RarityLogo = Math.Clamp(w * 0.27, 18, 80);
+        RarityLogoHeight = RarityLogo / 2;
+        BodyReserve = new Thickness(0, 0, 0, ShowRarity ? RarityLogoHeight / 2 : 0);
+        RarityLogoMargin = new Thickness(0);   // aligné en bas : son centre tombe sur le bord bas du corps de la carte
+        RarityMargin = new Thickness(0, 0, 0, RarityBadge * 0.05);
+        RarityHeight = RarityBadge / 2;
         var r = Math.Max(2, Corner.TopLeft - t * 0.6);
         ImageCorner = new CornerRadius(r);
         CreditSize = Math.Clamp(w / 22, 8, 14);
-        var lift = (ShowRarity ? RarityBadge / 2 : 0) + inset;
+        var lift = (ShowRarity ? RarityLogo / 4 + 2 : 0) + inset;
         CreditMargin = new Thickness(inset, inset, inset, lift);
         BottomLeftMargin = new Thickness(inset + 1, 0, 0, lift);
+        HpMargin = new Thickness(inset + 5, 0, 0, inset + 3);
+        HpSize = Math.Max(7, NameSize * 0.68);   // assez petit pour tenir entre le bord gauche et le médaillon de rareté
     }
 }

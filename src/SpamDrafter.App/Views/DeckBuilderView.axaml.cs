@@ -19,6 +19,39 @@ public partial class DeckBuilderView : UserControl
         InitializeComponent();
         PanelLayout.Attach(RootGrid, "builder", ResetLayout);
         Picker.CardActivated += (_, _) => (DataContext as DeckBuilderViewModel)?.AddCommand.Execute(null);
+        // Un clic droit sur un deck l'ouvre directement dans « Deck en cours » ; un clic sur le deck déjà présélectionné le désélectionne.
+        DeckList.AddHandler(PointerPressedEvent, (_, e) =>
+        {
+            if (DataContext is DeckBuilderViewModel rvm && e.GetCurrentPoint(DeckList).Properties.IsRightButtonPressed
+                && (e.Source as Avalonia.Visual)?.FindAncestorOfType<ListBoxItem>() is { DataContext: Deck rightClicked })
+            {
+                rvm.OpenDeckCommand.Execute(rightClicked);
+                e.Handled = true;
+                return;
+            }
+            if (DataContext is not DeckBuilderViewModel vm || !e.GetCurrentPoint(DeckList).Properties.IsLeftButtonPressed || e.ClickCount > 1) return;
+            var source = e.Source as Avalonia.Visual;
+            if (source?.FindAncestorOfType<Button>() is not null) return;
+            if (source?.FindAncestorOfType<ListBoxItem>() is { DataContext: Deck d } && vm.ListSelection is { } current && current.Id == d.Id)
+            {
+                vm.ListSelection = null;
+                e.Handled = true;
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        // Le menu « Détails et repères » prend toute la largeur de son bouton.
+        if (DetailsButton.Flyout is Flyout { Content: ScrollViewer sv } details)
+        {
+            var scaleBox = new LayoutTransformControl();
+            details.Content = null;
+            scaleBox.Child = sv;
+            details.Content = scaleBox;
+            details.Opening += (_, _) =>
+            {
+                var scale = OverlayMenu.ScaleOf(DetailsButton);
+                scaleBox.LayoutTransform = new Avalonia.Media.ScaleTransform(scale, scale);
+                sv.Width = DetailsButton.Bounds.Width;
+            };
+        }
         DeckSearchBox.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape && DataContext is DeckBuilderViewModel vm) { vm.DeckFilter = ""; e.Handled = true; }

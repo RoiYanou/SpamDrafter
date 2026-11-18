@@ -17,6 +17,33 @@
     <SolidColorBrush x:Key="BrushViolet" Color="{StaticResource ColorViolet}" />
     <SolidColorBrush x:Key="BrushYellow" Color="{StaticResource ColorYellow}" />
     <SolidColorBrush x:Key="BrushOnYellow" Color="{StaticResource ColorOnYellow}" />
+    <!-- Dégradés du décor : leurs couleurs sont réglées par ThemeManager selon le thème (violet, feu, eau…). -->
+    <LinearGradientBrush x:Key="BrushPanelFill" StartPoint="0%,0%" EndPoint="100%,100%">
+      <GradientStop Color="#D03B2A94" Offset="0" /><GradientStop Color="#C42B1B58" Offset="0.45" /><GradientStop Color="#D04A2078" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="BrushPanelEdge" StartPoint="0%,0%" EndPoint="100%,100%">
+      <GradientStop Color="#9A7BFF" Offset="0" /><GradientStop Color="#E070D0" Offset="0.4" /><GradientStop Color="#FFC93C" Offset="0.68" /><GradientStop Color="#5BC0F0" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="BrushButtonFill" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Color="#C08A5BE8" Offset="0" /><GradientStop Color="#C05A33AC" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="BrushButtonHover" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Color="#E09B6BF5" Offset="0" /><GradientStop Color="#E06A3CC8" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="BrushSelectFill" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Color="#B05A33C8" Offset="0" /><GradientStop Color="#B0A03C9C" Offset="1" />
+    </LinearGradientBrush>
+    <!-- Couleur secondaire du thème (jaune par défaut, une couleur complémentaire pour chaque thème d'élément) : réglée par ThemeManager. -->
+    <LinearGradientBrush x:Key="BrushPrimaryFill" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Color="#FFD84A" Offset="0" /><GradientStop Color="#FFA43A" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="BrushPrimaryHover" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Color="#FFE57A" Offset="0" /><GradientStop Color="#FFB955" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="BrushAccentDark" Color="#E6B22E" />
+    <SolidColorBrush x:Key="BrushAccentLight" Color="#FFE08A" />
+    <SolidColorBrush x:Key="BrushAccentGlow" Color="#66FFC93C" />
+    <DropShadowEffect x:Key="GlowEffect" OffsetX="0" OffsetY="0" BlurRadius="12" Color="#FFC93C" Opacity="0.55" />
     <SolidColorBrush x:Key="BrushText" Color="#FFFFFF" />
     <SolidColorBrush x:Key="BrushTextSecondary" Color="#B3FFFFFF" />
     <!-- Nuances des commandes : boutons et menus (violet plus clair que le fond), champs de saisie (plus sombres que le fond). -->
@@ -65,9 +92,29 @@
   </Style>
 
   <!-- Panneau (semi-transparent) -->
+  <!-- Poignée de colonne : un trait et une pastille à trois points, comme la poignée de hauteur. -->
+  <Style Selector="GridSplitter.vgrip">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="Cursor" Value="SizeWestEast" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid Background="Transparent">
+          <Border Width="2" Margin="0,4" Background="{StaticResource BrushControlBorder}" Opacity="0.7" HorizontalAlignment="Center" />
+          <Border HorizontalAlignment="Center" VerticalAlignment="Center" Padding="1.5,6" CornerRadius="6" Background="{StaticResource BrushViolet}" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1">
+            <StackPanel Spacing="3">
+              <Ellipse Width="4" Height="4" Fill="{StaticResource BrushYellow}" />
+              <Ellipse Width="4" Height="4" Fill="{StaticResource BrushYellow}" />
+              <Ellipse Width="4" Height="4" Fill="{StaticResource BrushYellow}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
   <Style Selector="Border.panel">
-    <Setter Property="Background" Value="{StaticResource BrushPanel}" />
-    <Setter Property="BorderBrush" Value="{StaticResource BrushViolet}" />
+    <Setter Property="Background" Value="{StaticResource BrushPanelFill}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushPanelEdge}" />
+    <Setter Property="BoxShadow" Value="0 0 16 0 #22FFFFFF" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusPanel}" />
     <Setter Property="Padding" Value="12" />
@@ -76,14 +123,14 @@
   <!-- Boutons : secondaire (par défaut) = texte blanc, fond transparent, bordure violet clair ;
        principal (classe « primary », un seul par écran) = fond jaune, texte violet très sombre. -->
   <Style Selector="Button">
-    <Setter Property="Background" Value="{StaticResource BrushControl}" />
+    <Setter Property="Background" Value="{StaticResource BrushButtonFill}" />
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
     <Setter Property="BorderBrush" Value="{StaticResource BrushControlBorder}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusControl}" />
   </Style>
   <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource BrushViolet}" />
+    <Setter Property="Background" Value="{StaticResource BrushButtonHover}" />
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
     <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
   </Style>
@@ -92,17 +139,17 @@
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
   </Style>
   <Style Selector="Button.primary, Button.accent">
-    <Setter Property="Background" Value="{StaticResource BrushYellow}" />
+    <Setter Property="Background" Value="{StaticResource BrushPrimaryFill}" />
     <Setter Property="Foreground" Value="{StaticResource BrushOnYellow}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="BorderThickness" Value="0" />
   </Style>
   <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#FFD866" />
+    <Setter Property="Background" Value="{StaticResource BrushPrimaryHover}" />
     <Setter Property="Foreground" Value="{StaticResource BrushOnYellow}" />
   </Style>
   <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#E6B22E" />
+    <Setter Property="Background" Value="{StaticResource BrushAccentDark}" />
     <Setter Property="Foreground" Value="{StaticResource BrushOnYellow}" />
   </Style>
   <!-- Bouton à bascule (ex. « Base » / « Skin ») : la classe « on » le met en jaune. -->
@@ -111,7 +158,7 @@
     <Setter Property="Foreground" Value="{StaticResource BrushOnYellow}" />
   </Style>
   <Style Selector="Button.toggle.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#FFD866" />
+    <Setter Property="Background" Value="{StaticResource BrushAccentLight}" />
     <Setter Property="Foreground" Value="{StaticResource BrushOnYellow}" />
   </Style>
 
@@ -144,15 +191,6 @@
     <Setter Property="RenderTransform" Value="scale(0.985)" />
   </Style>
 
-  <!-- Changement d'onglet : la page apparaît en fondu en 180 ms. -->
-  <Style Selector="UserControl.page[IsVisible=True]">
-    <Style.Animations>
-      <Animation Duration="0:0:0.18" FillMode="Both">
-        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
-        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
-      </Animation>
-    </Style.Animations>
-  </Style>
 
   <!-- « Réduire les animations » (classe « reduce » sur la fenêtre) : plus de transition, de fondu ni de reflet. -->
   <Style Selector="Window.reduce Border.cardface, Window.reduce Button">
@@ -160,9 +198,6 @@
   </Style>
   <Style Selector="Window.reduce Border.cardface:pointerover, Window.reduce Button:pressed, Window.reduce ListBoxItem:pressed">
     <Setter Property="RenderTransform" Value="none" />
-  </Style>
-  <Style Selector="Window.reduce UserControl.page[IsVisible=True]">
-    <Style.Animations><Animation Duration="0:0:0.001" /></Style.Animations>
   </Style>
 
   <!-- Succès : discret tant qu'il n'est pas acquis, jaune ensuite. -->
@@ -213,18 +248,41 @@
   <Style Selector="TabItem">
     <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
     <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="0,12,6,8" />
+    <Setter Property="Padding" Value="18,8" />
+    <Setter Property="Background" Value="#33000000" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushControlBorder}" />
+    <!-- Onglets fermés sur les quatre côtés : plus d'impression d'onglet « coupé » en bas. -->
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
   </Style>
   <!-- Navigation au clavier : cadre jaune bien visible sur la commande qui a le focus (accessibilité). -->
   <Style Selector="Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
     <Setter Property="BorderThickness" Value="2" />
   </Style>
+  <!-- Pendant la saisie (et au survol), le champ garde le fond du thème : le thème de base le passait au noir. -->
+  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement, TextBox:pointerover /template/ Border#PART_BorderElement, TextBox:focus:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{StaticResource BrushField}" />
+  </Style>
   <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
     <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
   </Style>
   <Style Selector="TabItem:selected">
     <Setter Property="Foreground" Value="{StaticResource BrushYellow}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
   </Style>
+  <!-- Survol : seuls les onglets non choisis changent de couleur ; l'onglet choisi garde celle de la page, souris dessus ou non. -->
+  <Style Selector="TabItem /template/ ContentPresenter#PART_ContentPresenter, TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, TabItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+  </Style>
+  <Style Selector="TabItem:selected /template/ ContentPresenter#PART_ContentPresenter, TabItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, TabItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource BrushYellow}" />
+  </Style>
+
 
   <!-- Champs -->
   <!-- Champs de saisie : plus sombres que le fond, bordure claire ; menus déroulants : plus clairs que le fond. -->
@@ -243,7 +301,7 @@
 
   <!-- Variantes de boutons : danger (rouge), information (bleu clair), doux (violet plein). -->
   <Style Selector="Button.danger">
-    <Setter Property="Background" Value="#55D04A4A" />
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%"><GradientStop Color="#88E85A6A" Offset="0" /><GradientStop Color="#88B02A4A" Offset="1" /></LinearGradientBrush></Setter>
     <Setter Property="BorderBrush" Value="#E07070" />
   </Style>
   <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -251,15 +309,45 @@
     <Setter Property="BorderBrush" Value="#FF9A9A" />
   </Style>
   <Style Selector="Button.info">
-    <Setter Property="Background" Value="#552A6FA8" />
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%"><GradientStop Color="#8850B8F0" Offset="0" /><GradientStop Color="#88286CB0" Offset="1" /></LinearGradientBrush></Setter>
     <Setter Property="BorderBrush" Value="{StaticResource BrushCyan}" />
   </Style>
   <Style Selector="Button.info:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="#992A6FA8" />
     <Setter Property="BorderBrush" Value="#B5F0FF" />
   </Style>
+  <!-- « Présenter » : dégradé rose-violet lumineux, texte blanc. -->
+  <Style Selector="Button.showcase">
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#FF7AD9" Offset="0" /><GradientStop Color="#8B5CF6" Offset="1" /></LinearGradientBrush></Setter>
+    <Setter Property="BorderBrush" Value="#FFC2F0" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.showcase:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#FF98E4" Offset="0" /><GradientStop Color="#A07BFF" Offset="1" /></LinearGradientBrush></Setter>
+    <Setter Property="BorderBrush" Value="White" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <!-- Menu flottant sans marge ni largeur maximale : il prend toute la largeur que le code lui donne (menu « Détails et repères »). -->
+  <Style Selector="FlyoutPresenter.tight">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MaxWidth" Value="2400" />
+    <Setter Property="Opacity" Value="0.96" />
+  </Style>
+  <!-- Bouton qui a l'allure d'une liste déroulante (« Filtrer par ») : même fond, même bord, même hauteur, chevron à droite. -->
+  <Style Selector="Button.combo">
+    <Setter Property="Background" Value="{StaticResource BrushControl}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushControlBorder}" />
+    <Setter Property="CornerRadius" Value="{StaticResource RadiusControl}" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
   <Style Selector="Button.soft">
-    <Setter Property="Background" Value="#885B3AA8" />
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%"><GradientStop Color="#A09A6BF5" Offset="0" /><GradientStop Color="#A0603CB8" Offset="1" /></LinearGradientBrush></Setter>
     <Setter Property="BorderBrush" Value="#B79CFF" />
   </Style>
 
@@ -274,10 +362,19 @@
     <Setter Property="Margin" Value="0,14,0,4" />
   </Style>
   <!-- Lueur jaune sous les textes importants pour les faire ressortir. -->
+  <!-- Marge intérieure + marge extérieure négative : la zone de dessin grandit (la lueur n'est plus coupée sur les côtés) sans bouger la mise en page. -->
   <Style Selector="TextBlock.glow, TextBlock.section">
-    <Setter Property="Effect">
-      <DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="12" Color="#FFC93C" Opacity="0.55" />
-    </Setter>
+    <Setter Property="Padding" Value="24,12" />
+    <Setter Property="Margin" Value="-24,-12" />
+    <Setter Property="Effect" Value="{StaticResource GlowEffect}" />
+  </Style>
+  <!-- Titre de l'application : blanc au survol. -->
+  <Style Selector="TextBlock.apptitle">
+    <Setter Property="Foreground" Value="{StaticResource BrushYellow}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="TextBlock.apptitle:pointerover">
+    <Setter Property="Foreground" Value="White" />
   </Style>
   <Style Selector="TextBlock.value">
     <Setter Property="Foreground" Value="{StaticResource BrushCyan}" />
@@ -310,7 +407,7 @@
     <Setter Property="Background" Value="Transparent" />
   </Style>
   <Style Selector="GridSplitter:pointerover">
-    <Setter Property="Background" Value="#66FFC93C" />
+    <Setter Property="Background" Value="{StaticResource BrushAccentGlow}" />
   </Style>
   <Style Selector="ListBox">
     <Setter Property="Background" Value="Transparent" />
@@ -332,10 +429,55 @@
     <Setter Property="Padding" Value="10,9" />
     <Setter Property="CornerRadius" Value="0" />
   </Style>
-  <Style Selector="ListBox.grid ListBoxItem">
-    <Setter Property="Padding" Value="6" />
-    <Setter Property="Margin" Value="3" />
+  <!-- Liste « Mes decks » : chaque deck est un gros bouton arrondi (bord clair, survol et sélection en jaune, main au survol). -->
+  <Style Selector="ListBox.decks ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,0,10" />
     <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushControlBorder}" />
+    <Setter Property="Background" Value="#33000000" />
+    <Setter Property="Cursor" Value="Hand" />
+    <!-- Pas de rognage : les cartes agrandies au survol dépassent par-dessus le bord de la boîte (le fond en bandes se rogne lui-même). -->
+    <Setter Property="ClipToBounds" Value="False" />
+  </Style>
+  <Style Selector="ListBox.decks ListBoxItem:pointerover">
+    <Setter Property="BorderBrush" Value="{StaticResource BrushAccentLight}" />
+  </Style>
+  <Style Selector="ListBox.decks ListBoxItem:selected">
+    <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
+  </Style>
+  <Style Selector="ListBox.decks ListBoxItem /template/ ContentPresenter#PART_ContentPresenter, ListBox.decks ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBox.decks ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#33000000" />
+  </Style>
+  <Style Selector="ListBox.grid">
+    <Setter Property="Padding" Value="9,16,9,12" />
+  </Style>
+  <Style Selector="ListBox.decks">
+    <Setter Property="Padding" Value="0,14,0,10" />
+  </Style>
+  <!-- Listes qui défilent : leurs bords haut et bas s'estompent en douceur au lieu d'être coupés net. -->
+  <Style Selector="ListBox.grid, ListBox.decks, ListBox.rows">
+    <Setter Property="OpacityMask">
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#00000000" Offset="0" />
+        <GradientStop Color="#FF000000" Offset="0.04" />
+        <GradientStop Color="#FF000000" Offset="0.96" />
+        <GradientStop Color="#00000000" Offset="1" />
+      </LinearGradientBrush>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.grid ListBoxItem">
+    <!-- Vertical réduit : le symbole de rareté (≈ 6 px) dépasse du cadre, ce qui rend l'écart entre les lignes égal à celui entre les colonnes. -->
+    <!-- Aucune marge intérieure : la zone cliquable colle exactement à la carte (l'écart entre cartes vient de la marge extérieure, 9 × 6). -->
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="9,6" />
+    <Setter Property="CornerRadius" Value="12" />
+    <!-- La carte agrandie au survol déborde de sa case : la case ne la rogne pas. -->
+    <Setter Property="ClipToBounds" Value="False" />
+  </Style>
+  <Style Selector="ListBox.grid ListBoxItem /template/ ContentPresenter#PART_ContentPresenter, ListBox.grid ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{x:Null}" />
   </Style>
   <Style Selector="ListBox.grid ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="#554B2E8C" />
@@ -343,6 +485,6 @@
     <Setter Property="BorderThickness" Value="2" />
   </Style>
   <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource BrushViolet}" />
+    <Setter Property="Background" Value="{StaticResource BrushSelectFill}" />
   </Style>
 </Styles>

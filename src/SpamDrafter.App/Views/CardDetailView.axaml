@@ -6,21 +6,66 @@
              x:DataType="vm:LibraryViewModel">
   <!-- Fiche détaillée d'une carte, en fenêtre au centre sur un fond assombri : utilisée par la Bibliothèque et, par-dessus n'importe quel onglet,
        par le clic droit sur une carte. -->
+  <UserControl.Styles>
+    <!-- Decks cliquables : au survol, le deck grossit et son contour devient jaune. -->
+    <Style Selector="Button.deckbtn">
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.deckbtn /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="#66FFFFFF" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Button.deckbtn:pointerover">
+      <Setter Property="RenderTransform" Value="scale(1.05)" />
+      <Setter Property="ZIndex" Value="3" />
+    </Style>
+    <Style Selector="Button.deckbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="#FFD35A" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
   <UserControl.KeyBindings>
     <KeyBinding Gesture="Escape" Command="{Binding CloseOverlayCommand}" />
   </UserControl.KeyBindings>
     <Border x:Name="Backdrop" Background="#99120A24" IsVisible="{Binding HasOverlay}">
-      <Border Classes="panel" Background="{StaticResource BrushPanelSolid}" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="2"
-              Padding="22" Margin="36,28" MaxWidth="980" MaxHeight="660" HorizontalAlignment="Center" VerticalAlignment="Center"
+      <Border Classes="panel" Background="Transparent" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="2"
+              Padding="22,22,6,22" Margin="36,28" MaxWidth="980" MaxHeight="660" HorizontalAlignment="Center" VerticalAlignment="Center"
               BoxShadow="0 12 40 0 #AA000000">
       <Grid>
-    <ScrollViewer Margin="0,0,44,0">
+    <Border Margin="-22,-22,-6,-22" CornerRadius="{StaticResource RadiusPanel}" Background="{StaticResource BrushPanelSolid}" Opacity="0.78" IsHitTestVisible="False" />
+    <ScrollViewer>
+      <StackPanel Margin="0,0,78,0">
+      <!-- Les talents, sur une seule ligne, au-dessus de la carte. -->
+      <ItemsControl ItemsSource="{Binding Talents}" Margin="14,10,0,0">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:TalentLine">
+          <Button Background="#4A3A7A" BorderBrush="#8E78D0" BorderThickness="1.5" CornerRadius="12" Padding="12,8" Margin="0,0,8,0"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" ToolTip.Tip="Cliquer pour lire la description du talent">
+            <TextBlock Text="{Binding Name}" Classes="hot" FontSize="14" TextWrapping="Wrap" TextAlignment="Center" />
+            <Button.Flyout>
+              <Flyout Placement="Bottom">
+                <StackPanel MaxWidth="340" Spacing="4">
+                  <TextBlock x:DataType="vm:TalentLine" Text="{Binding Name}" Classes="hot" FontSize="15" TextWrapping="Wrap" />
+                  <TextBlock x:DataType="vm:TalentLine" Text="{Binding Description}" FontSize="13" TextWrapping="Wrap" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <Grid ColumnDefinitions="Auto,*">
         <StackPanel Width="300" VerticalAlignment="Top" Spacing="8" Margin="14,14,0,14" Panel.ZIndex="5">
         <!-- Fiche « vitrine » : la grande carte s'incline avec la souris et se retourne quand on change d'affichage. Elle passe devant le reste. -->
-        <Border x:Name="Hero" Width="300" Height="430" VerticalAlignment="Top" RenderTransformOrigin="50%,50%">
+        <Border x:Name="Hero" ZIndex="10" Width="300" Height="430" VerticalAlignment="Top" RenderTransformOrigin="50%,50%">
           <Grid>
-            <v:CardFace Item="{Binding Browser.Selected}" ImageOverride="{Binding Image}" ShowRarity="True" ShowElement="True" ShowIncome="True" HoverZoom="False" Holo="True" Credit="{Binding ArtistCredit}" />
+            <v:CardFace Item="{Binding Browser.Selected}" ImageOverride="{Binding Image}" ShowName="True" ShowRarity="True" ShowElement="True" ShowIncome="True" HoverZoom="False" Holo="True" Credit="{Binding ArtistCredit}" CreditCommand="{Binding OpenArtistCommand}" />
           </Grid>
         </Border>
         <!-- Affichage de la carte : carte de base ou skin alternatif (retenu comme affichage par défaut). -->
@@ -36,54 +81,87 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
+        <ItemsControl ItemsSource="{Binding DecksUsing}" IsVisible="{Binding HasDecksUsing}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:DeckLine">
+              <!-- Le deck comme dans le Deck builder : fond fait des illustrations de ses cartes, coupées et recollées en diagonale. -->
+              <Button Classes="deckbtn" Padding="0" Margin="9,6" Height="52" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ClipToBounds="False" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0"
+                      Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenDeckCommand}"
+                      CommandParameter="{Binding}" ToolTip.Tip="Ouvrir dans le Deck builder">
+                <Grid>
+                  <v:DeckStrip Chips="{Binding Deck.Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" />
+                  <v:MarqueeText Text="{Binding Label}" Margin="14,0,10,0" FontSize="15" FontWeight="Bold" Foreground="White" VerticalAlignment="Center">
+                    <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>
+                  </v:MarqueeText>
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         </StackPanel>
         <StackPanel Grid.Column="1" Margin="20,0,0,0" Spacing="6">
-          <TextBlock Text="{Binding Title}" Classes="title glow" FontSize="30" Foreground="{StaticResource BrushYellow}" TextWrapping="Wrap" />
           <WrapPanel ItemSpacing="10" LineSpacing="4">
             <StackPanel Orientation="Horizontal" Spacing="5">
               <Image Source="{Binding ElementIcon}" Height="26" Width="26" Stretch="Uniform" />
-              <TextBlock Text="{Binding ElementName}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ElementName}" Foreground="{Binding ElementBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
               <Image Source="{Binding RarityIcon}" Height="22" Stretch="Uniform" />
               <TextBlock Text="{Binding RarityName}" Foreground="{Binding RarityTextBrush}" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="5">
-              <TextBlock Text="{Binding HpShort}" Classes="value" VerticalAlignment="Center" />
+              <TextBlock Text="♥" Foreground="#5FD86B" FontSize="16" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding HpShort}" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" />
               <TextBlock Text="·" Opacity="0.6" VerticalAlignment="Center" />
-              <Image Source="{Binding SpamtonIcon}" Height="22" Stretch="Uniform" />
-              <TextBlock Text="{Binding IncomeShort}" Classes="value" VerticalAlignment="Center" />
+              <Grid Width="38" Height="38" VerticalAlignment="Center" ToolTip.Tip="Revenu en Spamtons">
+                <Image Source="{Binding SpamtonIcon}" Stretch="Uniform" />
+                <TextBlock Text="{Binding IncomeShort}" FontFamily="{StaticResource FontTitle}" Foreground="#6E3B14" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
             </StackPanel>
           </WrapPanel>
-          <TextBlock Text="Résistances" Classes="section" />
-          <ItemsControl ItemsSource="{Binding ResistanceItems}">
-            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="12" LineSpacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:IconText">
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                  <Image Source="{Binding Icon}" Height="18" Width="18" Stretch="Uniform" />
-                  <TextBlock Text="{Binding Text}" FontSize="12" Opacity="0.85" VerticalAlignment="Center" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="Capacités" Classes="section" />
+          <TextBlock Text="{Binding AbilitiesTitle}" Classes="section" />
           <ItemsControl ItemsSource="{Binding AbilityLines}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:AbilityLine">
-                <StackPanel Margin="0,0,0,6">
-                  <TextBlock Text="{Binding Name}" Classes="hot" FontSize="15" />
-                  <TextBlock Text="{Binding Stats}" Classes="value" FontSize="12" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Description}" Opacity="0.75" FontSize="12" TextWrapping="Wrap" />
-                </StackPanel>
+                <!-- Capacité présentée comme un bouton du jeu : nom et recharge (icône du jeu derrière le nombre) ; dessous, description colorée et statistiques. -->
+                <Border Background="#4A3A7A" BorderBrush="#8E78D0" BorderThickness="1.5" CornerRadius="12" Padding="14,8" Margin="0,0,0,8">
+                  <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="14" RowSpacing="4">
+                    <Grid Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Name}" Classes="hot" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      <Grid Grid.Column="1" Width="40" Height="40" IsVisible="{Binding HasCooldown}" VerticalAlignment="Center" ToolTip.Tip="Temps de recharge, en tours">
+                        <Image Source="{Binding CooldownIcon}" Stretch="Uniform" />
+                        <TextBlock Text="{Binding CooldownText}" FontWeight="Bold" FontSize="17" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Grid>
+                    </Grid>
+                    <v:SegmentText Grid.Row="1" Segments="{Binding Rich}" FontSize="14" TextWrapping="Wrap" VerticalAlignment="Top" />
+                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2" IsVisible="{Binding HasStats}" MinWidth="96" ToolTip.Tip="{Binding Stats}">
+                      <TextBlock Text="Base" Classes="hint" />
+                      <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="Précision">
+                        <Image Source="{Binding PrecisionIcon}" Width="20" Height="20" Stretch="Uniform" />
+                        <TextBlock Text="{Binding PrecisionText}" Classes="value" FontSize="14" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="Critique" Classes="hint" Margin="0,4,0,0" IsVisible="{Binding CanCrit}" />
+                      <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding CanCrit}" ToolTip.Tip="Chance de coup critique">
+                        <Rectangle Width="20" Height="20" Fill="#FFD84A"><Rectangle.OpacityMask><ImageBrush Source="{Binding CritIcon}" Stretch="Uniform" /></Rectangle.OpacityMask></Rectangle>
+                        <TextBlock Text="{Binding CritChanceText}" Classes="value" FontSize="14" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding CanCrit}" ToolTip.Tip="Dégâts critiques (multiplicateur)">
+                        <Image Source="{Binding RatioIcon}" Width="20" Height="20" Stretch="Uniform" />
+                        <TextBlock Text="{Binding CritRatioText}" Classes="value" FontSize="14" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="Pas de critique" Classes="hint" Margin="0,4,0,0" IsVisible="{Binding NoCrit}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="Tox de base" Classes="section" IsVisible="{Binding HasInnateTox}" />
           <ItemsControl ItemsSource="{Binding InnateTox}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:ToxLine">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,0,0,8">
+                <Border Background="#4A3A7A" BorderBrush="#8E78D0" BorderThickness="1.5" CornerRadius="12" Padding="14,8" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                   <Border Width="52" Height="52" CornerRadius="8" BorderThickness="2" BorderBrush="{Binding Border}" Background="#22000000" ClipToBounds="True">
                     <Image Source="{Binding Image}" Stretch="Uniform" Margin="4" IsVisible="{Binding HasImage}" />
                   </Border>
@@ -95,41 +173,46 @@
                     <TextBlock Text="{Binding Description}" Opacity="0.8" FontSize="12" TextWrapping="Wrap" />
                   </StackPanel>
                 </Grid>
+              </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="Talents" Classes="section" />
-          <ItemsControl ItemsSource="{Binding Talents}">
+          <TextBlock Text="Résistances" Classes="section" />
+          <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Left">
+            <ItemsControl ItemsSource="{Binding ResistanceItems}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="20" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:TalentLine">
-                <StackPanel Margin="0,0,0,6">
-                  <TextBlock Text="{Binding Name}" Classes="hot" FontSize="15" />
-                  <TextBlock Text="{Binding Description}" Opacity="0.85" FontSize="12" TextWrapping="Wrap" />
+              <DataTemplate x:DataType="vm:ResistanceItem">
+                <!-- Comme dans le jeu : la grosse icône de l'élément, la valeur en dessous (le nom de l'élément est dans l'info-bulle). -->
+                <StackPanel Spacing="1" ToolTip.Tip="{Binding Text}">
+                  <Image Source="{Binding Icon}" Height="46" Width="46" Stretch="Uniform" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding Percent}" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="17" Foreground="White" HorizontalAlignment="Center">
+                    <TextBlock.Effect><DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="3" Color="#000000" Opacity="1" /></TextBlock.Effect>
+                  </TextBlock>
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="{Binding DecksUsingTitle}" Classes="section" IsVisible="{Binding HasDecksUsing}" />
-          <ItemsControl ItemsSource="{Binding DecksUsing}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:DeckLine">
-                <Button Content="{Binding Label}" Classes="info" Padding="10,3" Margin="0,2" HorizontalContentAlignment="Left"
-                        Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).OpenDeckCommand}"
-                        CommandParameter="{Binding}" ToolTip.Tip="Ouvrir dans le Deck builder" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <Border IsVisible="{Binding HasLore}" Background="#14808080" CornerRadius="6" Padding="10" Margin="0,16,0,0">
-            <StackPanel Spacing="4">
-              <TextBlock Text="{Binding LoreTags}" Classes="hot" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding LoreText}" TextWrapping="Wrap" FontSize="13" Opacity="0.9" />
-            </StackPanel>
-          </Border>
+          </Viewbox>
         </StackPanel>
       </Grid>
+      </StackPanel>
     </ScrollViewer>
-    <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Top" Command="{Binding CloseOverlayCommand}" Padding="10,4" FontSize="16"
-            ToolTip.Tip="Fermer la fiche (Échap ou clic en dehors)" />
+    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,22,0" Spacing="6" Width="48">
+      <Button Content="✕" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding CloseOverlayCommand}" Padding="0,4" FontSize="16"
+              ToolTip.Tip="Fermer la fiche (Échap ou clic en dehors)" />
+      <Button Content="Lore" IsVisible="{Binding HasLore}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,4" FontSize="12"
+              ToolTip.Tip="Lire le lore de la carte">
+        <Button.Flyout>
+          <Flyout Placement="LeftEdgeAlignedTop">
+            <StackPanel MaxWidth="360" Spacing="6">
+              <TextBlock x:DataType="vm:LibraryViewModel" Text="{Binding LoreTags}" Classes="hot" TextWrapping="Wrap" />
+              <TextBlock x:DataType="vm:LibraryViewModel" Text="{Binding LoreText}" TextWrapping="Wrap" FontSize="13" />
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+    </StackPanel>
       </Grid>
       </Border>
     </Border>

@@ -9,32 +9,33 @@
     <StackPanel Margin="24" Spacing="14">
       <StackPanel Spacing="2">
         <TextBlock Classes="title" Text="{Binding Greeting}" FontSize="{StaticResource FontSizeTitle}" />
-        <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource BrushTextSecondary}" />
       </StackPanel>
-      <Border Classes="panel" IsVisible="{Binding HasResume}">
-        <StackPanel Orientation="Horizontal" Spacing="14">
-          <TextBlock Text="Tu travaillais avant de fermer l'application." VerticalAlignment="Center" />
-          <Button Classes="primary" Content="{Binding ResumeLabel}" Command="{Binding ResumeCommand}" Padding="14,6" />
-        </StackPanel>
-      </Border>
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
         <!-- Carte du jour à gauche : elle s'incline avec la souris comme dans la fiche ; seuls le nom, la bordure et l'illustrateur s'affichent. -->
-        <Border Classes="panel">
+        <!-- Ornement : double cadre doré lumineux et étoiles autour du titre, pour mettre la carte du jour en avant. -->
+        <Border x:Name="CardOfDayPanel" Classes="panel" BorderBrush="{StaticResource BrushYellow}" BorderThickness="2" BoxShadow="0 0 22 2 #90FFC93C, inset 0 0 18 0 #30FFC93C">
+          <Grid>
           <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Classes="title glow" Text="Carte du jour" FontSize="20" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" />
+            <!-- Les étoiles encadrent le titre (elles ne touchent plus les bords de la carte). -->
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+              <TextBlock Text="✦" FontSize="16" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" IsHitTestVisible="False" />
+              <TextBlock Classes="title glow" Text="Carte du jour" FontSize="20" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" />
+              <TextBlock Text="✦" FontSize="16" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" IsHitTestVisible="False" />
+            </StackPanel>
             <Border x:Name="CardOfDayBox" Width="280" Height="412" Cursor="Hand" Background="Transparent" ToolTip.Tip="Cliquer pour voir la carte en grand">
               <v:CardFace Item="{Binding CardOfDay}" ImageOverride="{Binding CardOfDayImage}" Credit="{Binding CardOfDayCredit}"
                           ShowName="True" ShowElement="False" ShowIncome="False" ShowRarity="False" HoverZoom="False" Holo="True" />
             </Border>
           </StackPanel>
+          </Grid>
         </Border>
         <!-- Un deck de la collection au hasard (changé à chaque démarrage), agrandi pour remplir la bulle. -->
         <Border Grid.Column="1" Classes="panel">
           <StackPanel Spacing="12" VerticalAlignment="Center">
             <TextBlock Text="{Binding DeckMention}" Classes="hot" FontSize="17" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center" IsVisible="{Binding HasLastDeck}" />
             <TextBlock Classes="title glow" Text="{Binding LastDeckTitle}" FontSize="22" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" IsVisible="{Binding HasLastDeck}" />
-            <Viewbox Stretch="Uniform" MaxHeight="440" IsVisible="{Binding HasLastDeck}">
-              <ItemsControl ItemsSource="{Binding LastDeckChips}" ItemTemplate="{StaticResource DeckChipHome}">
+            <Viewbox Stretch="Uniform" MaxHeight="440" ClipToBounds="False" IsVisible="{Binding HasLastDeck}">
+              <ItemsControl ItemsSource="{Binding LastDeckChips}" ItemTemplate="{StaticResource DeckChipHome}" Margin="0,0,0,16" ClipToBounds="False">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="14" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
               </ItemsControl>
             </Viewbox>
@@ -47,10 +48,13 @@
         </Border>
       </Grid>
       <Border Classes="panel">
-        <StackPanel Orientation="Horizontal" Spacing="10">
+        <!-- Bandeau « breaking news » : l'astuce défile de gauche à droite (s'arrête sous la souris pour pouvoir cliquer sur un nom). -->
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
           <TextBlock Classes="title glow" Text="Astuce" FontSize="{StaticResource FontSizeLead}" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Tip}" TextWrapping="Wrap" VerticalAlignment="Center" />
-        </StackPanel>
+          <Border x:Name="TipViewport" Grid.Column="1" Height="30" ClipToBounds="True" Background="Transparent">
+            <Canvas x:Name="TipTrack" />
+          </Border>
+        </Grid>
       </Border>
       <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
         <Border Classes="panel">
