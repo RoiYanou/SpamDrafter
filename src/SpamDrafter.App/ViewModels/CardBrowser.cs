@@ -14,7 +14,32 @@ public sealed class ToggleOption : ViewModelBase
 {
     private bool _checked;
     private readonly Action _changed;
-    public ToggleOption(string id, string label, Avalonia.Media.Imaging.Bitmap? icon, Action changed) { Id = id; Label = label; Icon = icon; _changed = changed; }
+    public ToggleOption(string id, string label, Avalonia.Media.Imaging.Bitmap? icon, Action changed)
+    {
+        Id = id; Label = label; Icon = icon; _changed = changed; IconGray = Icons.Gray(icon);
+        ToggleCommand = new RelayCommand(_ => Toggle());
+    }
+    private IReadOnlyList<ToggleOption> _group = Array.Empty<ToggleOption>();
+    internal void SetGroup(IReadOnlyList<ToggleOption> group) => _group = group;
+    /// <summary>Icône en noir et blanc, montrée quand le logo est désactivé.</summary>
+    public Avalonia.Media.Imaging.Bitmap? IconGray { get; }
+    /// <summary>Logo allumé (en couleur) : tous le sont par défaut (aucun filtre) ; sinon seuls les logos cochés le sont.</summary>
+    public bool IsActive => _group.Count == 0 || !_group.Any(c => c._checked) || _checked;
+    public Avalonia.Media.Imaging.Bitmap? ShownIcon => IsActive || IconGray is null ? Icon : IconGray;
+    public System.Windows.Input.ICommand ToggleCommand { get; }
+    internal void RefreshActive() { Raise(nameof(IsActive)); Raise(nameof(ShownIcon)); }
+    /// <summary>Clic sur le logo : depuis « tous allumés », le premier clic ne garde que ce logo ; ensuite il allume ou éteint ce logo. Tous éteints ou tous allumés = aucun filtre : tout se rallume.</summary>
+    private void Toggle()
+    {
+        if (!_group.Any(c => c._checked)) { foreach (var c in _group) c._checked = ReferenceEquals(c, this); }
+        else
+        {
+            _checked = !_checked;
+            if (!_group.Any(c => c._checked) || _group.All(c => c._checked)) foreach (var c in _group) c._checked = false;
+        }
+        foreach (var c in _group) { c.Raise(nameof(IsChecked)); c.RefreshActive(); }
+        _changed();
+    }
     public string Id { get; }
     public string Label { get; }
     public Avalonia.Media.Imaging.Bitmap? Icon { get; }
@@ -46,6 +71,8 @@ public sealed class CardBrowser : ViewModelBase
             .Concat(kb.Rarities.Select(r => new FilterOption(r.Id, kb.RarityName(r.Id), Icons.Load(kb, r.Icon, 32)))).ToList();
         ElementChoices = kb.Elements.Select(e => new ToggleOption(e.Id, kb.ElementName(e.Id), Icons.Load(kb, e.Icon, 32), ChoiceChanged)).ToList();
         RarityChoices = kb.Rarities.Select(r => new ToggleOption(r.Id, kb.RarityName(r.Id), Icons.Load(kb, r.Icon, 32), ChoiceChanged)).ToList();
+        foreach (var c in ElementChoices) c.SetGroup(ElementChoices);
+        foreach (var c in RarityChoices) c.SetGroup(RarityChoices);
         _element = ElementOptions[0];
         _rarity = RarityOptions[0];
         SpeciesOptions = LoreOptions("Toutes les espèces", all.Select(i => i.Lore?.Species));
@@ -70,6 +97,7 @@ public sealed class CardBrowser : ViewModelBase
     {
         var set = ids.ToHashSet();
         foreach (var c in choices) c.SetSilently(set.Contains(c.Id));
+        foreach (var c in choices) c.RefreshActive();
     }
     public IReadOnlyList<FilterOption> ElementOptions { get; }
     public IReadOnlyList<FilterOption> RarityOptions { get; }
@@ -222,12 +250,29 @@ public sealed class CardBrowser : ViewModelBase
 
     private void Refresh()
     {
-        Items.Clear();
         var els = Checked(ElementChoices); var ras = Checked(RarityChoices);
         var shown = _all.Where(c => (_collection?.Shows(c) ?? true) && (els.Count == 0 || els.Contains(c.Card.Element)) && (ras.Count == 0 || ras.Contains(c.Card.Rarity))
                                     && c.Matches(_search, null, null, _species?.Id, _region?.Id, _chronology?.Id));
-        foreach (var c in Sorted(shown)) Items.Add(c);
+        SyncItems(Sorted(shown).ToList());
         Raise(nameof(CountText)); Raise(nameof(HasLoreFilter)); Raise(nameof(AdvancedHeader)); Raise(nameof(LoreSummary)); Raise(nameof(AnyFilterActive)); Raise(nameof(FiltersToggleText));
+    }
+
+    /// <summary>
+    /// Met la liste affichée à jour en ne touchant qu'à ce qui change : les cartes qui disparaissent sont retirées, celles qui apparaissent insérées,
+    /// les autres gardent leur contrôle déjà construit (au lieu de tout vider puis de tout recréer carte par carte : c'était le petit freeze du filtre).
+    /// </summary>
+    private void SyncItems(List<CardItem> target)
+    {
+        var keep = target.ToHashSet();
+        for (var i = Items.Count - 1; i >= 0; i--)
+            if (!keep.Contains(Items[i])) Items.RemoveAt(i);
+        for (var i = 0; i < target.Count; i++)
+        {
+            if (i < Items.Count && ReferenceEquals(Items[i], target[i])) continue;
+            var at = -1;
+            for (var j = i + 1; j < Items.Count; j++) if (ReferenceEquals(Items[j], target[i])) { at = j; break; }
+            if (at >= 0) Items.Move(at, i); else Items.Insert(i, target[i]);
+        }
     }
 
     /// <summary>Tri choisi. À valeur égale, l'ordre du jeu : le résultat ne dépend jamais du hasard.</summary>

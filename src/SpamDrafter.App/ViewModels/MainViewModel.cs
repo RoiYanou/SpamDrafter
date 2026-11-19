@@ -68,6 +68,7 @@ public sealed class MainViewModel : ViewModelBase
             var talentsTab = new TalentsViewModel(kb, items) { Collection = Collection };
             LibraryTabs = new LibraryTabsViewModel(Library, talentsTab, new ToxViewModel(kb, items), new ArtistsViewModel(kb, items));
             LibraryTabs.SelectRandomRows();
+            foreach (var item in items) item.PreloadThumbnail();   // miniatures décodées en arrière-plan dès le démarrage
             QuickDetail = new LibraryViewModel(new CardBrowser(items, kb), kb, decks, items) { Collection = Collection };
             LibraryTabs.CardOpener = OpenCardDetail;   // un clic sur une carte dans Talents, Tox, Artistes ou une astuce ouvre la même fiche que le clic droit
             DeckBuilder = new DeckBuilderViewModel(_browsers["builder"], items, kb, decks);
@@ -97,11 +98,12 @@ public sealed class MainViewModel : ViewModelBase
                 // Onglet Tester (phase 14) : mêmes decks, recherche et filtres que le Deck builder.
                 Tester = new TesterViewModel(decks, DeckBuilder, coordinator, history);
                 Tester.OpenRequested += deck => { DeckBuilder.RequestOpen(deck); SelectedTab = 1; };
-                Generator.TestRequested += deck => { if (Tester.Select(deck)) SelectedTab = 5; };   // « Tester ce deck → » du Générateur
+                Generator.TestRequested += deck => { if (Tester.Select(deck)) SelectedTab = 5; };
+                Generator.OpenCardRequested += OpenCardDetail;   // un clic sur le nom d'une carte imposée ouvre sa fiche   // « Tester ce deck → » du Générateur
             }
             catch (Exception e)
             {
-                GeneratorError = "Générateur indisponible : " + e.Message;
+                GeneratorError = "Cuisine indisponible : " + e.Message;
             }
             var revision = installed is { } i && i.Directory == dir ? $" · données révision {i.Manifest.Revision}" : "";
             Header = $"SPAM {kb.Manifest.GameVersion} · {kb.Cards.Count} cartes{revision}";

@@ -30,20 +30,25 @@
           <TextBlock Text="{Binding WantedText}" Classes="hot" VerticalAlignment="Center" />
           <Button Grid.Column="1" Content="Tout effacer" Command="{Binding ClearCommand}" Classes="danger" Padding="10,5" />
         </Grid>
+        <!-- Cartes recherchées : comme « Deck en cours » du Builder (carte, ✕ dans le coin, talent dessous pour préciser la recherche). -->
         <ItemsControl ItemsSource="{Binding Wanted}">
+          <!-- Quatre emplacements de même largeur sur une seule ligne : les cartes s'adaptent à la largeur disponible. -->
           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            <ItemsPanelTemplate><UniformGrid Columns="4" Rows="1" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:CardItem">
-              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="8" Margin="0,0,10,10">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <ContentControl Width="58" Height="82" Content="{Binding}" ContentTemplate="{StaticResource CardThumbQuiet}" />
-                  <TextBlock Text="{Binding Name}" Classes="title" VerticalAlignment="Center" />
-                  <Button Content="✕" Classes="danger" VerticalAlignment="Center"
+            <DataTemplate x:DataType="vm:WantedSlotViewModel">
+              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="8,26,8,8" Margin="3,4,3,6">
+                <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                  <Viewbox Stretch="Uniform" MaxWidth="112" HorizontalAlignment="Center">
+                    <ContentControl Width="112" Height="165" Content="{Binding Card}" ContentTemplate="{StaticResource CardThumbFlat}" />
+                  </Viewbox>
+                  <Button Content="✕" Classes="danger" ClickMode="Press" MinWidth="30" MinHeight="26" HorizontalContentAlignment="Center" HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Margin="0,-24,-4,0" Padding="6,2" FontSize="12" ZIndex="5" ToolTip.Tip="Retirer cette carte de la recherche"
                           Command="{Binding $parent[UserControl].((vm:DrafterViewModel)DataContext).RemoveCommand}"
                           CommandParameter="{Binding}" />
-                </StackPanel>
+                  <ComboBox Grid.Row="1" ItemsSource="{Binding TalentOptions}" SelectedItem="{Binding Talent}" HorizontalAlignment="Stretch" FontSize="12" />
+                </Grid>
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -57,7 +62,7 @@
             <v:Collapse.Header>
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBlock Text="Tri et filtres" />
-                <TextBlock Text="● filtre actif" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
+                <TextBlock Text="{Binding DeckFiltersLabel}" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
               </StackPanel>
             </v:Collapse.Header>
             <StackPanel Spacing="8" Margin="10,8,10,10">
@@ -84,10 +89,9 @@
               <Grid Height="60" ClipToBounds="True">
                 <v:DeckStrip Chips="{Binding Deck.Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" />
                 <Border Width="4" Margin="14,9,0,9" CornerRadius="2" HorizontalAlignment="Left" Background="{Binding Deck.Id, Converter={x:Static vm:DeckDecor.ColorBrush}}" />
-                <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7" VerticalAlignment="Center">
-                  <TextBlock Text="★" Foreground="#FFD35A" IsVisible="{Binding Deck.Favorite}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{Binding Deck.Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />
-                  <v:MarqueeText Grid.Column="2" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}">
+                <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
+                  <ContentControl Content="{Binding Deck}" ContentTemplate="{StaticResource DeckMarks}" />
+                  <v:MarqueeText Grid.Column="1" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}">
                     <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>
                   </v:MarqueeText>
                 </Grid>

@@ -58,7 +58,7 @@ public partial class CardGridPanel : UserControl
         List.DoubleTapped += (_, _) => { if (!ClickToAdd) CardActivated?.Invoke(this, EventArgs.Empty); };
         List.AddHandler(PointerPressedEvent, OnTilePressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         List.SizeChanged += (_, _) => Fit();
-        List.TemplateApplied += (_, _) => { if (List.Scroll is ScrollViewer sv) sv.ScrollChanged += (_, _) => Fit(); Fit(); };
+        List.TemplateApplied += (_, _) => { if (List.Scroll is ScrollViewer sv) { sv.ScrollChanged += (_, _) => { ElementSheen.NoteScroll(); Fit(); }; } Fit(); };
         PropertyChanged += (_, e) => { if (e.Property == TileWidthProperty || e.Property == TileHeightProperty || e.Property == ColumnsProperty) Fit(); };
         SearchBox.KeyDown += (_, e) =>
         {

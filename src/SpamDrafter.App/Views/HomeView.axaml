@@ -55,7 +55,7 @@
             </StackPanel>
             <StackPanel Spacing="14" HorizontalAlignment="Center" IsVisible="{Binding ShowCreatePrompt}">
               <TextBlock Text="Pas de deck ? Essaye d'en créer un !" Classes="title glow" FontSize="24" Foreground="{StaticResource BrushYellow}" TextAlignment="Center" TextWrapping="Wrap" />
-              <Button Classes="primary" Content="Aller au Deck builder" Command="{Binding OpenBuilderCommand}" HorizontalAlignment="Center" Padding="20,10" FontSize="16" />
+              <Button Classes="primary" Content="Aller au Deck Builder" Command="{Binding OpenBuilderCommand}" HorizontalAlignment="Center" Padding="20,10" FontSize="16" />
             </StackPanel>
           </StackPanel>
         </Border>

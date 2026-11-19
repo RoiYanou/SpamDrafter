@@ -117,7 +117,7 @@ public static class GrandCuisinier
         var owned = s.Owned;
         var allIds = kb.Cards.Select(c => c.Id).Where(id => owned is null || owned.ContainsKey(id)).Order(StringComparer.Ordinal).ToArray();
         if (owned is not null && allIds.Length < size)
-            throw new ArgumentException($"Il faut au moins {size} cartes possédées pour générer un deck (tu en as {allIds.Length}).");
+            throw new ArgumentException($"Il faut au moins {size} cartes possédées pour cuisiner un deck (tu en as {allIds.Length}).");
         var free = size - selection.Count;
         var guide = s.Guided > 0 ? new Guide(CardProfiles.For(kb), s.Guided) : null;
 
@@ -238,7 +238,7 @@ public static class GrandCuisinier
         if (selection.Count is 0 || selection.Count > size)
             throw new ArgumentException($"La sélection doit contenir de 1 à {size} cartes.");
         if (selection.Select(f => f.CardId).Distinct().Count() != selection.Count)
-            throw new ArgumentException("Une carte ne peut pas être choisie deux fois (D-020).");
+            throw new ArgumentException("Une carte ne peut pas être choisie deux fois.");
         foreach (var f in selection)
         {
             var card = kb.Cards.FirstOrDefault(c => c.Id == f.CardId) ?? throw new ArgumentException($"Carte inconnue : {f.CardId}.");

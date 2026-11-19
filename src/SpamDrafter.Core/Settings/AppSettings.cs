@@ -41,7 +41,7 @@ public sealed class AppSettings
     public string MusicTrack { get; set; } = "";
     /// <summary>Contour des cartes : « rarity » (par défaut, couleur de la rareté), « black » ou « multicolor ».</summary>
     public string CardFrame { get; set; } = "rarity";
-    /// <summary>« Réduire les animations » : coupe l'inclinaison, le retournement, le reflet, les étoiles et les transitions.</summary>
+    /// <summary>« Désactiver les animations » : coupe l'inclinaison, le retournement, le reflet, les étoiles et les transitions.</summary>
     public bool ReduceAnimations { get; set; }
     /// <summary>Thème de couleur : « default » (violet), un élément : fire, light, earth, nature, shadow, water.</summary>
     public string ElementTheme { get; set; } = "default";

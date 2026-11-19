@@ -138,6 +138,32 @@ public static class Icons
         });
     }
 
+    /// <summary>Version en noir et blanc d'une icône (logos de filtre désactivés) ; null si l'image ne peut pas être lue.</summary>
+    public static Bitmap? Gray(Bitmap? s)
+    {
+        if (s is null) return null;
+        try
+        {
+            int w = s.PixelSize.Width, h = s.PixelSize.Height, stride = w * 4;
+            var buf = new byte[stride * h];
+            var handle = System.Runtime.InteropServices.GCHandle.Alloc(buf, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try { s.CopyPixels(new Avalonia.PixelRect(0, 0, w, h), handle.AddrOfPinnedObject(), buf.Length, stride); }
+            finally { handle.Free(); }
+            var format = s.Format ?? Avalonia.Platform.PixelFormat.Bgra8888;
+            for (var i = 0; i < buf.Length; i += 4)
+            {
+                // Image prémultipliée : le gris se calcule directement sur les composantes (l'opacité ne change pas).
+                var gray = (byte)Math.Min(255, (buf[i] + buf[i + 1] + buf[i + 2]) / 3);
+                buf[i] = buf[i + 1] = buf[i + 2] = gray;
+            }
+            var wb = new Avalonia.Media.Imaging.WriteableBitmap(s.PixelSize, new Avalonia.Vector(96, 96), format, Avalonia.Platform.AlphaFormat.Premul);
+            using (var fb = wb.Lock())
+                for (var y = 0; y < h; y++) System.Runtime.InteropServices.Marshal.Copy(buf, y * stride, fb.Address + y * fb.RowBytes, stride);
+            return wb;
+        }
+        catch (Exception) { return null; }
+    }
+
     public static Bitmap? Element(KnowledgeBase kb, string? elementId, int height = 40) =>
         elementId is null ? null : Load(kb, kb.Element(elementId)?.Icon, height);
 

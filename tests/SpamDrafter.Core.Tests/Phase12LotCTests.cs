@@ -292,8 +292,8 @@ public class Phase12LotCTests : IDisposable
         w.Vm.Browser.Selected = used;
         Assert.Equal(2, w.Vm.DecksUsing.Count);
         Assert.Equal("Dans mes decks (2)", w.Vm.DecksUsingTitle);
-        Assert.Contains(w.Vm.DecksUsing, l => l.Label == "★ Mon feu (brouillon)");
-        Assert.Contains(w.Vm.DecksUsing, l => l.Label.StartsWith("⚙ Généré"));
+        Assert.Contains(w.Vm.DecksUsing, l => l.Label == "Mon feu (brouillon)" && l.Deck.Favorite);
+        Assert.Contains(w.Vm.DecksUsing, l => l.Deck.IsGenerated && l.Label.StartsWith("Généré"));
         Assert.DoesNotContain(w.Vm.DecksUsing, l => l.Label.Contains("Sans elle"));
 
         Deck? opened = null;

@@ -1,3 +1,4 @@
+using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -45,6 +46,7 @@ public partial class MainWindow : Window
                 page.SetCurrentValue(IsVisibleProperty, true);
                 await Task.Delay(40);
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                await WaitImagesAsync();
                 if (tab == 0 && vm.LibraryTabs is { } tabs)
                 {
                     // Sous-onglets Talents, Tox, Artistes : construits à leur première sélection, donc on les parcourt une fois.
@@ -54,6 +56,7 @@ public partial class MainWindow : Window
                         tabs.SelectedTab = i;
                         await Task.Delay(40);
                         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                        await WaitImagesAsync();
                     }
                     tabs.SelectedTab = original;
                 }
@@ -80,8 +83,60 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Attend (au plus 2,5 s) que les images de cartes demandées soient chargées, pour qu'elles ne tombent pas toutes d'un coup au premier clic.</summary>
+    private static async Task WaitImagesAsync()
+    {
+        var until = Environment.TickCount64 + 2500;
+        while (CardItem.PendingLoads > 0 && Environment.TickCount64 < until) await Task.Delay(40);
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+    }
+
+    /// <summary>Contact : copie le nom Discord dans le presse-papiers.</summary>
+    private async void CopyDiscord_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        try { if (Clipboard is { } cb) await cb.SetTextAsync("RoiYanou"); } catch (Exception) { }
+    }
+
+    /// <summary>Contact : ouvre la page GitHub du projet dans le navigateur.</summary>
+    private async void OpenGitHub_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        try { await Launcher.LaunchUriAsync(new Uri(SpamDrafter.Core.Updates.UpdateSource.GitHubRepository)); } catch (Exception) { }
+    }
+
+    /// <summary>
+    /// Transition entre « Toutes les cartes et talents » et « Cartes et talents possédés » : les listes se reconstruisent d'un coup ;
+    /// l'écran est mis à 0 puis revient en fondu, au lieu d'un saut brutal. Sans effet avec « Désactiver les animations ».
+    /// </summary>
+    private void HookModeTransition()
+    {
+        if (DataContext is not MainViewModel vm) return;
+        void Hook()
+        {
+            if (vm.Collection is not { } c) return;
+            c.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(c.OwnedOnly) || Motion.Reduce) return;
+                PagesHost.Transitions = null;
+                PagesHost.Opacity = 0;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    PagesHost.Transitions = new Avalonia.Animation.Transitions
+                    {
+                        new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(320), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
+                    };
+                    PagesHost.Opacity = 1;
+                }, DispatcherPriority.Render);
+            };
+        }
+        if (vm.IsLoaded) Hook();
+        else vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(vm.IsLoaded) && vm.IsLoaded) Hook(); };
+    }
+
     private void WireSounds()
     {
+        ContactButton.Flyout!.Opened += (_, _) => Rail.Classes.Set("pinned", true);
+        ContactButton.Flyout!.Closed += (_, _) => Rail.Classes.Set("pinned", false);
+        AutoScroll.Install(this);   // clic molette : défilement automatique, comme sur une page web
         // Clic droit sur une carte, dans n'importe quel onglet : sa fiche détaillée s'ouvre dans la Bibliothèque.
         AddHandler(PointerPressedEvent, (_, e) =>
         {
@@ -97,7 +152,20 @@ public partial class MainWindow : Window
             if (e.Key == Avalonia.Input.Key.F && e.KeyModifiers == Avalonia.Input.KeyModifiers.Control) { FocusSearch(); e.Handled = true; }
         };
         // Titre de l'application : un clic le fait rebondir et joue l'un de trois petits sons voisins, au hasard.
-        AppTitle.PointerPressed += (_, _) => { Bounce.Run(AppTitle); Sounds.PlayAnyTitle(); };
+        BrandBox.PointerPressed += (_, _) => { Bounce.Run(BrandBox); Sounds.PlayAnyTitle(); };
+        // Logo de la barre latérale : animé tant que la barre est survolée (ou que le menu Contact est ouvert).
+        var brand = new BrandAnimator(PinkPath, YellowPath, GlyphPath, PinkBox, LettersClip, LettersRow, RaysBox, RaysPath, CrownPath);
+        var icons = new NavIconAnimator();
+        icons.AddHome(NavHome, HomeHole, HomeDoor);
+        icons.AddBook(NavLibrary, BookGroup, BookCover, BookCoverOuter, BookCoverInner);
+        icons.AddBuilder(NavBuilder, BuilderSq1, BuilderSq2, BuilderSq3, BuilderSq4);
+        icons.AddDrafter(NavDrafter, DrafterCanvas, DrafterPink, DrafterHeadPink, DrafterPurpleA, DrafterPurpleB, DrafterHeadPurple);
+        icons.AddContact(ContactButton, ContactDot1, ContactDot2, ContactDot3);
+        icons.Kick();   // état de départ (porte et livre ouverts si leur onglet est celui choisi)
+        Rail.PointerEntered += (_, _) => { brand.Hover = true; brand.Kick(); };
+        Rail.PointerExited += (_, _) => { brand.Hover = Rail.Classes.Contains("pinned"); brand.Kick(); };
+        ContactButton.Flyout!.Opened += (_, _) => { brand.Hover = true; brand.Kick(); };
+        ContactButton.Flyout!.Closed += (_, _) => { brand.Hover = Rail.IsPointerOver; brand.Kick(); };
         AddHandler(Button.ClickEvent, (_, _) => Sounds.Play(SoundKind.Click), handledEventsToo: true);
         AddHandler(SelectingItemsControl.SelectionChangedEvent, (_, e) =>
         {
@@ -140,7 +208,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         WireSounds();
-        Opened += (_, _) => { RestoreWindow(); _ = Task.Run(Sounds.Warm); _ = PrewarmAsync(); };
+        Opened += (_, _) => { RestoreWindow(); _ = Task.Run(Sounds.Warm); _ = PrewarmAsync(); HookModeTransition(); };
         Closed += (_, _) => { SaveWindow(); SpamDrafter.App.ViewModels.MusicPlayer.Shutdown(); };
         // Phase 12, lot A : fermer la fenêtre avec un deck modifié et non sauvegardé demande d'abord confirmation.
         Closing += (_, e) =>

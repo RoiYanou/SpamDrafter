@@ -82,7 +82,7 @@ public sealed class LibraryViewModel : ViewModelBase
         OpenDeckCommand = new RelayCommand(p => { if (p is DeckLine l) OpenDeckRequested?.Invoke(l.Deck); });
         browser.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(CardBrowser.Selected)) { UpdateDetail(); Raise(nameof(HasOverlay)); }
+            if (e.PropertyName == nameof(CardBrowser.Selected)) { if (Browser.Selected is null) SeeCard = false; UpdateDetail(); Raise(nameof(HasOverlay)); }
         };
         if (decks is not null) decks.Changed += (_, _) => UpdateDecksUsing();
     }
@@ -113,6 +113,10 @@ public sealed class LibraryViewModel : ViewModelBase
     private RelayCommand? _openArtist;
 
     public Bitmap? Image { get => _image; private set => Set(ref _image, value); }
+    private bool _seeCard;
+    /// <summary>Case « Voir la carte » : cochée, la carte de la fiche n'affiche plus que l'illustration (ni élément, ni Spamtons, ni PV, ni talents, ni capacités).</summary>
+    public bool SeeCard { get => _seeCard; set { if (Set(ref _seeCard, value)) Raise(nameof(ShowCardInfo)); } }
+    public bool ShowCardInfo => !_seeCard;
 
     private IReadOnlyList<SkinOption> _skinOptions = Array.Empty<SkinOption>();
     private SkinOption? _selectedSkinOption;
@@ -199,9 +203,9 @@ public sealed class LibraryViewModel : ViewModelBase
         Raise(nameof(ArtistCredit)); Raise(nameof(HasArtistCredit));
     }
 
-    /// <summary>Nom d'un skin : « Skin alternatif », « Skin alternatif (peinture) » pour les variantes peintes.</summary>
+    /// <summary>Nom d'un skin : « Skin alternatif », « Skin alternatif (paint) » pour les variantes peintes.</summary>
     private static string SkinLabel(CardSkin skin, int index, int count) =>
-        (skin.Id.EndsWith("_paint", StringComparison.Ordinal) ? "Skin alternatif (peinture)" : "Skin alternatif") +
+        (skin.Id.EndsWith("_paint", StringComparison.Ordinal) ? "Skin alternatif (paint)" : "Skin alternatif") +
         (skin.Animated ? " animé" : "");
     public string Title { get; private set; } = "Choisis une carte dans la liste";
     public string Stats { get; private set; } = "";
@@ -355,7 +359,7 @@ public sealed class LibraryViewModel : ViewModelBase
             ? Array.Empty<DeckLine>()
             : _decks.Decks.Where(d => d.Slots.Any(s => s.CardId == id))
                 .OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
-                .Select(d => new DeckLine(d, (d.Favorite ? "★ " : "") + (d.IsGenerated ? "⚙ " : "") + d.Name +
+                .Select(d => new DeckLine(d, d.Name +
                                             (d.Slots.Count < Deck.MaxCards ? " (brouillon)" : "")))
                 .ToList();
         Raise(nameof(DecksUsing)); Raise(nameof(HasDecksUsing)); Raise(nameof(DecksUsingTitle));

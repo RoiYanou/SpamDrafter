@@ -20,6 +20,20 @@ public class DeckSearchTests
     private static string[] Names(IEnumerable<DeckMatch> m) => m.Select(x => x.Deck.Name).ToArray();
 
     [Fact]
+    public void Un_talent_precise_la_recherche_et_un_talent_vide_laisse_tout_passer()
+    {
+        var decks = new[]
+        {
+            new Deck { Name = "T1", Slots = new List<DeckSlot> { new("a", "t1"), new("b", null) } },
+            new Deck { Name = "T2", Slots = new List<DeckSlot> { new("a", "t2"), new("b", null) } },
+        };
+        Assert.Equal(new[] { "T1" }, Names(DeckSearch.Find(decks, new (string, string?)[] { ("a", "t1") })));
+        Assert.Equal(new[] { "T1", "T2" }, Names(DeckSearch.Find(decks, new (string, string?)[] { ("a", null) })));
+        Assert.Empty(DeckSearch.Find(decks, new (string, string?)[] { ("a", "t3") }));
+        Assert.Equal(new[] { "T2" }, Names(DeckSearch.Find(decks, new (string, string?)[] { ("a", "t2"), ("b", null) })));
+    }
+
+    [Fact]
     public void Une_carte_trouve_les_decks_qui_la_contiennent()
         => Assert.Equal(new[] { "Alpha", "Zèbre", "Brouillon" }, Names(DeckSearch.Find(Decks, new[] { "a" })));
 

@@ -32,8 +32,8 @@ public sealed class DrafterViewModel : ViewModelBase
             };
         _byId = items.ToDictionary(i => i.Card.Id);
         AddCommand = new RelayCommand(_ => AddSelected());
-        RemoveCommand = new RelayCommand(p => { if (p is CardItem c) { Wanted.Remove(c); Search(); } });
-        ClearCommand = new RelayCommand(_ => { Wanted.Clear(); Search(); });
+        RemoveCommand = new RelayCommand(p => { if (p is WantedSlotViewModel w) { Wanted.Remove(w); Raise(nameof(WantedText)); SearchSoon(); } });
+        ClearCommand = new RelayCommand(_ => { Wanted.Clear(); Raise(nameof(WantedText)); SearchSoon(); });
         OpenCommand = new RelayCommand(p => { if (p is DrafterResult r) OpenRequested?.Invoke(r.Deck); });
         library.Changed += (_, _) => Search();
         Search();
@@ -53,7 +53,7 @@ public sealed class DrafterViewModel : ViewModelBase
     private bool OwnedOnly => _collection?.OwnedOnly == true;
     private IReadOnlyList<Deck> Source => _builder is null ? _library.Decks.Where(d => _collection?.ShowsDeck(d) ?? true).ToList() : _builder.SavedDecks.ToList();
     public CardBrowser Browser { get; }
-    public ObservableCollection<CardItem> Wanted { get; } = new();
+    public ObservableCollection<WantedSlotViewModel> Wanted { get; } = new();
     public ObservableCollection<DrafterResult> Results { get; } = new();
 
     public RelayCommand AddCommand { get; }
@@ -72,9 +72,21 @@ public sealed class DrafterViewModel : ViewModelBase
         var item = Browser.Selected;
         if (item is null) { Message = "Choisis d'abord une carte dans la liste."; return; }
         if (Wanted.Count >= Deck.MaxCards) { Message = $"Une recherche porte sur {Deck.MaxCards} cartes au plus."; return; }
-        if (Wanted.Contains(item)) { Message = "Cette carte fait déjà partie de la recherche."; return; }
-        Wanted.Add(item);
+        if (Wanted.Any(w => w.Card == item)) { Message = "Cette carte fait déjà partie de la recherche."; return; }
+        Wanted.Add(new WantedSlotViewModel(item, _kb, OwnedOnly ? _collection?.AllowedTalents(item) : null, SearchSoon));
         Search();
+    }
+
+    private bool _soonPending;
+    /// <summary>
+    /// Relance la recherche un instant plus tard (les clics sur ✕ restent instantanés) : plusieurs retraits de suite ne déclenchent qu'une seule recherche,
+    /// qui reconstruit la liste des decks (le travail le plus lourd).
+    /// </summary>
+    private void SearchSoon()
+    {
+        if (_soonPending) return;
+        _soonPending = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => { _soonPending = false; Search(); }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void Search()
@@ -84,12 +96,12 @@ public sealed class DrafterViewModel : ViewModelBase
         var source = Source;
         IEnumerable<DeckMatch> matches = Wanted.Count == 0
             ? source.Select(d => new DeckMatch(d, d.Slots.Count == Deck.MaxCards))      // aucune carte choisie : tous les decks
-            : DeckSearch.Find(source, Wanted.Select(w => w.Card.Id).ToList())
+            : DeckSearch.Find(source, Wanted.Select(w => (w.Card.Card.Id, w.Talent.Id)).ToList())
                 .OrderBy(m => source.ToList().FindIndex(d => d.Id == m.Deck.Id));           // l'ordre choisi dans « Mes decks »
         foreach (var m in matches)
             Results.Add(new DrafterResult(m.Deck, m.Deck.Name,
                 (m.IsComplete ? "Complet" : $"Brouillon · {m.Deck.Slots.Count} carte(s)") +
-                (m.Deck.Origin == DeckOrigin.Generated ? " · généré" : " · créé à la main"),
+                (m.Deck.Origin == DeckOrigin.Generated ? " · deck du chef" : " · créé à la main"),
                 m.Deck.Slots.Select(Describe).ToList()));
         if (Wanted.Count == 0)
         {
@@ -112,4 +124,27 @@ public sealed class DrafterViewModel : ViewModelBase
         var name = _byId.TryGetValue(s.CardId, out var c) ? c.Name : s.CardId;
         return s.TalentId is null ? $"{name} — aucun talent" : $"{name} — {_kb.TalentName(s.TalentId)}";
     }
+}
+
+/// <summary>
+/// Une carte de la recherche du Drafter, comme dans « Deck en cours » du Builder : la carte et, dessous, le talent qu'on veut y voir
+/// (« Talent indifférent » : les decks qui ont cette carte avec n'importe quel talent).
+/// </summary>
+public sealed class WantedSlotViewModel : ViewModelBase
+{
+    private TalentOption _talent;
+    private readonly Action _changed;
+
+    public WantedSlotViewModel(CardItem card, KnowledgeBase kb, IReadOnlyList<string>? allowedTalents, Action changed)
+    {
+        Card = card; _changed = changed;
+        TalentOptions = new[] { new TalentOption(null, "Tous") }
+            .Concat(card.Card.Talents.Select((t, i) => (t, i)).Where(x => allowedTalents is null || allowedTalents.Contains(x.t))
+                .Select(x => new TalentOption(x.t, $"{x.i + 1}. {kb.TalentName(x.t)}"))).ToList();
+        _talent = TalentOptions[0];
+    }
+
+    public CardItem Card { get; }
+    public IReadOnlyList<TalentOption> TalentOptions { get; }
+    public TalentOption Talent { get => _talent; set { if (value is not null && Set(ref _talent, value)) _changed(); } }
 }

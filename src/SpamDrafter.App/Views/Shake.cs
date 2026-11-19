@@ -7,7 +7,7 @@ namespace SpamDrafter.App.Views;
 
 /// <summary>
 /// Secousse douce d'un champ invalide (phase 13) : trois allers-retours en 350 ms, à la place d'une fenêtre d'erreur.
-/// Sans effet quand « Réduire les animations » est coché.
+/// Sans effet quand « Désactiver les animations » est coché.
 /// </summary>
 public static class Shake
 {

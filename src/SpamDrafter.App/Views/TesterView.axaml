@@ -25,7 +25,7 @@
             <v:Collapse.Header>
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBlock Text="Tri et filtres" />
-                <TextBlock Text="● filtre actif" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
+                <TextBlock Text="{Binding DeckFiltersLabel}" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
               </StackPanel>
             </v:Collapse.Header>
             <StackPanel Spacing="8" Margin="10,8,10,10">
@@ -46,10 +46,9 @@
             <Grid Height="60" ClipToBounds="True">
               <v:DeckStrip Chips="{Binding Deck.Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" />
               <Border Width="4" Margin="14,9,0,9" CornerRadius="2" HorizontalAlignment="Left" Background="{Binding Deck.Id, Converter={x:Static vm:DeckDecor.ColorBrush}}" />
-              <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
-                <TextBlock Text="★" Foreground="#FFD35A" IsVisible="{Binding Deck.Favorite}" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Text="{Binding Deck.Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />
-                <v:MarqueeText Grid.Column="2" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}">
+              <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
+                <ContentControl Content="{Binding Deck}" ContentTemplate="{StaticResource DeckMarks}" />
+                <v:MarqueeText Grid.Column="1" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}">
                   <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>
                 </v:MarqueeText>
               </Grid>

@@ -3,7 +3,7 @@ using Avalonia.Controls;
 namespace SpamDrafter.App.Views;
 
 /// <summary>
-/// Réglage « Réduire les animations » (phase 13, D-078) : vrai = pas d'inclinaison, de retournement ni d'étoiles qui scintillent.
+/// Réglage « Désactiver les animations » (phase 13, D-078) : vrai = pas d'inclinaison, de retournement ni d'étoiles qui scintillent.
 /// Un seul interrupteur pour toutes les animations ; les vues le consultent, elles ne gardent pas leur propre réglage.
 /// </summary>
 public static class Motion
@@ -20,7 +20,7 @@ public static class Motion
 /// <summary>
 /// Transition d'entrée d'une page (changement d'onglet) : fondu + glissement vers le haut, 300 ms, décélération douce. Pilotée par un
 /// minuteur (comme le retournement de la carte) : la page rejoue l'effet à chaque fois qu'elle devient visible ou qu'elle est (ré)attachée.
-/// « Réduire les animations » la coupe. Utilisation : <c>v:PageFx.Enter="True"</c>.
+/// « Désactiver les animations » la coupe. Utilisation : <c>v:PageFx.Enter="True"</c>.
 /// </summary>
 public static class PageFx
 {

@@ -9,7 +9,7 @@ namespace SpamDrafter.App.Views;
 /// Texture animée du fond, propre à chaque thème et dessinée derrière les particules : nébuleuse violette (défaut), vagues et reflets (eau),
 /// flammes qui montent (feu), prairie sous le vent et lucioles (nature), rayons dorés qui tournent (lumière), strates et poussière
 /// (terre), sceau occulte qui tourne (ombre). Très douce et peu contrastée, pour ne jamais gêner la lecture ; mouvements lents, redessinée une quinzaine
-/// de fois par seconde. « Réduire les animations » la fige.
+/// de fois par seconde. « Désactiver les animations » la fige.
 /// </summary>
 public sealed class ThemeTexture : Control
 {

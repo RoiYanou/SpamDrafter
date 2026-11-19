@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SpamDrafter.App.ViewModels"
              xmlns:v="using:SpamDrafter.App.Views"
+             xmlns:cd="using:SpamDrafter.Core.Decks"
              x:Class="SpamDrafter.App.App"
              RequestedThemeVariant="Dark">
   <Application.Styles>
@@ -61,6 +62,19 @@
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 
+      <!-- Repères d'un deck, partout pareils (Deck builder excepté, qui a ses propres colonnes) : ★ favori, toque (deck du chef, dessinée), emoji choisi. -->
+      <DataTemplate x:Key="DeckMarks" x:DataType="cd:Deck">
+        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+          <TextBlock Text="★" Foreground="#FFD35A" IsVisible="{Binding Favorite}" VerticalAlignment="Center" />
+          <Viewbox Width="20" Height="20" IsVisible="{Binding IsGenerated}" ToolTip.Tip="Deck du chef" VerticalAlignment="Center">
+            <Canvas Width="24" Height="24">
+              <Path Data="M6.5 13 C3.5 12.5 3 8 6 7 C6.5 4 10.5 3 12 5.5 C13.5 3 17.5 4 18 7 C21 8 20.5 12.5 17.5 13 V19.5 H6.5 Z" Fill="#F4F0FF" Stroke="#B9AEE0" StrokeThickness="1.2" StrokeJoin="Round" />
+              <Path Data="M6.5 16.2 H17.5" Stroke="#B9AEE0" StrokeThickness="1.2" />
+            </Canvas>
+          </Viewbox>
+          <TextBlock Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />
+        </StackPanel>
+      </DataTemplate>
       <!-- Une carte : nom en haut, élément à gauche, rareté sur le cadre. La taille vient du conteneur (ContentControl). -->
       <DataTemplate x:Key="CardThumb" x:DataType="vm:CardItem">
         <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" ShowAbilities="True" />

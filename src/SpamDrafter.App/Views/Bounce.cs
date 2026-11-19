@@ -4,7 +4,7 @@ using Avalonia.Threading;
 
 namespace SpamDrafter.App.Views;
 
-/// <summary>Petit rebond d'un élément qu'on vient de choisir : il se tasse, grossit un peu, puis retrouve sa taille (« Réduire les animations » le coupe).</summary>
+/// <summary>Petit rebond d'un élément qu'on vient de choisir : il se tasse, grossit un peu, puis retrouve sa taille (« Désactiver les animations » le coupe).</summary>
 public static class Bounce
 {
     /// <summary>Apparition avec rebond (agrandissement au survol d'une carte) : part un peu plus petit, dépasse légèrement, se pose.</summary>

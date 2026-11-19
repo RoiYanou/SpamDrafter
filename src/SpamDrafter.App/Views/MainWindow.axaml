@@ -16,7 +16,8 @@
     <KeyBinding Gesture="Ctrl+6" Command="{Binding SelectTabCommand}" CommandParameter="5" />
   </Window.KeyBindings>
   <LayoutTransformControl LayoutTransform="{Binding UiTransform}">
-  <DockPanel>
+  <Grid>
+  <DockPanel Margin="80,0,0,0">
     <DockPanel DockPanel.Dock="Top" Margin="14,6">
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" DataContext="{Binding Updater}">
         <TextBlock Text="{Binding Status}" Opacity="0.7" FontSize="12" VerticalAlignment="Center" MaxWidth="80" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status}" />
@@ -65,7 +66,7 @@
                     <Slider Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding MusicVolume}" />
                 </StackPanel>
                 <TextBlock Classes="title glow" Text="Animations" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
-                <CheckBox Content="Réduire les animations" IsChecked="{Binding ReduceAnimations}" />
+                <CheckBox Content="Désactiver les animations" IsChecked="{Binding ReduceAnimations}" />
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Classes="title glow" Text="Particules" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                   <Button Grid.Column="1" Content="Réglages par défaut" Command="{Binding ResetParticlesCommand}" IsVisible="{Binding ParticlesModified}" VerticalAlignment="Center" FontSize="11" Padding="8,2" />
@@ -77,10 +78,10 @@
                 <TextBlock Classes="title glow" Text="Aide" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <TextBlock Text="Raccourcis clavier" FontWeight="SemiBold" FontSize="13" />
                 <StackPanel Spacing="4">
-                <TextBlock Text="Ctrl+1 à Ctrl+6 : Accueil, Biblio, Builder, Drafter, Générateur, Tester" TextWrapping="Wrap" />
+                <TextBlock Text="Ctrl+1 à Ctrl+6 : Accueil, Bibliothèque, Deck Builder, Drafter, Cuisine, Deck Tester" TextWrapping="Wrap" />
                 <TextBlock Text="Ctrl+F : aller à la recherche" TextWrapping="Wrap" />
                 <TextBlock Text="Échap : fermer la fiche d'une carte, vider la recherche" TextWrapping="Wrap" />
-                <TextBlock Text="Clic sur une carte (Builder, Drafter, Générateur) : l'ajouter" TextWrapping="Wrap" />
+                <TextBlock Text="Clic sur une carte (Deck Builder, Drafter, Cuisine) : l'ajouter" TextWrapping="Wrap" />
                 <TextBlock Text="Deck builder : Ctrl+S sauvegarder, Ctrl+N nouveau, Ctrl+D dupliquer, Ctrl+Z annuler, Ctrl+Y rétablir" TextWrapping="Wrap" />
                 <TextBlock Text="Flèches ▲ ▼ dans « Mes decks » : choisir l'ordre des decks" TextWrapping="Wrap" />
                 </StackPanel>
@@ -96,8 +97,6 @@
         <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
       </StackPanel>
       <DockPanel>
-        <TextBlock x:Name="AppTitle" DockPanel.Dock="Left" Margin="0,0,12,0" Classes="title glow apptitle" Text="SpamDrafter" FontSize="26" VerticalAlignment="Center"
-                   IsVisible="{Binding IsLoaded}" ToolTip.Tip="SpamDrafter (non officiel)" />
         <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
       </DockPanel>
     </DockPanel>
@@ -134,48 +133,8 @@
       <!-- Texture animée du thème, derrière les particules. -->
       <v:ThemeTexture Grid.ColumnSpan="2" />
       <v:StarField Grid.ColumnSpan="2" />
-      <Border Background="{StaticResource BrushRail}" Width="84" Padding="6,12">
-        <StackPanel Spacing="8">
-          <Button Classes="toggle rail" Classes.on="{Binding IsTab4}" Command="{Binding SelectTabCommand}" CommandParameter="4" ToolTip.Tip="Accueil">
-            <StackPanel Spacing="4">
-              <Path Data="M3 11l9-8 9 8 M5 10v10h5v-6h4v6h5V10" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
-              <TextBlock Text="Accueil" FontSize="11" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Button>
-          <Button Classes="toggle rail" Classes.on="{Binding IsTab0}" Command="{Binding SelectTabCommand}" CommandParameter="0" ToolTip.Tip="Bibliothèque">
-            <StackPanel Spacing="4">
-              <Path Data="M6 3h12a1 1 0 0 1 1 1v14H7a2 2 0 0 0-2 2V4a1 1 0 0 1 1-1z M5 20a2 2 0 0 0 2 2h12 M9 8h6 M9 12h4" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
-              <TextBlock Text="Biblio" FontSize="11" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Button>
-          <Button Classes="toggle rail" Classes.on="{Binding IsTab1}" Command="{Binding SelectTabCommand}" CommandParameter="1" ToolTip.Tip="Deck builder">
-            <StackPanel Spacing="4">
-              <Path Data="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
-              <TextBlock Text="Builder" FontSize="11" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Button>
-          <Button Classes="toggle rail" Classes.on="{Binding IsTab2}" Command="{Binding SelectTabCommand}" CommandParameter="2" ToolTip.Tip="Drafter">
-            <StackPanel Spacing="4">
-              <Path Data="M3 7h4l10 10h4 M3 17h4l3-3 M14 10l3-3h4 M18 4l3 3-3 3 M18 14l3 3-3 3" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
-              <TextBlock Text="Drafter" FontSize="11" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Button>
-          <Button Classes="toggle rail" Classes.on="{Binding IsTab3}" Command="{Binding SelectTabCommand}" CommandParameter="3" IsEnabled="{Binding HasGenerator}" ToolTip.Tip="{Binding GeneratorError}">
-            <StackPanel Spacing="4">
-              <Path Data="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
-              <TextBlock Text="Générateur" FontSize="11" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Button>
-          <Button Classes="toggle rail" Classes.on="{Binding IsTab5}" Command="{Binding SelectTabCommand}" CommandParameter="5" IsEnabled="{Binding HasTester}" ToolTip.Tip="Tester un deck">
-            <StackPanel Spacing="4">
-              <Path Data="M12 14l4-5 M4 18a9 9 0 1 1 16 0 M12 14h.01 M6 17h.01 M18 17h.01" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" StrokeLineCap="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
-              <TextBlock Text="Tester" FontSize="11" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Button>
-        </StackPanel>
-      </Border>
       <Border Grid.Column="1" Classes="panel" Margin="12" Padding="0">
-        <Panel>
+        <Panel x:Name="PagesHost">
           <v:HomeView x:Name="PageHome" v:PageFx.Enter="True" DataContext="{Binding Home}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab4}" />
           <v:LibraryTabsView x:Name="PageLibrary" v:PageFx.Enter="True" DataContext="{Binding LibraryTabs}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab0}" />
           <v:DeckBuilderView x:Name="PageBuilder" v:PageFx.Enter="True" DataContext="{Binding DeckBuilder}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab1}" />
@@ -194,5 +153,213 @@
       <v:CollectionView Grid.ColumnSpan="2" DataContext="{Binding Collection}" />
     </Grid>
   </DockPanel>
+  <!-- Barre latérale : de haut en bas de l'application. Repliée (icônes seules) ; au survol elle se déplie par-dessus le contenu et montre les noms. -->
+  <Border x:Name="Rail" Classes="rail" HorizontalAlignment="Left" VerticalAlignment="Stretch" IsVisible="{Binding IsLoaded}" ZIndex="30" ClipToBounds="True">
+    <Grid>
+      <Border IsHitTestVisible="False" VerticalAlignment="Top" Height="160">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Color="#22FFFFFF" Offset="0" />
+            <GradientStop Color="#00FFFFFF" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+      <DockPanel Margin="10,12,10,12">
+        <!-- Titre : « SD » quand la barre est repliée, « SpamDrafter » quand elle est dépliée (un clic le fait rebondir). -->
+        <!-- Logo animé au survol (voir BrandAnimator) : les cartes se redressent, la rose glisse à droite en dévoilant « pamDrafter », puis les rayons de la bannière tournent. -->
+        <Grid x:Name="BrandBox" DockPanel.Dock="Top" Height="48" Margin="0,0,0,14" Background="Transparent">
+          <Border x:Name="RaysBox" ZIndex="-1" CornerRadius="12" ClipToBounds="True" IsHitTestVisible="False">
+            <Canvas>
+              <Path x:Name="RaysPath" Fill="#15FFFFFF" Data="M0,0 L140.0,0.0 L137.2,28.1 Z M0,0 L126.1,60.7 L111.4,84.8 Z M0,0 L87.3,109.5 L63.6,124.7 Z M0,0 L31.2,136.5 L3.1,140.0 Z M0,0 L-31.2,136.5 L-57.9,127.5 Z M0,0 L-87.3,109.5 L-107.5,89.7 Z M0,0 L-126.1,60.7 L-135.8,34.2 Z M0,0 L-140.0,0.0 L-137.2,-28.1 Z M0,0 L-126.1,-60.7 L-111.4,-84.8 Z M0,0 L-87.3,-109.5 L-63.6,-124.7 Z M0,0 L-31.2,-136.5 L-3.1,-140.0 Z M0,0 L31.2,-136.5 L57.9,-127.5 Z M0,0 L87.3,-109.5 L107.5,-89.7 Z M0,0 L126.1,-60.7 L135.8,-34.2 Z" />
+            </Canvas>
+          </Border>
+          <Border x:Name="LettersClip" ZIndex="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="41,0,0,0" ClipToBounds="True" Width="0" IsHitTestVisible="False">
+            <StackPanel x:Name="LettersRow" Orientation="Horizontal" Spacing="0.5" HorizontalAlignment="Left">
+              <TextBlock Text="p" Foreground="#FFD84D" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="a" Foreground="#FFD84D" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="m" Foreground="#FFD84D" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="D" Foreground="#F4F0FF" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="r" Foreground="#F4F0FF" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="a" Foreground="#F4F0FF" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="f" Foreground="#F4F0FF" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="t" Foreground="#F4F0FF" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="e" Foreground="#F4F0FF" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              <TextBlock Text="r" Foreground="#F4F0FF" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="23" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+            </StackPanel>
+          </Border>
+          <Viewbox x:Name="PinkBox" ZIndex="2" Width="38" Height="38" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="11,0,0,0" IsHitTestVisible="False">
+            <Canvas Width="40" Height="40">
+              <Path x:Name="PinkPath" Data="M 11,7 h 16 a 3,3 0 0 1 3,3 v 20 a 3,3 0 0 1 -3,3 h -16 a 3,3 0 0 1 -3,-3 v -20 a 3,3 0 0 1 3,-3 z" Stroke="#FF7AC6" StrokeThickness="2.6" Fill="#2E2158" />
+              <!-- Couronne à 3 piques, jaune pleine : à l'intérieur de la carte rose (elle apparaît quand les cartes se redressent). -->
+              <Path x:Name="CrownPath" Data="M10.68,24.16 L10.16,17.14 L14.84,20.78 L19,15.84 L23.16,20.78 L27.84,17.14 L27.32,24.16 Z" Fill="#FFD84D" Stroke="#FFD84D" StrokeThickness="0.9" StrokeJoin="Round" Opacity="0" />
+            </Canvas>
+          </Viewbox>
+          <Viewbox ZIndex="3" Width="38" Height="38" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="11,0,0,0" IsHitTestVisible="False">
+            <Canvas Width="40" Height="40">
+              <Path x:Name="YellowPath" Data="M 11,7 h 16 a 3,3 0 0 1 3,3 v 20 a 3,3 0 0 1 -3,3 h -16 a 3,3 0 0 1 -3,-3 v -20 a 3,3 0 0 1 3,-3 z" Stroke="#FFD84D" StrokeThickness="2.8" Fill="#3A2B66" />
+              <Path x:Name="GlyphPath" Data="M 24,14 C 24,10.5 14,10.5 14,16 C 14,21.5 24,18.5 24,24 C 24,29.5 14,29.5 14,26" Stroke="#FFD84D" StrokeThickness="3" StrokeLineCap="Round" StrokeJoin="Round" />
+            </Canvas>
+          </Viewbox>
+        </Grid>
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
+          <Border Height="1" Margin="8,0" Background="{StaticResource BrushControlBorder}" Opacity="0.7" />
+          <Button x:Name="ContactButton" Classes="nav">
+            <Grid>
+              
+              <Viewbox Width="26" Height="26" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Center">
+            <Canvas Classes="ico i-contact" Width="24" Height="24">
+              <Path Data="M4 5.5 a1.5 1.5 0 0 1 1.5 -1.5 h13 a1.5 1.5 0 0 1 1.5 1.5 v9 a1.5 1.5 0 0 1 -1.5 1.5 H10 l-4.5 4 V16 a1.5 1.5 0 0 1 -1.5 -1.5 Z" Fill="#B28DFF" Stroke="#8A5CF0" StrokeThickness="1.4" StrokeJoin="Round" />
+              <Ellipse x:Name="ContactDot1" Canvas.Left="6.7" Canvas.Top="8.4" Width="2.6" Height="2.6" Fill="#F1E8FF" />
+              <Ellipse x:Name="ContactDot2" Canvas.Left="10.7" Canvas.Top="8.4" Width="2.6" Height="2.6" Fill="#F1E8FF" />
+              <Ellipse x:Name="ContactDot3" Canvas.Left="14.7" Canvas.Top="8.4" Width="2.6" Height="2.6" Fill="#F1E8FF" />
+            </Canvas>
+          </Viewbox>
+              <TextBlock Classes="navlabel" Text="Contact" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="56,0,8,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+            <Button.Flyout>
+              <Flyout Placement="RightEdgeAlignedBottom">
+                <StackPanel Width="290" Spacing="10">
+                  <TextBlock Classes="title" Text="Contact" FontSize="20" />
+                  <TextBlock TextWrapping="Wrap" FontSize="13" Text="Une idée, une suggestion ou un bug à signaler ? Écris-moi sur Discord." />
+                  <Border Background="#22000000" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="1" CornerRadius="10" Padding="12,8">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <StackPanel>
+                        <TextBlock Text="Discord" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" />
+                        <TextBlock Text="RoiYanou" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushYellow}" />
+                      </StackPanel>
+                      <Button Grid.Column="1" Content="Copier" Click="CopyDiscord_Click" Padding="10,4" FontSize="12" VerticalAlignment="Center" />
+                    </Grid>
+                  </Border>
+                  <Button Content="Ouvrir le GitHub du projet" Click="OpenGitHub_Click" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,8" />
+                  <TextBlock Text="github.com/RoiYanou/SpamDrafter" FontSize="11" Opacity="0.7" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+        <StackPanel Spacing="6">
+          <Button x:Name="NavHome" Classes="nav" Classes.on="{Binding IsTab4}" Command="{Binding SelectTabCommand}" CommandParameter="4">
+            <Grid>
+              <Border Width="4" Height="24" CornerRadius="2" HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" IsVisible="{Binding IsTab4}" />
+              <Viewbox Width="26" Height="26" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Center">
+            <Canvas Classes="ico i-home" Width="24" Height="24">
+              <Path Data="M12 3 L2.5 11.5 H5 V20 a1 1 0 0 0 1 1 H18 a1 1 0 0 0 1 -1 V11.5 H21.5 Z" Fill="#FFC36B" Stroke="#E8782E" StrokeThickness="1.4" StrokeJoin="Round" />
+              <Path x:Name="HomeHole" Data="M9.5 21 V15 a1.2 1.2 0 0 1 1.2 -1.2 h2.6 a1.2 1.2 0 0 1 1.2 1.2 V21 Z" Fill="#4A1E0C" />
+              <!-- Porte coulissante : rognée à l'embrasure, elle glisse vers la gauche et disparaît « dans » le mur. -->
+              <Canvas Width="24" Height="24" Clip="M9.5,13.5 H14.7 V21.2 H9.5 Z">
+                <Path x:Name="HomeDoor" Data="M9.5 21 V15 a1.2 1.2 0 0 1 1.2 -1.2 h2.6 a1.2 1.2 0 0 1 1.2 1.2 V21 Z" Fill="#C45A24" Stroke="#8F3A12" StrokeThickness="0.5" StrokeJoin="Round" />
+              </Canvas>
+              <Path Data="M12 3 L2.5 11.5 H5.2 L12 5.4 L18.8 11.5 H21.5 Z" Fill="#FF6E3A" />
+            </Canvas>
+          </Viewbox>
+              <TextBlock Classes="navlabel" Text="Accueil" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="56,0,8,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Button>
+          <Button x:Name="NavLibrary" Classes="nav" Classes.on="{Binding IsTab0}" Command="{Binding SelectTabCommand}" CommandParameter="0">
+            <Grid>
+              <Border Width="4" Height="24" CornerRadius="2" HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" IsVisible="{Binding IsTab0}" />
+              <Viewbox Width="26" Height="26" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Center">
+            <Canvas Classes="ico i-book" Width="24" Height="24">
+              <Canvas x:Name="BookGroup" Width="24" Height="24">
+                <!-- Corps du livre (celui d'origine, dos à gauche en x = 6) : dos bleu, page de droite, tranche blanche en bas. -->
+                <Path Data="M6 3 H18 a1.5 1.5 0 0 1 1.5 1.5 V19.5 a1.5 1.5 0 0 1 -1.5 1.5 H7.5 a1.5 1.5 0 0 1 -1.5 -1.5 Z" Fill="#4DA3FF" Stroke="#2F6FD6" StrokeThickness="1.4" StrokeJoin="Round" />
+                <Path Data="M7.4 4.4 H18.1 V17.6 H7.4 Z" Fill="#F3F8FF" />
+                <Path Data="M9.2 7.6 H16.4 M9.2 10.6 H16.4 M9.2 13.6 H14" Stroke="#9DB9E0" StrokeThickness="1.1" StrokeLineCap="Round" />
+                <Path Data="M6 19.5 a1.5 1.5 0 0 1 1.5 -1.5 H19.5 V21 H7.5 a1.5 1.5 0 0 1 -1.5 -1.5 Z" Fill="#E3F0FF" Stroke="#2F6FD6" StrokeThickness="1.2" StrokeJoin="Round" />
+                <!-- Couverture : pivote autour du dos ; face extérieure fermée, face intérieure (page) une fois tournée. -->
+                <Canvas x:Name="BookCover" Width="24" Height="24">
+                  <Canvas x:Name="BookCoverOuter" Width="24" Height="24">
+                    <Path Data="M6 3 H18 a1.5 1.5 0 0 1 1.5 1.5 V18 H7.5 a1.5 1.5 0 0 0 -1.5 1.5 Z" Fill="#4DA3FF" Stroke="#2F6FD6" StrokeThickness="1.4" StrokeJoin="Round" />
+                    <Path Data="M9.5 7 H16 M9.5 10.5 H14" Stroke="#E3F0FF" StrokeThickness="1.6" StrokeLineCap="Round" />
+                  </Canvas>
+                  <Canvas x:Name="BookCoverInner" Width="24" Height="24" IsVisible="False">
+                    <Path Data="M6 3 H18 a1.5 1.5 0 0 1 1.5 1.5 V19.5 a1.5 1.5 0 0 1 -1.5 1.5 H7.5 a1.5 1.5 0 0 1 -1.5 -1.5 Z" Fill="#4DA3FF" Stroke="#2F6FD6" StrokeThickness="1.4" StrokeJoin="Round" />
+                    <Path Data="M7.4 4.4 H18.1 V17.6 H7.4 Z" Fill="#F3F8FF" />
+                    <Path Data="M9.2 7.6 H16.4 M9.2 10.6 H16.4 M9.2 13.6 H14" Stroke="#9DB9E0" StrokeThickness="1.1" StrokeLineCap="Round" />
+                    <Path Data="M6 19.5 a1.5 1.5 0 0 1 1.5 -1.5 H19.5 V21 H7.5 a1.5 1.5 0 0 1 -1.5 -1.5 Z" Fill="#E3F0FF" Stroke="#2F6FD6" StrokeThickness="1.2" StrokeJoin="Round" />
+                  </Canvas>
+                </Canvas>
+              </Canvas>
+            </Canvas>
+          </Viewbox>
+              <TextBlock Classes="navlabel" Text="Bibliothèque" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="56,0,8,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Button>
+          <Button x:Name="NavBuilder" Classes="nav" Classes.on="{Binding IsTab1}" Command="{Binding SelectTabCommand}" CommandParameter="1">
+            <Grid>
+              <Border Width="4" Height="24" CornerRadius="2" HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" IsVisible="{Binding IsTab1}" />
+              <Viewbox Width="26" Height="26" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Center">
+            <Canvas Classes="ico i-builder" Width="24" Height="24">
+              <Rectangle x:Name="BuilderSq1" Canvas.Left="3" Canvas.Top="3" Width="8.5" Height="8.5" RadiusX="2.2" RadiusY="2.2" Fill="#6EE08A" />
+              <Rectangle x:Name="BuilderSq2" Canvas.Left="12.5" Canvas.Top="3" Width="8.5" Height="8.5" RadiusX="2.2" RadiusY="2.2" Fill="#2EA85A" />
+              <Rectangle x:Name="BuilderSq3" Canvas.Left="12.5" Canvas.Top="12.5" Width="8.5" Height="8.5" RadiusX="2.2" RadiusY="2.2" Fill="#3FC46A" />
+              <Rectangle x:Name="BuilderSq4" Canvas.Left="3" Canvas.Top="12.5" Width="8.5" Height="8.5" RadiusX="2.2" RadiusY="2.2" Fill="#A6F0B5" />
+            </Canvas>
+          </Viewbox>
+              <TextBlock Classes="navlabel" Text="Deck Builder" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="56,0,8,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Button>
+          <Button x:Name="NavDrafter" Classes="nav" Classes.on="{Binding IsTab2}" Command="{Binding SelectTabCommand}" CommandParameter="2">
+            <Grid>
+              <Border Width="4" Height="24" CornerRadius="2" HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" IsVisible="{Binding IsTab2}" />
+              <Viewbox Width="26" Height="26" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Center">
+            <Canvas x:Name="DrafterCanvas" Classes="ico i-drafter" Width="24" Height="24">
+              <Path x:Name="DrafterPink" Data="M3 7 H7.5 C11.5 7 12 17 16.5 17 H18" Stroke="#FF7AC6" StrokeThickness="2.2" StrokeLineCap="Round" />
+              <Path x:Name="DrafterHeadPink" Data="M17.5 13.2 L21.5 17 L17.5 20.8 Z" Fill="#FF7AC6" />
+              <Path x:Name="DrafterPurpleA" Data="M3 17 H6.5 C8.2 17 9.2 15.6 10 14.2" Stroke="#C06BFF" StrokeThickness="2.2" StrokeLineCap="Round" />
+              <Path x:Name="DrafterPurpleB" Data="M14 9.8 C14.8 8.4 15.6 7 17.5 7 H18" Stroke="#C06BFF" StrokeThickness="2.2" StrokeLineCap="Round" />
+              <Path x:Name="DrafterHeadPurple" Data="M17.5 3.2 L21.5 7 L17.5 10.8 Z" Fill="#C06BFF" />
+            </Canvas>
+          </Viewbox>
+              <TextBlock Classes="navlabel" Text="Drafter" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="56,0,8,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Button>
+          <Button Classes="nav" Classes.on="{Binding IsTab3}" Command="{Binding SelectTabCommand}" CommandParameter="3" IsEnabled="{Binding HasGenerator}" ToolTip.Tip="{Binding GeneratorError}">
+            <Grid>
+              <Border Width="4" Height="24" CornerRadius="2" HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" IsVisible="{Binding IsTab3}" />
+              <Viewbox Width="26" Height="26" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Center">
+            <Canvas Classes="ico i-cook" Width="24" Height="24">
+              <Canvas Classes="ico i-steam" Width="24" Height="24">
+                <Canvas.RenderTransform><TranslateTransform /></Canvas.RenderTransform>
+                <Path Data="M7.5 8 C6.3 6.6 8.7 5.4 7.5 3.6" Stroke="#DCE5F7" StrokeThickness="1.3" StrokeLineCap="Round" Opacity="0.7" />
+                <Path Data="M11 7.5 C10 6.4 11.8 5.6 10.9 4.2" Stroke="#DCE5F7" StrokeThickness="1.1" StrokeLineCap="Round" Opacity="0.55" />
+              </Canvas>
+              <Canvas Classes="ico i-spoon" Width="24" Height="24">
+                <Canvas.RenderTransform><RotateTransform /></Canvas.RenderTransform>
+                <Path Data="M17.2 2.6 L12.6 11.2" Stroke="#C98A4B" StrokeThickness="2.1" StrokeLineCap="Round" />
+                <Ellipse Canvas.Left="10.6" Canvas.Top="9.6" Width="4" Height="3.2" Fill="#E3A15C" />
+              </Canvas>
+              <Path Data="M4.5 11.5 H19.5 V15 a6 6 0 0 1 -6 6 H10.5 a6 6 0 0 1 -6 -6 Z" Fill="#8E9AB5" Stroke="#5D6B8A" StrokeThickness="1.3" StrokeJoin="Round" />
+              <Path Data="M7 14.2 V15 a3.6 3.6 0 0 0 1.6 2.9" Stroke="#C9D3E8" StrokeThickness="1.2" StrokeLineCap="Round" />
+              <Path Data="M3.6 11 a1.1 1.1 0 0 1 1.1 -1.1 H19.3 a1.1 1.1 0 0 1 1.1 1.1 a1.1 1.1 0 0 1 -1.1 1.1 H4.7 a1.1 1.1 0 0 1 -1.1 -1.1 Z" Fill="#B7C2DA" Stroke="#5D6B8A" StrokeThickness="1.1" StrokeJoin="Round" />
+              <Path Data="M4.6 13.6 H2.2 V15.8 H4.6 M19.4 13.6 H21.8 V15.8 H19.4" Stroke="#5D6B8A" StrokeThickness="1.5" StrokeLineCap="Round" StrokeJoin="Round" />
+            </Canvas>
+          </Viewbox>
+              <TextBlock Classes="navlabel" Text="Cuisine" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="56,0,8,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Button>
+          <Button Classes="nav" Classes.on="{Binding IsTab5}" Command="{Binding SelectTabCommand}" CommandParameter="5" IsEnabled="{Binding HasTester}">
+            <Grid>
+              <Border Width="4" Height="24" CornerRadius="2" HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" IsVisible="{Binding IsTab5}" />
+              <Viewbox Width="26" Height="26" HorizontalAlignment="Left" Margin="17,0,0,0" VerticalAlignment="Center">
+            <Canvas Classes="ico i-tester" Width="24" Height="24">
+              <Path Data="M4 18 A8 8 0 0 1 8 11.07" Stroke="#59D98E" StrokeThickness="3" />
+              <Path Data="M8 11.07 A8 8 0 0 1 16 11.07" Stroke="#FFD84D" StrokeThickness="3" />
+              <Path Data="M16 11.07 A8 8 0 0 1 20 18" Stroke="#FF5C5C" StrokeThickness="3" />
+              <Canvas Classes="ico i-needle" Width="24" Height="24" RenderTransformOrigin="50%,75%">
+                <Canvas.RenderTransform><RotateTransform Angle="35" /></Canvas.RenderTransform>
+                <Path Data="M12 18 L12 10.2" Stroke="#FFFFFF" StrokeThickness="2.2" StrokeLineCap="Round" />
+              </Canvas>
+              <Ellipse Canvas.Left="9.8" Canvas.Top="15.8" Width="4.4" Height="4.4" Fill="#FFFFFF" />
+            </Canvas>
+          </Viewbox>
+              <TextBlock Classes="navlabel" Text="Deck Tester" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="56,0,8,0" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Button>
+        </StackPanel>
+      </DockPanel>
+    </Grid>
+  </Border>
+  </Grid>
   </LayoutTransformControl>
 </Window>

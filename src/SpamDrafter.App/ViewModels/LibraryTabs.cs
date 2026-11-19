@@ -54,6 +54,10 @@ public sealed class LibraryTabsViewModel : ViewModelBase
         {
             if (!Set(ref _selectedTab, value)) return;
             Raise(nameof(IsCardsTab)); Raise(nameof(IsTalentsTab)); Raise(nameof(IsToxTab)); Raise(nameof(IsArtistsTab));
+            // En arrivant sur Talents, Tox ou Artistes sans rien de sélectionné (ex. sélection perdue par un filtre ou un changement de collection) : une ligne au hasard.
+            if (value == 1 && Talents.Selected is null && Talents.Rows.Count > 0) Talents.Selected = Talents.Rows[Random.Shared.Next(Talents.Rows.Count)];
+            if (value == 2 && Tox.Selected is null && Tox.Rows.Count > 0) Tox.Selected = Tox.Rows[Random.Shared.Next(Tox.Rows.Count)];
+            if (value == 3 && Artists.Selected is null && Artists.Rows.Count > 0) Artists.Selected = Artists.Rows[Random.Shared.Next(Artists.Rows.Count)];
         }
     }
     // Les quatre vues restent construites et en place : changer de sous-onglet n'est qu'un changement de visibilité (pas de reconstruction des 151 cartes).

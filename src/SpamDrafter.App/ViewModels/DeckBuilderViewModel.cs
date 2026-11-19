@@ -105,7 +105,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         };
         OriginOptions = new DeckListOption[]
         {
-            new("all", "Tous les decks"), new("manual", "Faits à la main"), new("generated", "Générés"),
+            new("all", "Tous les decks"), new("manual", "Faits à la main"), new("generated", "Du chef"),
         };
         _sort = SortOptions[0];
         _originFilter = OriginOptions[0];
@@ -304,7 +304,12 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     /// <summary>Titre du menu « Tri et filtres » : indique quand un filtre (ou la recherche) est actif.</summary>
     public bool DeckFiltersActive => TextSearch.Normalize(_deckFilter).Length > 0 || _favoritesOnly || _impactedOnly
                                      || !ReferenceEquals(_originFilter, OriginOptions[0]) || _tagFilter.Id.Length > 0;
-    public string DeckFiltersHeader => DeckFiltersActive ? "Tri et filtres  ●  filtre actif" : "Tri et filtres";
+    /// <summary>Nombre de filtres actifs (recherche, favoris, decks touchés, origine, tag).</summary>
+    public int DeckFiltersCount => (TextSearch.Normalize(_deckFilter).Length > 0 ? 1 : 0) + (_favoritesOnly ? 1 : 0) + (_impactedOnly ? 1 : 0)
+                                   + (ReferenceEquals(_originFilter, OriginOptions[0]) ? 0 : 1) + (_tagFilter.Id.Length > 0 ? 1 : 0);
+    /// <summary>« ● filtre actif » ou « ● filtres actifs » selon le nombre de filtres actifs.</summary>
+    public string DeckFiltersLabel => DeckFiltersCount > 1 ? "● filtres actifs" : "● filtre actif";
+    public string DeckFiltersHeader => DeckFiltersActive ? "Tri et filtres  " + DeckFiltersLabel : "Tri et filtres";
     public string DeckFilter { get => _deckFilter; set { if (Set(ref _deckFilter, value)) RefreshDeckList(); } }
     public bool FavoritesOnly { get => _favoritesOnly; set { if (Set(ref _favoritesOnly, value)) RefreshDeckList(); } }
     /// <summary>Ne montre que les decks touchés par une mise à jour de SPAM (lot E).</summary>
@@ -340,9 +345,9 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     /// <summary>Un deck venu du générateur ne se modifie pas (cartes et talents) ; son nom, ses étiquettes et son favori restent libres.</summary>
     public bool IsLocked => _current.Origin == DeckOrigin.Generated;
     public bool CanEditCards => !IsLocked;
-    public string LockedNotice => "⚙ Deck généré : ses cartes et ses talents sont verrouillés. Tu peux le renommer, lui ajouter des tags, " +
+    public string LockedNotice => "Deck du chef : ses cartes et ses talents sont verrouillés. Tu peux le renommer, lui ajouter des tags, " +
                                    "le mettre en favori, ou le dupliquer pour en faire une copie modifiable.";
-    private const string LockedMessage = "Ce deck vient du générateur : ses cartes et ses talents ne se modifient pas. " +
+    private const string LockedMessage = "Ce deck est un deck du chef : ses cartes et ses talents ne se modifient pas. " +
                                          "Utilise « Dupliquer » pour en faire une copie modifiable.";
 
     private SlotViewModel MakeSlot(CardItem card, string? talentId) =>
@@ -882,7 +887,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         _refreshing = true;
         try { SavedDecks.Clear(); foreach (var d in list) SavedDecks.Add(d); }
         finally { _refreshing = false; }
-        Raise(nameof(ListSelection)); Raise(nameof(DeckFiltersActive)); Raise(nameof(DeckFiltersHeader));
+        Raise(nameof(ListSelection)); Raise(nameof(DeckFiltersActive)); Raise(nameof(DeckFiltersCount)); Raise(nameof(DeckFiltersLabel)); Raise(nameof(DeckFiltersHeader));
         // La sélection suit le deck ouvert (l'objet a été rechargé depuis le disque).
         _selectedSaved = SavedDecks.FirstOrDefault(d => d.Id == _current.Id);
         Raise(nameof(SelectedSaved));

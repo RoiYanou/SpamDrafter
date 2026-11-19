@@ -15,8 +15,7 @@
       <Grid Margin="{Binding BodyMargin}">
         <Border Margin="{Binding ImageMargin}" CornerRadius="{Binding ImageCorner}" ClipToBounds="True" Background="#33000000">
           <Grid>
-            <Image Source="{Binding Item.Thumbnail}" Stretch="UniformToFill"
-                   IsVisible="{Binding ImageOverride, Converter={x:Static ObjectConverters.IsNull}}" />
+            <Image Source="{Binding Item.Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding ShowThumb}" />
             <!-- Grande tuile : version nette (440 px) par-dessus la miniature, qui reste dessous le temps du chargement. -->
             <Image Source="{Binding LargeImage}" Stretch="UniformToFill" IsHitTestVisible="False"
                    IsVisible="{Binding ImageOverride, Converter={x:Static ObjectConverters.IsNull}}" />
@@ -30,7 +29,7 @@
               <!-- Le TextBlock rogne ce qui dépasse de sa propre zone : l'italique dépasse un peu de la dernière lettre, d'où une marge intérieure (Padding) et non extérieure. -->
               <TextBlock Text="{Binding Credit}" FontSize="{Binding CreditSize}" FontStyle="Italic" Foreground="White" TextTrimming="CharacterEllipsis" Padding="1,0,5,0" />
             </Border>
-            <Border IsVisible="{Binding ShowName}" VerticalAlignment="Top" IsHitTestVisible="False" Padding="4,4,4,12">
+            <Border IsVisible="{Binding ShowName}" VerticalAlignment="Top" IsHitTestVisible="False" Padding="{Binding NamePadding}">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
                   <GradientStop Color="#D0120A24" Offset="0" />
@@ -44,7 +43,7 @@
         </Border>
         <!-- Profondeur : ombre portée autour de la carte et ombre rentrante le long du cadre ; cadre métallique (reflets de la couleur de rareté). -->
         <Border CornerRadius="{Binding Corner}" BorderBrush="{Binding FrameShine}" BorderThickness="{Binding FrameThickness}" IsHitTestVisible="False"
-                BoxShadow="0 3 9 0 #80000000, inset 0 0 12 2 #A0000000" />
+                BoxShadow="inset 0 0 14 3 #B0000000" />
         <!-- Petit contour noir : au bord extérieur du cadre et là où il touche l'illustration. -->
         <Border CornerRadius="{Binding Corner}" BorderBrush="#E0000000" BorderThickness="1" IsHitTestVisible="False" />
         <Border CornerRadius="{Binding ImageCorner}" BorderBrush="#B0000000" BorderThickness="1" Margin="{Binding FrameThickness}" IsHitTestVisible="False" />
@@ -53,7 +52,7 @@
               Width="{Binding Glyph}" Height="{Binding Glyph}" IsHitTestVisible="False">
           <Image Source="{Binding Item.ElementBadge}" Stretch="Uniform" />
           <!-- Reflet métallique animé en permanence : un éclat clair, bordé d'une ombre, traverse l'icône en diagonale (pinceau partagé, voir ElementSheen). -->
-          <Rectangle Fill="{x:Static v:ElementSheen.Brush}">
+          <Rectangle IsVisible="{Binding On, Source={x:Static v:ElementSheen.State}}" Fill="{x:Static v:ElementSheen.Brush}">
 
             <Rectangle.OpacityMask><ImageBrush Source="{Binding Item.ElementBadgeMask}" Stretch="Uniform" /></Rectangle.OpacityMask>
           </Rectangle>
@@ -61,7 +60,7 @@
         <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding OverlayMargin}" Spacing="3" IsHitTestVisible="False">
           <Grid IsVisible="{Binding ShowIncome}" HorizontalAlignment="Right" Width="{Binding Glyph}" Height="{Binding Glyph}">
             <Image Source="{Binding Item.SpamtonBadge}" Stretch="Uniform" />
-            <Rectangle Fill="{x:Static v:ElementSheen.Brush}" IsHitTestVisible="False">
+            <Rectangle IsVisible="{Binding On, Source={x:Static v:ElementSheen.State}}" Fill="{x:Static v:ElementSheen.Brush}" IsHitTestVisible="False">
               <Rectangle.OpacityMask><ImageBrush Source="{Binding Item.SpamtonBadgeMask}" Stretch="Uniform" /></Rectangle.OpacityMask>
             </Rectangle>
             <TextBlock Text="{Binding Item.IncomeText}" FontSize="{Binding IncomeFont}" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" Foreground="#6E3B14"
@@ -150,7 +149,7 @@
       <Grid IsVisible="{Binding ShowRarity}" Width="{Binding RarityLogo}" Height="{Binding RarityLogoHeight}" RenderOptions.BitmapInterpolationMode="HighQuality"
             HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding RarityLogoMargin}" IsHitTestVisible="False">
         <Image Source="{Binding Item.RarityIcon}" Stretch="Uniform" />
-        <Rectangle Fill="{x:Static v:ElementSheen.Brush}">
+        <Rectangle IsVisible="{Binding On, Source={x:Static v:ElementSheen.State}}" Fill="{x:Static v:ElementSheen.Brush}">
           <Rectangle.OpacityMask><ImageBrush Source="{Binding Item.RarityIcon}" Stretch="Uniform" /></Rectangle.OpacityMask>
         </Rectangle>
       </Grid>

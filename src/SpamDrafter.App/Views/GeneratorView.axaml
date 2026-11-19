@@ -27,8 +27,9 @@
     <!-- Sélection, réglage, propositions -->
     <Border Grid.Column="2" Classes="panel" Padding="14">
     <DockPanel>
-      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Générateur" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
-      <StackPanel DockPanel.Dock="Top" Spacing="8">
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Cuisine" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+      <ScrollViewer>
+      <StackPanel Spacing="8" Margin="0,0,8,0">
         <v:Collapse Header="Comment ça marche ?" HorizontalAlignment="Stretch">
           <v:MarkedText Source="{Binding HowItWorks}" TextWrapping="Wrap" FontSize="12" />
         </v:Collapse>
@@ -44,7 +45,7 @@
               <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="10,12,10,8" Margin="4">
                 <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
                   <ContentControl Width="112" Height="165" HorizontalAlignment="Center" Content="{Binding Card}" ContentTemplate="{StaticResource CardThumbFlat}" />
-                  <Button Content="✕" Classes="danger" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-6,0" Padding="7,2" FontSize="12" ZIndex="5"
+                  <Button Content="✕" Classes="danger" ClickMode="Press" MinWidth="34" MinHeight="30" HorizontalContentAlignment="Center" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-8,-8,0" Padding="8,3" FontSize="13" ZIndex="5"
                           ToolTip.Tip="Retirer cette carte"
                           Command="{Binding $parent[UserControl].((vm:GeneratorViewModel)DataContext).RemoveCommand}"
                           CommandParameter="{Binding}" />
@@ -55,15 +56,21 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
         <StackPanel Orientation="Horizontal" Spacing="8">
-          <Button Content="Générer des decks" Command="{Binding GenerateCommand}" Classes="primary" Padding="16,8" />
+          <Button Content="Lancer la cuisine" Command="{Binding GenerateCommand}" Classes="primary" Padding="16,8" />
           <Button Content="Annuler" Command="{Binding CancelCommand}" Classes="danger" />
         </StackPanel>
         <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" IsVisible="{Binding IsBusy}" Height="6" />
-        <TextBlock Text="{Binding Step}" Opacity="0.7" FontSize="12" IsVisible="{Binding IsBusy}" />
+        <StackPanel Orientation="Horizontal" IsVisible="{Binding IsBusy}" Opacity="0.85">
+          <TextBlock Text="{Binding CookStage}" FontSize="12" />
+          <!-- Largeur réservée : les points apparaissent un à un sans faire bouger le pourcentage. -->
+          <TextBlock Text="{Binding CookDots}" FontSize="12" Width="18" />
+          <TextBlock Text="{Binding CookPercent}" FontSize="12" />
+        </StackPanel>
         <TextBlock Text="{Binding Problem}" Classes="warn" TextWrapping="Wrap" IsVisible="{Binding HasProblem}" />
         <TextBlock Text="{Binding Tip, StringFormat='Astuce : {0}'}" IsVisible="{Binding IsBusy}" TextWrapping="Wrap" FontSize="12"
                    Foreground="{StaticResource BrushYellow}" />
       </StackPanel>
+      </ScrollViewer>
     </DockPanel>
     </Border>
     <GridSplitter Classes="vgrip" Grid.Column="3" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" ToolTip.Tip="Tirer pour régler la largeur des colonnes" />
@@ -75,33 +82,54 @@
       <TextBlock DockPanel.Dock="Top" IsVisible="{Binding !HasProposals}" Margin="0,12,0,0" TextWrapping="Wrap" Opacity="0.8"
                  Text="Les decks proposés par le Grand Cuisinier apparaîtront ici, avec leur note sur 100." />
       <ScrollViewer IsVisible="{Binding HasProposals}" Margin="0,8,0,0">
-        <ItemsControl ItemsSource="{Binding Proposals}">
+        <ItemsControl ItemsSource="{Binding Proposals}" Grid.IsSharedSizeScope="True">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ProposalViewModel">
-              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,10,10">
-                <StackPanel Spacing="6">
-                  <WrapPanel ItemSpacing="10" LineSpacing="2" ToolTip.Tip="{Binding NoteDetail}">
+              <!-- Toutes les propositions ont la même hauteur (groupe de taille partagé : celle de la plus haute, sans espace perdu) : titre, cartes, puis jauge et boutons calés en bas. -->
+              <Grid RowDefinitions="Auto"><Grid.RowDefinitions><RowDefinition Height="Auto" SharedSizeGroup="ProposalBox" /></Grid.RowDefinitions>
+              <Border BorderBrush="{StaticResource BrushControlBorder}" Background="#22000000" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,8,10,10">
+                <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="6">
+                  <Button Grid.RowSpan="5" Content="✕" Classes="danger" ClickMode="Press" MinWidth="30" MinHeight="26" HorizontalContentAlignment="Center" HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Margin="0,-4,-4,0" Padding="6,2" FontSize="12" ZIndex="5" ToolTip.Tip="Retirer cette proposition"
+                          Command="{Binding $parent[UserControl].((vm:GeneratorViewModel)DataContext).RemoveProposalCommand}"
+                          CommandParameter="{Binding}" />
+                  <WrapPanel ItemSpacing="10" LineSpacing="2" Margin="0,0,34,0" ToolTip.Tip="{Binding NoteDetail}">
                     <TextBlock Text="{Binding Title}" Classes="title" FontSize="18" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding NoteText}" Classes="value" FontSize="18" VerticalAlignment="Center" Foreground="{Binding NoteBrush}" />
                     <TextBlock Text="{Binding NoteLabel}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{Binding NoteBrush}" />
-                    <TextBlock Text="{Binding NoteHint}" Opacity="0.6" FontSize="12" VerticalAlignment="Center"
-                               IsVisible="{Binding HasNoteHint}" />
+                    <TextBlock Text="{Binding NoteHint}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" IsVisible="{Binding HasNoteHint}" />
                   </WrapPanel>
-                  <ItemsControl ItemsSource="{Binding Chips}" ItemTemplate="{StaticResource DeckChipTemplate}" Margin="0,4,0,4">
+                  <!-- Les 4 cartes du deck ; à leur droite, quand il y a la place, les cartes imposées pour la génération (nom + talent utilisé), en texte souligné cliquable. -->
+                  <WrapPanel Grid.Row="1" ItemSpacing="14" LineSpacing="4">
+                    <ItemsControl ItemsSource="{Binding Chips}" ItemTemplate="{StaticResource DeckChipTemplate}">
                       <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="3" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     </ItemsControl>
-                    <ProgressBar Classes="gauge" Minimum="0" Maximum="100" Value="{Binding Gauge}" Height="8" ToolTip.Tip="{Binding NoteDetail}" />
-                  <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                    <StackPanel IsVisible="{Binding HasSource}" VerticalAlignment="Center" Spacing="2" MaxWidth="240">
+                      <TextBlock Text="{Binding SourceTitle}" FontSize="11" Opacity="0.65" />
+                      <ItemsControl ItemsSource="{Binding Source}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:SourceCard">
+                            <TextBlock Text="{Binding Label}" FontSize="13" TextDecorations="Underline" TextTrimming="CharacterEllipsis" Cursor="Hand"
+                                       Foreground="{StaticResource BrushTextSecondary}" Tapped="SourceCard_Tapped" ToolTip.Tip="Voir la fiche de cette carte" />
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </WrapPanel>
+                  <ProgressBar Grid.Row="3" Classes="gauge" Minimum="0" Maximum="100" Value="{Binding Gauge}" Height="8" ToolTip.Tip="{Binding NoteDetail}" />
+                  <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8">
                     <Button Content="Tester ce deck →" Classes="info" Padding="12,6"
                             Command="{Binding $parent[UserControl].((vm:GeneratorViewModel)DataContext).TestCommand}"
                             CommandParameter="{Binding}"
-                            ToolTip.Tip="Sauvegarde cette proposition, puis l'ouvre dans l'onglet Tester (fiche, analyse complète, comparaison)" />
+                            ToolTip.Tip="Sauvegarde cette proposition, puis l'ouvre dans l'onglet Deck Tester (fiche, analyse complète, comparaison)" />
                     <Button Content="{Binding SaveLabel}" Classes="soft" Padding="12,6"
                             Command="{Binding $parent[UserControl].((vm:GeneratorViewModel)DataContext).SaveCommand}"
                             CommandParameter="{Binding}" />
                   </StackPanel>
-                </StackPanel>
+                </Grid>
               </Border>
+              </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

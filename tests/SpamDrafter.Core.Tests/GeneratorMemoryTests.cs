@@ -143,7 +143,7 @@ public class GeneratorMemoryTests : IDisposable
         Assert.Equal(2, w.History.Entries.Count);
         Assert.Single(w.Vm.HistoryItems);
         Assert.Equal("Historique (1)", w.Vm.HistoryTitle);
-        Assert.StartsWith("Génération", w.Vm.HistoryItems[0].Subtitle);
+        Assert.StartsWith("Cuisine", w.Vm.HistoryItems[0].Subtitle);
 
         // Repartir de zéro puis rouvrir la génération : la sélection et les propositions reviennent.
         w.Vm.ClearCommand.Execute(null);

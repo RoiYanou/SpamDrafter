@@ -9,7 +9,7 @@ namespace SpamDrafter.App.Views;
 
 /// <summary>
 /// Fiche détaillée d'une carte. La grande carte de la fiche « vitrine » s'incline selon la souris (±14°) et se retourne en 700 ms
-/// quand on passe de la carte de base au skin. « Réduire les animations » (<see cref="Motion.Reduce"/>) coupe les deux.
+/// quand on passe de la carte de base au skin. « Désactiver les animations » (<see cref="Motion.Reduce"/>) coupe les deux.
 /// </summary>
 public partial class CardDetailView : UserControl
 {

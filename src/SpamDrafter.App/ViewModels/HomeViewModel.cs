@@ -242,8 +242,8 @@ public sealed class HomeViewModel : ViewModelBase
             {
                 new Achievement("Premier deck", _decks.Decks.Count >= 1),
                 new Achievement("10 decks", _decks.Decks.Count >= 10),
-                new Achievement("Deck généré", generated >= 1),
-                new Achievement("10 decks générés", generated >= 10),
+                new Achievement("Deck du chef", generated >= 1),
+                new Achievement("10 decks du chef", generated >= 10),
                 new Achievement("Chasseur de skins", _items.Any(i => i.SelectedSkinId is not null)),
             };
         }

@@ -74,21 +74,27 @@
         <!-- Fiche « vitrine » : la grande carte s'incline avec la souris et se retourne quand on change d'affichage. Elle passe devant le reste. -->
         <Border x:Name="Hero" ZIndex="10" Width="300" Height="430" VerticalAlignment="Top" RenderTransformOrigin="50%,50%">
           <Grid>
-            <v:CardFace Item="{Binding Browser.Selected}" ImageOverride="{Binding Image}" ShowName="True" ShowRarity="True" ShowElement="True" ShowIncome="True" HoverZoom="False" Holo="True" Credit="{Binding ArtistCredit}" CreditCommand="{Binding OpenArtistCommand}" />
+            <v:CardFace Item="{Binding Browser.Selected}" ImageOverride="{Binding Image}" ShowName="True" ShowRarity="True" ShowElement="{Binding ShowCardInfo}" ShowIncome="{Binding ShowCardInfo}" ShowAbilities="{Binding ShowCardInfo}" CreditBelowAbilities="True" HoverZoom="False" Holo="True" Credit="{Binding ArtistCredit}" CreditCommand="{Binding OpenArtistCommand}" />
           </Grid>
         </Border>
         <!-- Affichage de la carte : carte de base ou skin alternatif (retenu comme affichage par défaut). -->
-        <StackPanel IsVisible="{Binding HasSkins}" Spacing="4" Margin="0,14,0,0">
-          <TextBlock Text="Affichage par défaut" Classes="hint" />
-          <ItemsControl ItemsSource="{Binding SkinOptions}">
-            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:SkinOption">
-                <Button Classes="toggle" Classes.on="{Binding IsSelected}" Content="{Binding Label}" Margin="0,0,6,6" Padding="10,4" FontSize="12"
-                        Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).SelectSkinCommand}" CommandParameter="{Binding}" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+        <!-- Case « Voir la carte » juste sous la carte, puis le choix de l'affichage. -->
+        <!-- Même ligne, juste sous la carte : « Affichage par défaut » à gauche, case « Voir la carte » à droite ; les boutons de skin dessous. -->
+        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+          <TextBlock Text="Affichage par défaut" Classes="hint" IsVisible="{Binding HasSkins}" VerticalAlignment="Center" />
+          <CheckBox Grid.Column="1" Content="Voir la carte" IsChecked="{Binding SeeCard}"
+                    ToolTip.Tip="Masque l'élément, les Spamtons, les PV, les talents et les capacités pour ne voir que l'illustration" />
+        </Grid>
+        <StackPanel IsVisible="{Binding HasSkins}">
+            <ItemsControl ItemsSource="{Binding SkinOptions}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SkinOption">
+                  <Button Classes="toggle" Classes.on="{Binding IsSelected}" Content="{Binding Label}" Margin="0,0,6,6" Padding="10,4" FontSize="12"
+                          Command="{Binding $parent[UserControl].((vm:LibraryViewModel)DataContext).SelectSkinCommand}" CommandParameter="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
         <ItemsControl ItemsSource="{Binding DecksUsing}" IsVisible="{Binding HasDecksUsing}">
           <ItemsControl.ItemTemplate>
@@ -100,9 +106,12 @@
                       CommandParameter="{Binding}" ToolTip.Tip="Ouvrir dans le Deck builder">
                 <Grid>
                   <v:DeckStrip Chips="{Binding Deck.Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" />
-                  <v:MarqueeText Text="{Binding Label}" Margin="14,0,10,0" FontSize="15" FontWeight="Bold" Foreground="White" VerticalAlignment="Center">
-                    <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>
-                  </v:MarqueeText>
+                  <Grid Margin="14,0,10,0" ColumnDefinitions="Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
+                    <ContentControl Content="{Binding Deck}" ContentTemplate="{StaticResource DeckMarks}" />
+                    <v:MarqueeText Grid.Column="1" Text="{Binding Label}" FontSize="15" FontWeight="Bold" Foreground="White" VerticalAlignment="Center">
+                      <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>
+                    </v:MarqueeText>
+                  </Grid>
                 </Grid>
               </Button>
             </DataTemplate>

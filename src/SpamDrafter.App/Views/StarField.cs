@@ -29,7 +29,7 @@ public static class StarSettings
 /// Fond animé (phase 13, D-078). Par défaut : étoiles qui scintillent. Avec un thème d'élément, ce sont des détails qui lui ressemblent :
 /// pluie fine (eau), braises qui montent (feu), feuilles et pollen qui flottent (nature), étincelles dorées (lumière), poussière qui
 /// dérive (terre), volutes sombres qui montent lentement (ombre). Toujours doux et peu contrasté. Les particules sont posées avec une
-/// graine fixe ; <see cref="Animate"/> faux (« Réduire les animations ») les fige. Nombre, taille et vitesse : <see cref="StarSettings"/>.
+/// graine fixe ; <see cref="Animate"/> faux (« Désactiver les animations ») les fige. Nombre, taille et vitesse : <see cref="StarSettings"/>.
 /// </summary>
 public sealed class StarField : Control
 {
@@ -37,7 +37,7 @@ public sealed class StarField : Control
     private readonly DispatcherTimer _timer;
     private double _time;
 
-    /// <summary>Faux : particules fixes (réglage « Réduire les animations »).</summary>
+    /// <summary>Faux : particules fixes (réglage « Désactiver les animations »).</summary>
     public static bool Animate { get; set; } = true;
 
     /// <summary>Thème d'élément du fond (« default », « water », « fire »…).</summary>

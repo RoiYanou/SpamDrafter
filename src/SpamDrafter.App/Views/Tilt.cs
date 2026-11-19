@@ -4,7 +4,7 @@ using Avalonia.Media;
 
 namespace SpamDrafter.App.Views;
 
-/// <summary>Inclinaison 3D d'une carte selon la souris (±14°), comme la grande carte de la fiche ; coupée par « Réduire les animations ».</summary>
+/// <summary>Inclinaison 3D d'une carte selon la souris (±14°), comme la grande carte de la fiche ; coupée par « Désactiver les animations ».</summary>
 public static class Tilt
 {
     public static void Attach(Control box)

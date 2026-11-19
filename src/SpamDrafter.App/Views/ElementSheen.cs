@@ -7,7 +7,7 @@ namespace SpamDrafter.App.Views;
 /// <summary>
 /// Reflet métallique de l'icône d'élément d'une carte, animé en permanence : un seul pinceau dégradé est partagé par toutes les icônes
 /// (une icône sert de masque à un rectangle peint de ce pinceau). Un minuteur le fait glisser en diagonale : un éclat clair, bordé d'une ombre,
-/// traverse l'icône, puis une courte pause. Immobile si « Réduire les animations » est coché.
+/// traverse l'icône, puis une courte pause. Immobile si « Désactiver les animations » est coché.
 /// </summary>
 public static class ElementSheen
 {
@@ -39,15 +39,34 @@ public static class ElementSheen
         return timer;
     }
 
+    private static long _lastScroll;
+    /// <summary>Signale un défilement : le reflet est mis en pause un instant (il ne redessine plus toutes les cartes pendant que la liste bouge).</summary>
+    public static void NoteScroll() { _lastScroll = Environment.TickCount64; State.On = false; }
+
+    /// <summary>
+    /// Les rectangles du reflet ne sont présents que lorsque l'éclat est visible (traversée de l'icône) et que la liste ne défile pas : un rectangle
+    /// à masque d'opacité coûte un calque de dessin par icône et par image de l'écran, même quand l'éclat est hors de l'icône.
+    /// </summary>
+    public sealed class SheenState : System.ComponentModel.INotifyPropertyChanged
+    {
+        private bool _on = true;
+        public bool On { get => _on; set { if (_on == value) return; _on = value; PropertyChanged?.Invoke(this, new(nameof(On))); } }
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+    }
+    public static SheenState State { get; } = new();
+
     private static void Step()
     {
+        if (Environment.TickCount64 - _lastScroll < 250) { State.On = false; return; }
         if (Motion.Reduce)
         {
             Place(0.5);   // reflet fixe, au milieu de l'icône
+            State.On = true;
             return;
         }
         var t = ((DateTime.UtcNow - Origin).TotalSeconds % CycleSeconds) / CycleSeconds;
         Place(t < 0.7 ? t / 0.7 : 1.0);   // 70 % du cycle : traversée ; ensuite : éclat hors de l'icône (pause)
+        State.On = t < 0.7;
     }
 
     /// <summary>Position de l'éclat : 0 = avant l'icône, 1 = après (au-delà de 1 : hors icône).</summary>

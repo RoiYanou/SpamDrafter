@@ -7,15 +7,14 @@
   <!-- Liste de cartes en grand quadrillage (phase 13) : filtres en une barre, cartes en vignettes qui remplissent la largeur. -->
   <DockPanel>
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
-      <Grid x:Name="SearchRow" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-        <TextBox x:Name="SearchBox" Text="{Binding Search}" PlaceholderText="Rechercher une carte, une capacité ou un talent…" />
-        <Button Grid.Column="1" Click="ToggleFilters_Click" Padding="10,6" ToolTip.Tip="Réduire ou afficher le menu de tri et de filtres">
+      <Grid x:Name="SearchRow" ColumnDefinitions="Auto,*" ColumnSpacing="6">
+        <Button Grid.Column="0" Click="ToggleFilters_Click" Padding="10,6" ToolTip.Tip="Réduire ou afficher le menu de tri et de filtres">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <TextBlock Text="{Binding FiltersToggleText}" />
             <TextBlock Text="● actif" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding AnyFilterActive}" />
           </StackPanel>
         </Button>
-        <Button Grid.Column="2" Content="Réinitialiser" Click="ClearFilters_Click" Padding="10,6" />
+        <TextBox Grid.Column="1" x:Name="SearchBox" Text="{Binding Search}" PlaceholderText="Rechercher une carte, une capacité ou un talent…" />
       </Grid>
       <!-- Filtres (éléments, raretés, tri…) : un menu flottant par-dessus la liste de cartes, de la largeur de la barre de recherche, sur un fond translucide. -->
       <Popup x:Name="FilterPopup" Placement="Bottom" IsLightDismissEnabled="True" IsOpen="{Binding FiltersVisible, Mode=OneWay}">
@@ -27,9 +26,9 @@
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:ToggleOption">
-            <CheckBox Classes="chip" IsChecked="{Binding IsChecked}" ToolTip.Tip="{Binding Label}">
-              <Image Source="{Binding Icon}" Height="22" Stretch="Uniform" />
-            </CheckBox>
+            <Button Classes="logofilter" Command="{Binding ToggleCommand}" ToolTip.Tip="{Binding Label}">
+              <Image Source="{Binding ShownIcon}" Height="26" Stretch="Uniform" />
+            </Button>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
@@ -37,9 +36,9 @@
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:ToggleOption">
-            <CheckBox Classes="chip" IsChecked="{Binding IsChecked}" ToolTip.Tip="{Binding Label}">
-              <Image Source="{Binding Icon}" Height="24" Stretch="Uniform" />
-            </CheckBox>
+            <Button Classes="logofilter" Command="{Binding ToggleCommand}" ToolTip.Tip="{Binding Label}">
+              <Image Source="{Binding ShownIcon}" Height="28" Stretch="Uniform" />
+            </Button>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
@@ -53,6 +52,7 @@
             </Grid>
           </Button>
         </StackPanel>
+              <Button Content="Réinitialiser" Click="ClearFilters_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" />
             </StackPanel>
           </Border>
         </LayoutTransformControl>
@@ -64,8 +64,8 @@
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="vm:CardItem">
           <!-- Le nom est écrit sur la carte (en haut au centre), plus besoin de le répéter dessous. -->
-          <ContentControl ClipToBounds="False" Width="{Binding $parent[v:CardGridPanel].FitWidth}" Height="{Binding $parent[v:CardGridPanel].FitHeight}"
-                          Content="{Binding}" ContentTemplate="{Binding $parent[v:CardGridPanel].ThumbTemplate}" />
+          <v:LazyTile ClipToBounds="False" Width="{Binding $parent[v:CardGridPanel].FitWidth}" Height="{Binding $parent[v:CardGridPanel].FitHeight}"
+                      Item="{Binding}" ContentTemplate="{Binding $parent[v:CardGridPanel].ThumbTemplate}" />
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>

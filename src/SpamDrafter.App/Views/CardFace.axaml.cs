@@ -11,7 +11,7 @@ namespace SpamDrafter.App.Views;
 /// <summary>
 /// Une carte à cadre de rareté (phase 13). Les tailles du nom, des pastilles et des coins suivent la largeur de la carte.
 /// Reflet holographique : seulement sur la fiche détaillée (<see cref="Holo"/>). Au survol, un exemplaire plus grand flotte au-dessus
-/// de tout (une fenêtre flottante, donc jamais rognée par la liste qui contient la carte) ; « Réduire les animations » le coupe.
+/// de tout (une fenêtre flottante, donc jamais rognée par la liste qui contient la carte) ; « Désactiver les animations » le coupe.
 /// </summary>
 public partial class CardFace : UserControl
 {
@@ -64,6 +64,9 @@ public partial class CardFace : UserControl
     public static readonly StyledProperty<IImage?> LargeImageProperty = AvaloniaProperty.Register<CardFace, IImage?>(nameof(LargeImage));
     /// <summary>Version nette de l'illustration, seulement pour une grande tuile (voir <see cref="RefreshLarge"/>).</summary>
     public IImage? LargeImage { get => GetValue(LargeImageProperty); private set => SetValue(LargeImageProperty, value); }
+    public static readonly StyledProperty<bool> ShowThumbProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(ShowThumb), true);
+    /// <summary>La miniature ne sert que tant que la version nette n'est pas arrivée (dessous, elle serait redessinée pour rien à chaque image).</summary>
+    public bool ShowThumb { get => GetValue(ShowThumbProperty); private set => SetValue(ShowThumbProperty, value); }
     private CardItem? _watched;
 
     /// <summary>La miniature de 256 px suffit jusqu'à ≈ 230 pixels réels ; au-delà (tuile large, écran à fort zoom), on charge la version nette.</summary>
@@ -73,6 +76,9 @@ public partial class CardFace : UserControl
         LargeImage = Item is { } it && ImageOverride is null && Bounds.Width * scale > 230 ? it.LargeThumbnail : null;
     }
 
+    public static readonly StyledProperty<bool> CreditBelowAbilitiesProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(CreditBelowAbilities));
+    /// <summary>Fiche détaillée : la signature reste sous l'emplacement des capacités, qu'elles soient affichées ou non (elle ne bouge pas).</summary>
+    public bool CreditBelowAbilities { get => GetValue(CreditBelowAbilitiesProperty); set => SetValue(CreditBelowAbilitiesProperty, value); }
     public static readonly StyledProperty<bool> CompactAbilitiesProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(CompactAbilities));
     /// <summary>Vrai : le bloc des capacités est rapproché des PV (cartes des sélecteurs et des decks du Builder, du Drafter et du Générateur : l'écart sous la 3ᵉ capacité y paraissait trop grand).</summary>
     public bool CompactAbilities { get => GetValue(CompactAbilitiesProperty); set => SetValue(CompactAbilitiesProperty, value); }
@@ -127,6 +133,8 @@ public partial class CardFace : UserControl
     public bool TalentAtBottom { get => GetValue(TalentAtBottomProperty); set => SetValue(TalentAtBottomProperty, value); }
     public string? TopTag { get => GetValue(TopTagProperty); private set => SetValue(TopTagProperty, value); }
     public string? BottomTag { get => GetValue(BottomTagProperty); private set => SetValue(BottomTagProperty, value); }
+    public static readonly StyledProperty<Thickness> NamePaddingProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(NamePadding), new Thickness(4, 4, 4, 12));
+    public Thickness NamePadding { get => GetValue(NamePaddingProperty); private set => SetValue(NamePaddingProperty, value); }
     public static readonly StyledProperty<Thickness> HpMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(HpMargin));
     public Thickness HpMargin { get => GetValue(HpMarginProperty); private set => SetValue(HpMarginProperty, value); }
     public static readonly StyledProperty<Thickness> StarMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(StarMargin));
@@ -413,7 +421,8 @@ public partial class CardFace : UserControl
         if (change.Property == CreditCommandProperty) CreditBox.IsHitTestVisible = CreditCommand is not null;
         if (change.Property == ShowIncomeProperty || change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
             HpVisible = ShowIncome && !(TalentAtBottom && !string.IsNullOrEmpty(TalentTag));
-        if (change.Property == ShowNameProperty || change.Property == ShowRarityProperty || change.Property == ShowAbilitiesProperty || change.Property == CompactAbilitiesProperty) Adapt();
+        if (change.Property == LargeImageProperty || change.Property == ImageOverrideProperty) ShowThumb = ImageOverride is null && LargeImage is null;
+        if (change.Property == ShowNameProperty || change.Property == ShowRarityProperty || change.Property == ShowAbilitiesProperty || change.Property == CompactAbilitiesProperty || change.Property == CreditBelowAbilitiesProperty) Adapt();
         else if (change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
         {
             TopTag = TalentAtBottom ? null : TalentTag;
@@ -438,10 +447,10 @@ public partial class CardFace : UserControl
         var w = Math.Max(Bounds.Width, 30);
         RefreshLarge();
         // Redimensionner une boîte relance Adapt pour chaque carte : on ne refait le calcul que si la largeur ou les options ont changé.
-        var key = (ShowName ? 1 : 0) | (ShowRarity ? 2 : 0) | (ShowAbilities ? 4 : 0) | (ShowElement ? 8 : 0) | (ShowIncome ? 16 : 0) | (CompactAbilities ? 32 : 0);
+        var key = (ShowName ? 1 : 0) | (ShowRarity ? 2 : 0) | (ShowAbilities ? 4 : 0) | (ShowElement ? 8 : 0) | (ShowIncome ? 16 : 0) | (CompactAbilities ? 32 : 0) | (CreditBelowAbilities ? 64 : 0);
         if (Math.Abs(w - _adaptWidth) < 0.3 && key == _adaptKey) return;
         _adaptWidth = w; _adaptKey = key;
-        Corner = new CornerRadius(Math.Clamp(w / 12, 6, 18));
+        Corner = new CornerRadius(Math.Clamp(w / 24, 3, 9));
         NameSize = Math.Clamp(w / 11.5, 8, 17);
         Glyph = Math.Clamp(w / 6.2, 14, 40);
         RarityBadge = Math.Clamp(w / 4.2, 20, 60);   // le symbole chevauche le cadre : sa moitié est sur la bordure, devant
@@ -449,7 +458,11 @@ public partial class CardFace : UserControl
         IncomeFont = Math.Max(7, Glyph * 0.42);
         TalentMaxWidth = Math.Max(40, w * 0.62);
         var inset = Math.Clamp(w / 28, 3, 9);
-        OverlayMargin = new Thickness(inset + 1, ShowName ? NameSize * 1.9 + inset : inset + 1, inset + 1, inset);
+        // Élément (haut gauche) et Spamton (haut droite) : dans leur coin, avec les mêmes marges que les PV et les étoiles (en bas) ;
+        // le nom, centré, laisse la place des deux icônes de chaque côté.
+        OverlayMargin = new Thickness(inset + 5, inset + 3, inset + 5, inset + 3);
+        var nameSide = ShowElement || ShowIncome ? Glyph + inset + 5 : 4;
+        NamePadding = new Thickness(nameSide, 4, nameSide, 12);
         // Le symbole (2 fois plus large que haut) est centré sur le bord bas du cadre ; la carte s'arrête exactement au bas du symbole : aucune marge en dessous.
         BodyMargin = new Thickness(0);
         var t = Math.Clamp(w / 55, 1.5, 7);
@@ -484,6 +497,9 @@ public partial class CardFace : UserControl
         CooldownFont = Math.Max(5.5, AbilitySize * 0.68);
         var side = inset + 2 + w * 0.045;   // bandeaux un peu moins larges que la carte
         AbilitiesMargin = new Thickness(side, 0, side, inset + 3 + HpSize * 2.4 + AbilityRow * 0.55 - 6 - AbilityRow * 0.2 - (CompactAbilities ? AbilityRow * 0.5 : 0));   // 0,2 ligne plus bas qu'avant (retouche phase 15)
+        // Signature de l'artiste : sous les capacités (jamais par-dessus), le plus bas possible dans l'illustration.
+        if (CreditBelowAbilities)
+            CreditMargin = new Thickness(inset, inset, inset, Math.Max(1, Math.Min(lift, AbilitiesMargin.Bottom - CreditSize * 1.7 - 3)));
         ToxSize = Math.Max(11, AbilityIcon * 1.1);
         ToxCorner = new CornerRadius(Math.Max(1, AbilityIcon * 0.12));   // coins à peine arrondis : le cadre du logo ne devient jamais un cercle
         var toxRoom = Math.Max(30, w - 2 * (inset + 2 + w * 0.045) - AbilityIcon - 14);

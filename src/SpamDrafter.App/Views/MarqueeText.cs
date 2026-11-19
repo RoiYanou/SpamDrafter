@@ -7,7 +7,7 @@ namespace SpamDrafter.App.Views;
 
 /// <summary>
 /// Texte sur une ligne qui s'arrête au bord de sa zone ; quand il est trop long, il défile de droite à gauche tant que la souris est
-/// dessus (comme un bandeau), puis revient à sa place quand la souris part. « Réduire les animations » coupe le défilement.
+/// dessus (comme un bandeau), puis revient à sa place quand la souris part. « Désactiver les animations » coupe le défilement.
 /// </summary>
 public sealed class MarqueeText : Decorator
 {

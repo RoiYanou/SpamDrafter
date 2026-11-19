@@ -158,6 +158,13 @@ public sealed class CardItem : ViewModelBase
     public string RarityName { get; }
     public string Summary => $"{ElementName} · {RarityName} · {Card.Hp} PV";
 
+    private static int _pendingLoads;
+    /// <summary>Nombre d'images en cours de chargement (le préchargement du démarrage attend qu'il retombe à 0).</summary>
+    public static int PendingLoads => Volatile.Read(ref _pendingLoads);
+
+    /// <summary>Lance tout de suite, en arrière-plan, le chargement de la miniature (au démarrage : elle est prête avant le premier clic sur un onglet).</summary>
+    public void PreloadThumbnail() { _ = Thumbnail; }
+
     /// <summary>Miniature décodée en petit (évite de charger 100 Mo d'images en mémoire).</summary>
     public Bitmap? Thumbnail
     {
@@ -186,12 +193,17 @@ public sealed class CardItem : ViewModelBase
         var requestedSkin = _skinId;
         var path = _kb.ImagePath(SelectedSkin?.Image ?? Card.Image);
         if (path is null) return;
-        var bmp = await Task.Run(() =>
+        Interlocked.Increment(ref _pendingLoads);
+        try
         {
-            try { using var s = File.OpenRead(path); return Bitmap.DecodeToWidth(s, 440); }
-            catch (Exception) { return null; }
-        });
-        await Dispatcher.UIThread.InvokeAsync(() => { if (_skinId != requestedSkin) return; _large = bmp; Raise(nameof(LargeThumbnail)); });
+            var bmp = await Task.Run(() =>
+            {
+                try { using var s = File.OpenRead(path); return Bitmap.DecodeToWidth(s, 440); }
+                catch (Exception) { return null; }
+            });
+            await Dispatcher.UIThread.InvokeAsync(() => { if (_skinId != requestedSkin) return; _large = bmp; Raise(nameof(LargeThumbnail)); });
+        }
+        finally { Interlocked.Decrement(ref _pendingLoads); }
     }
 
     private async Task LoadThumbAsync()
@@ -199,12 +211,17 @@ public sealed class CardItem : ViewModelBase
         var requestedSkin = _skinId;
         var path = _kb.ImagePath(SelectedSkin?.Thumbnail ?? Card.Thumbnail);
         if (path is null) return;
-        var bmp = await Task.Run(() =>
+        Interlocked.Increment(ref _pendingLoads);
+        try
         {
-            try { using var s = File.OpenRead(path); return Bitmap.DecodeToWidth(s, 260); }
-            catch (Exception) { return null; }
-        });
-        await Dispatcher.UIThread.InvokeAsync(() => { if (_skinId != requestedSkin) return; _thumb = bmp; Raise(nameof(Thumbnail)); });
+            var bmp = await Task.Run(() =>
+            {
+                try { using var s = File.OpenRead(path); return Bitmap.DecodeToWidth(s, 260); }
+                catch (Exception) { return null; }
+            });
+            await Dispatcher.UIThread.InvokeAsync(() => { if (_skinId != requestedSkin) return; _thumb = bmp; Raise(nameof(Thumbnail)); });
+        }
+        finally { Interlocked.Decrement(ref _pendingLoads); }
     }
 
     /// <summary>Illustration complète, décodée à une hauteur raisonnable pour la fiche détail.</summary>

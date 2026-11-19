@@ -9,7 +9,7 @@ using SpamDrafter.Simulator.Engine;
 
 namespace SpamDrafter.App.ViewModels;
 
-/// <summary>Une carte imposée, avec son talent (null = au choix du Cuisinier).</summary>
+/// <summary>Une carte imposée, avec son talent (null = « Choix du chef »).</summary>
 public sealed class FixedSlotViewModel : ViewModelBase
 {
     private TalentOption _talent;
@@ -18,7 +18,7 @@ public sealed class FixedSlotViewModel : ViewModelBase
     {
         Card = card;
         // Phase 15 : en mode « possédés », seuls les talents possédés se proposent.
-        TalentOptions = new[] { new TalentOption(null, "Talent au choix du Cuisinier") }
+        TalentOptions = new[] { new TalentOption(null, "Choix du chef") }
             .Concat(card.Card.Talents.Select((t, i) => (t, i)).Where(x => allowedTalents is null || allowedTalents.Contains(x.t))
                 .Select(x => new TalentOption(x.t, $"{x.i + 1}. {kb.TalentName(x.t)}"))).ToList();
         _talent = TalentOptions[0];
@@ -34,13 +34,18 @@ public sealed record EffortOption(Effort Value, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>Une carte imposée pour une génération : son nom (et le talent utilisé s'il y en a un) ; un clic ouvre sa fiche.</summary>
+public sealed record SourceCard(CardItem Card, string Label);
+
 /// <summary>Un deck proposé par le Cuisinier.</summary>
 public sealed class ProposalViewModel : ViewModelBase
 {
     private bool _saved;
-    public ProposalViewModel(int rank, GeneratedDeck deck, IReadOnlyList<string> lines)
+    public ProposalViewModel(int rank, GeneratedDeck deck, IReadOnlyList<string> lines, IReadOnlyList<SourceCard>? source = null)
     {
         Deck = deck;
+        Source = source ?? Array.Empty<SourceCard>();
+        Rank = rank;
         Title = $"Proposition {rank}";
         Lines = lines;
         SetNote(deck);
@@ -68,6 +73,12 @@ public sealed class ProposalViewModel : ViewModelBase
     public GeneratedDeck Deck { get; }
     /// <summary>Les cartes de la proposition en pastilles (cadre de rareté, talent choisi), comme dans la liste des decks.</summary>
     public IReadOnlyList<DeckChip> Chips => DeckChipsConverter.Build(Deck.Deck.Select(s => new SpamDrafter.Core.Decks.DeckSlot(s.CardId, s.TalentId)));
+    public int Rank { get; }
+    /// <summary>Les cartes (et talents) imposées pour générer cette proposition, affichées à droite de la boîte.</summary>
+    public IReadOnlyList<SourceCard> Source { get; }
+    public bool HasSource => Source.Count > 0;
+    /// <summary>« Ingrédient imposé: » au singulier quand il n'y a qu'une carte.</summary>
+    public string SourceTitle => Source.Count > 1 ? "Ingrédients imposés:" : "Ingrédient imposé:";
     public string Title { get; }
     /// <summary>Note sur 100 (D-072, D-074), par exemple « 54 / 100 ».</summary>
     public string NoteText { get; private set; } = "";
@@ -104,7 +115,7 @@ public sealed class GeneratorViewModel : ViewModelBase
     private readonly Action<Action> _post;
     private CancellationTokenSource? _cts;
     private EffortOption _effort;
-    private string _status = "Choisis 1 à 4 cartes, puis lance la génération.";
+    private string _status = "Choisis 1 à 4 cartes, puis lance la cuisine.";
     private string _step = "";
     private double _progress;
     private bool _busy;
@@ -126,6 +137,8 @@ public sealed class GeneratorViewModel : ViewModelBase
         _effort = EffortOptions[1];
         AddCommand = new RelayCommand(_ => AddSelected(), _ => !IsBusy);
         RemoveCommand = new RelayCommand(p => { if (p is FixedSlotViewModel s && !IsBusy) { Fixed.Remove(s); Refresh(); } });
+        OpenCardCommand = new RelayCommand(p => { if (p is SourceCard sc) OpenCardRequested?.Invoke(sc.Card); });
+        RemoveProposalCommand = new RelayCommand(p => { if (p is ProposalViewModel pr) RemoveProposal(pr); });
         ClearCommand = new RelayCommand(_ => { if (!IsBusy) { Fixed.Clear(); Refresh(); } });
         GenerateCommand = new RelayCommand(_ => _ = GenerateAsync(), _ => !IsBusy && Fixed.Count is > 0 and <= Deck.MaxCards);
         CancelCommand = new RelayCommand(_ => _cts?.Cancel(), _ => IsBusy);
@@ -171,6 +184,10 @@ public sealed class GeneratorViewModel : ViewModelBase
 
     public RelayCommand AddCommand { get; }
     public RelayCommand RemoveCommand { get; }
+    public RelayCommand RemoveProposalCommand { get; }
+    public RelayCommand OpenCardCommand { get; }
+    /// <summary>Demande l'ouverture de la fiche détaillée d'une carte (un clic sur son nom).</summary>
+    public event Action<CardItem>? OpenCardRequested;
     public RelayCommand ClearCommand { get; }
     public RelayCommand GenerateCommand { get; }
     public RelayCommand CancelCommand { get; }
@@ -203,7 +220,7 @@ public sealed class GeneratorViewModel : ViewModelBase
         "• Ce sont des parties simulées par une intelligence artificielle, pas de vraies parties : {{prends les propositions comme des idées à essayer}}. " +
         "Une même demande donne toujours le même résultat, et elle est gardée en mémoire : la relancer est instantané.";
 
-    public string FixedText => $"{Fixed.Count} / {Deck.MaxCards} cartes imposées";
+    public string FixedText => $"{Fixed.Count} / {Deck.MaxCards} ingrédient{(Fixed.Count > 1 ? "s" : "")} imposé{(Fixed.Count > 1 ? "s" : "")}";
     public EffortOption SelectedEffort { get => _effort; set => Set(ref _effort, value); }
     public string Status { get => _status; private set => Set(ref _status, value); }
     /// <summary>Le seul message affiché dans la colonne « Générateur » : un refus, une annulation ou une erreur (le reste est silencieux).</summary>
@@ -213,7 +230,38 @@ public sealed class GeneratorViewModel : ViewModelBase
     private void Warn(string text) { Status = text; Problem = text; }
     public string Step { get => _step; private set => Set(ref _step, value); }
     /// <summary>Avancement de 0 à 100.</summary>
-    public double Progress { get => _progress; private set => Set(ref _progress, value); }
+    public double Progress
+    {
+        get => _progress;
+        private set { if (Set(ref _progress, value)) { Raise(nameof(CookStage)); Raise(nameof(CookPercent)); } }
+    }
+
+    /// <summary>Étape de la « cuisine » selon l'avancement : épluchage, découpe, cuisson, dressage (un quart chacune).</summary>
+    public string CookStage => _progress < 25 ? "Épluchage des ingrédients"
+        : _progress < 50 ? "Découpe des ingrédients"
+        : _progress < 75 ? "Cuisson en cours"
+        : "Dressage en cours";
+    /// <summary>Les trois points qui apparaissent l'un après l'autre, en boucle (voir <see cref="_dotTimer"/>).</summary>
+    public string CookDots => new string('.', _dots);
+    public string CookPercent => $"{_progress:0} %";
+    private int _dots;
+    private Avalonia.Threading.DispatcherTimer? _dotTimer;
+
+    private void StartDots()
+    {
+        _dots = 1; Raise(nameof(CookDots));
+        _dotTimer ??= new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(420) };
+        _dotTimer.Tick -= DotsTick; _dotTimer.Tick += DotsTick;
+        _dotTimer.Start();
+    }
+
+    private void StopDots() => _dotTimer?.Stop();
+
+    private void DotsTick(object? sender, EventArgs e)
+    {
+        _dots = _dots % 3 + 1;   // . puis .. puis ... puis on recommence
+        Raise(nameof(CookDots));
+    }
     /// <summary>Astuce affichée pendant l'attente d'une génération.</summary>
     public string Tip { get; private set; } = Tips.Any();
     public bool IsBusy
@@ -222,7 +270,7 @@ public sealed class GeneratorViewModel : ViewModelBase
         private set
         {
             if (!Set(ref _busy, value)) return;
-            if (value) { Tip = Tips.Any(); Raise(nameof(Tip)); }
+            if (value) { Tip = Tips.Any(); Raise(nameof(Tip)); StartDots(); } else StopDots();
             foreach (var c in new[] { AddCommand, GenerateCommand, CancelCommand, TestCommand, OpenHistoryCommand })
                 c.RaiseCanExecuteChanged();
         }
@@ -232,7 +280,7 @@ public sealed class GeneratorViewModel : ViewModelBase
         var item = Browser.Selected;
         if (item is null) { Warn("Choisis d'abord une carte dans la liste."); return; }
         if (Fixed.Count >= Deck.MaxCards) { Warn($"La sélection contient déjà {Deck.MaxCards} cartes."); return; }
-        if (Fixed.Any(f => f.Card.Card.Id == item.Card.Id)) { Warn("Cette carte est déjà choisie (pas de doublon, D-020)."); return; }
+        if (Fixed.Any(f => f.Card.Card.Id == item.Card.Id)) { Warn("Cette carte est déjà choisie."); return; }
         Problem = "";
         Fixed.Add(new FixedSlotViewModel(item, _kb, OwnedOnly ? _collection!.AllowedTalents(item) : null));
         Refresh();
@@ -243,7 +291,7 @@ public sealed class GeneratorViewModel : ViewModelBase
         Raise(nameof(FixedText));
         GenerateCommand.RaiseCanExecuteChanged();
         Status = Fixed.Count == 0 ? "Choisis 1 à 4 cartes, puis lance la génération."
-            : Fixed.Count == Deck.MaxCards ? "4 cartes imposées : le Cuisinier choisira les talents et l'ordre."
+            : Fixed.Count == Deck.MaxCards ? "4 ingrédients imposés : le Cuisinier choisira les talents et l'ordre."
             : Fixed.Count == 1 && !OwnedOnly && _coordinator.Opponents == OpponentSource.Synthetic && _coordinator.Synthetic.OneCard is not null
                 ? "Le Cuisinier complétera avec 3 cartes. Avec le talent au choix (réglage rapide ou normal), les propositions sont " +
                   "immédiates : elles ont été calculées à l'avance."
@@ -256,27 +304,25 @@ public sealed class GeneratorViewModel : ViewModelBase
         var owned = _collection?.OwnedMap;
         if (owned is not null && owned.Count < Deck.MaxCards)
         {
-            Proposals.Clear();
-            Warn($"Il faut au moins {Deck.MaxCards} cartes possédées pour générer un deck (tu en as {owned.Count}). Importe tes cartes (« Importer ») ou passe sur « Toutes les cartes et talents ».");
+            Warn($"Il faut au moins {Deck.MaxCards} cartes possédées pour cuisiner un deck (tu en as {owned.Count}). Importe tes cartes (« Importer ») ou passe sur « Toutes les cartes et talents ».");
             return;
         }
         var scope = _collection?.Scope ?? "";
         var selection = Fixed.Select(f => new FixedCard(f.Card.Card.Id, f.Talent.Id)).ToList();
         var asSlots = selection.Select(f => new DuelSlot(f.CardId, f.TalentId)).ToList();
-        Proposals.Clear();
         Problem = "";
         // Même demande déjà calculée : on la reprend en mémoire, sans attendre (les moteurs sont reproductibles).
         if (_history?.FindGeneration(asSlots, SelectedEffort.Value, scope) is { Proposals: { Count: > 0 } kept } hit)
         {
-            ShowProposals(kept);
+            ShowProposals(kept, asSlots);
             Status = $"Résultat retrouvé en mémoire (calculé {HistoryText.When(hit.CreatedUtc)}) : aucun nouveau calcul. " + NoteExplanation();
             return;
         }
         var effort = SelectedEffort.Value;
-        await Run("Génération", async (cancel, progress) =>
+        await Run("Cuisine", async (cancel, progress) =>
         {
             var decks = await _coordinator.GenerateAsync(selection, effort, Seed(), cancel, progress, owned);
-            ShowProposals(decks);
+            ShowProposals(decks, asSlots, newBatch: true);
             if (decks.Count > 0 && decks[0].Precomputed && !decks[0].Measured)
             {
                 // Propositions pré-calculées par le Studio : elles s'affichent tout de suite, puis leur note est mesurée comme
@@ -284,7 +330,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                 Status = $"{decks.Count} proposition(s) calculée(s) à l'avance par le Studio. Mesure de la note…";
                 Step = "Mesure de la note…";
                 decks = await _coordinator.MeasureNotesAsync(decks, Seed(), cancel, progress);
-                ShowProposals(decks);
+                ShowProposals(decks, asSlots, newBatch: false);   // même lot : les notes mesurées remplacent les provisoires
             }
             if (decks.Count == 0) Problem = "Aucune proposition.";
             Status = decks.Count == 0 ? "Aucune proposition."
@@ -293,12 +339,40 @@ public sealed class GeneratorViewModel : ViewModelBase
         });
     }
 
-    private void ShowProposals(IReadOnlyList<GeneratedDeck> decks)
+    // Les résultats s'accumulent : chaque génération ajoute ses propositions en haut de la liste (les précédentes restent) ; chacune se retire avec sa croix.
+    private readonly List<ProposalViewModel> _batch = new();
+    private int _nextRank = 1;
+
+    private static string DeckKey(GeneratedDeck d) => string.Join("|", d.Deck.Select(s => s.CardId + ":" + s.TalentId).OrderBy(x => x, StringComparer.Ordinal));
+
+    /// <param name="newBatch">Vrai : nouveau lot, ajouté au-dessus des résultats existants. Faux : le lot précédent est remplacé (notes mesurées).</param>
+    private void ShowProposals(IReadOnlyList<GeneratedDeck> decks, IReadOnlyList<DuelSlot> source, bool newBatch = true)
     {
-        Proposals.Clear();
-        var rank = 0;
-        foreach (var d in decks) Proposals.Add(new ProposalViewModel(++rank, d, d.Deck.Select(Describe).ToList()));
+        int firstRank;
+        if (newBatch) { _batch.Clear(); firstRank = _nextRank; }
+        else
+        {
+            firstRank = _batch.Count > 0 ? _batch.Min(b => b.Rank) : _nextRank;
+            foreach (var old in _batch) Proposals.Remove(old);
+            _batch.Clear();
+        }
+        // Un deck déjà présent dans les résultats n'est pas ajouté une deuxième fois.
+        var chips = source.Where(x => _byId.ContainsKey(x.CardId))
+            .Select(x => { var c = _byId[x.CardId]; return new SourceCard(c, x.TalentId is null ? c.Name : $"{c.Name} · {_kb.TalentName(x.TalentId)}"); }).ToList();
+        var existing = Proposals.Select(p => DeckKey(p.Deck)).ToHashSet();
+        var rank = firstRank - 1;
+        var insertAt = 0;
+        foreach (var d in decks)
+        {
+            if (!existing.Add(DeckKey(d))) continue;
+            var vm = new ProposalViewModel(++rank, d, d.Deck.Select(Describe).ToList(), chips);
+            _batch.Add(vm);
+            Proposals.Insert(insertAt++, vm);
+        }
+        _nextRank = Math.Max(_nextRank, rank + 1);
     }
+
+    private void RemoveProposal(ProposalViewModel p) { Proposals.Remove(p); _batch.Remove(p); }
 
     private string NoteExplanation() =>
         DeckNote.Explanation(_coordinator.Synthetic.Meta.Count, _coordinator.Opponents == OpponentSource.Synthetic);
@@ -313,7 +387,7 @@ public sealed class GeneratorViewModel : ViewModelBase
     {
         HistoryItems.Clear();
         foreach (var e in _history!.Entries.Where(e => e.Kind == HistoryKind.Generation))   // les rapports et les confrontations sont dans l'onglet Tester
-            HistoryItems.Add(new HistoryItem(e, e.Label, "Génération · " + HistoryText.When(e.CreatedUtc)));
+            HistoryItems.Add(new HistoryItem(e, e.Label, "Cuisine · " + HistoryText.When(e.CreatedUtc)));
         Raise(nameof(HasHistory)); Raise(nameof(HistoryTitle));
         ClearHistoryCommand.RaiseCanExecuteChanged();
     }
@@ -333,8 +407,8 @@ public sealed class GeneratorViewModel : ViewModelBase
                 }
             if (Enum.TryParse<Effort>(e.Effort, out var effort)) SelectedEffort = EffortOptions.First(o => o.Value == effort);
             Refresh();
-            ShowProposals(props);
-            Status = $"Génération rouverte depuis l'historique (calculée {HistoryText.When(e.CreatedUtc)}). " + NoteExplanation();
+            ShowProposals(props, e.Slots);
+            Status = $"Cuisine rouverte depuis l'historique (calculée {HistoryText.When(e.CreatedUtc)}). " + NoteExplanation();
         }
     }
 
@@ -363,7 +437,7 @@ public sealed class GeneratorViewModel : ViewModelBase
         var names = p.Deck.Deck.Select(s => _byId.TryGetValue(s.CardId, out var c) ? c.Name : s.CardId);
         var deck = new Deck
         {
-            Name = DeckNames.MakeUnique(_library.Decks, "Généré — " + string.Join(", ", names), Guid.Empty),
+            Name = DeckNames.MakeUnique(_library.Decks, string.Join(", ", names), Guid.Empty),
             Origin = DeckOrigin.Generated,
             GameVersion = _kb.Manifest.GameVersion,
             Slots = p.Deck.Deck.Select(s => new DeckSlot(s.CardId, s.TalentId)).ToList(),

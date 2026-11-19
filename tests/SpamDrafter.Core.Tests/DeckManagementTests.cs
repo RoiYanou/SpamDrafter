@@ -474,7 +474,7 @@ public class DeckManagementTests : IDisposable
 
         Add(vm, 5);
         Assert.Equal(2, vm.Slots.Count);
-        Assert.Contains("générateur", vm.Status);
+        Assert.Contains("deck du chef", vm.Status);
 
         vm.RemoveCommand.Execute(vm.Slots[0]);
         Assert.Equal(2, vm.Slots.Count);

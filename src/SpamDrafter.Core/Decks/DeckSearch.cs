@@ -25,4 +25,24 @@ public static class DeckSearch
             .ThenBy(m => m.Deck.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
     }
+
+    /// <summary>
+    /// Comme <see cref="Find(IEnumerable{Deck}, IReadOnlyCollection{string})"/>, avec en plus un talent facultatif par carte : le deck doit contenir la carte
+    /// avec CE talent (talent null = n'importe lequel).
+    /// </summary>
+    public static IReadOnlyList<DeckMatch> Find(IEnumerable<Deck> decks, IReadOnlyList<(string CardId, string? TalentId)> wanted)
+    {
+        if (wanted.Count > Deck.MaxCards)
+            throw new ArgumentException($"Une recherche porte sur {Deck.MaxCards} cartes au plus.", nameof(wanted));
+        if (wanted.Select(w => w.CardId).Distinct().Count() != wanted.Count)
+            throw new ArgumentException("Une carte ne peut pas être demandée deux fois.", nameof(wanted));
+        if (wanted.Count == 0) return Array.Empty<DeckMatch>();
+
+        return decks
+            .Where(d => wanted.All(w => d.Slots.Any(s => s.CardId == w.CardId && (w.TalentId is null || s.TalentId == w.TalentId))))
+            .Select(d => new DeckMatch(d, d.Slots.Count == Deck.MaxCards))
+            .OrderByDescending(m => m.IsComplete)
+            .ThenBy(m => m.Deck.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
 }

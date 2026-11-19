@@ -97,7 +97,7 @@ Pour retrouver, parmi **vos decks sauvegardés**, ceux qui contiennent certaines
 Le **Grand Cuisinier** complète une sélection de 1 à 4 cartes en un deck de 4 cartes, avec les talents, en faisant jouer des milliers de **duels simulés**.
 
 1. Choisissez 1 à 4 cartes (**Imposer cette carte**). Pour chacune, laissez « Talent au choix du Cuisinier » ou imposez un talent.
-2. Cliquez sur **Générer des decks** (environ 1 minute ; la génération se fait toujours à l'effort « normal »).
+2. Cliquez sur **Lancer la cuisine** (environ 1 minute ; la génération se fait toujours à l'effort « normal »).
 Vous pouvez **Annuler** à tout moment.
 
 Avec **une seule carte** et le talent au choix, les propositions s'affichent **tout de suite** : elles ont été calculées à l'avance.

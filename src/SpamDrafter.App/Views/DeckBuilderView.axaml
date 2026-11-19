@@ -90,7 +90,7 @@
                 <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
                   <!-- La même carte qu'en Bibliothèque, sans agrandissement au survol. Le ✕ est dans le coin haut droit de la case, jamais sur la carte. -->
                   <ContentControl Width="112" Height="165" HorizontalAlignment="Center" Content="{Binding Card}" ContentTemplate="{StaticResource CardThumbFlat}" />
-                  <Button Content="✕" Classes="danger" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-6,0" Padding="7,2" FontSize="12" ZIndex="5"
+                  <Button Content="✕" Classes="danger" ClickMode="Press" MinWidth="34" MinHeight="30" HorizontalContentAlignment="Center" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-8,-8,0" Padding="8,3" FontSize="13" ZIndex="5"
                           ToolTip.Tip="Retirer cette carte du deck"
                           IsEnabled="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).CanEditCards}"
                           Command="{Binding $parent[UserControl].((vm:DeckBuilderViewModel)DataContext).RemoveCommand}"
@@ -107,7 +107,7 @@
                 Background="#F0301C5E" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" BoxShadow="0 8 24 0 #AA000000">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <StackPanel Spacing="4">
-              <TextBlock Text="⚙ Deck généré" Classes="title" FontSize="16" Foreground="{StaticResource BrushYellow}" />
+              <StackPanel Orientation="Horizontal" Spacing="8"><Viewbox Width="20" Height="20" VerticalAlignment="Center"><Canvas Width="24" Height="24"><Path Data="M6.5 13 C3.5 12.5 3 8 6 7 C6.5 4 10.5 3 12 5.5 C13.5 3 17.5 4 18 7 C21 8 20.5 12.5 17.5 13 V19.5 H6.5 Z" Fill="#F4F0FF" Stroke="#B9AEE0" StrokeThickness="1.2" StrokeJoin="Round" /><Path Data="M6.5 16.2 H17.5" Stroke="#B9AEE0" StrokeThickness="1.2" /></Canvas></Viewbox><TextBlock Text="Deck du chef" Classes="title" FontSize="16" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" /></StackPanel>
               <TextBlock Text="{Binding LockedNotice}" TextWrapping="Wrap" FontSize="13" />
             </StackPanel>
             <Button Grid.Column="1" Content="✕" Classes="neutral" VerticalAlignment="Top" Padding="8,2" FontSize="12" ToolTip.Tip="Fermer cette information"
@@ -249,7 +249,7 @@
           <v:Collapse.Header>
             <StackPanel Orientation="Horizontal" Spacing="10">
               <TextBlock Text="Tri et filtres" />
-              <TextBlock Text="● filtre actif" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
+              <TextBlock Text="{Binding DeckFiltersLabel}" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
             </StackPanel>
           </v:Collapse.Header>
           <StackPanel Spacing="8" Margin="10,8,10,10">
@@ -295,7 +295,7 @@
                 <Border Width="4" Margin="14,9,0,9" CornerRadius="2" HorizontalAlignment="Left" Background="{Binding Id, Converter={x:Static vm:DeckDecor.ColorBrush}}" />
                 <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
                   <TextBlock Text="★" Foreground="#FFD35A" IsVisible="{Binding Favorite}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="⚙" IsVisible="{Binding IsGenerated}" ToolTip.Tip="Deck issu du générateur" VerticalAlignment="Center" />
+                  <ContentControl Grid.Column="1" IsVisible="{Binding IsGenerated}" ToolTip.Tip="Deck du chef" VerticalAlignment="Center"><Viewbox Width="18" Height="18" VerticalAlignment="Center"><Canvas Width="24" Height="24"><Path Data="M6.5 13 C3.5 12.5 3 8 6 7 C6.5 4 10.5 3 12 5.5 C13.5 3 17.5 4 18 7 C21 8 20.5 12.5 17.5 13 V19.5 H6.5 Z" Fill="#F4F0FF" Stroke="#B9AEE0" StrokeThickness="1.2" StrokeJoin="Round" /><Path Data="M6.5 16.2 H17.5" Stroke="#B9AEE0" StrokeThickness="1.2" /></Canvas></Viewbox></ContentControl>
                   <TextBlock Grid.Column="2" Text="⚠" Foreground="#FFB050" IsVisible="{Binding VersionImpacted}" VerticalAlignment="Center"
                              ToolTip.Tip="Touché par une mise à jour de SPAM : ouvre le deck pour voir les différences" />
                   <TextBlock Grid.Column="3" Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />

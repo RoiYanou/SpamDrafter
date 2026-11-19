@@ -98,7 +98,7 @@ public class GeneratorViewModelTests
         w.Drafter.Browser.Selected = w.Drafter.Browser.Items.First(i => i.Card.Id == imposed);
         w.Drafter.AddCommand.Execute(null);
         var found = Assert.Single(w.Drafter.Results);
-        Assert.Contains("généré", found.Badge);
+        Assert.Contains("deck du chef", found.Badge);
     }
 
     [Fact]

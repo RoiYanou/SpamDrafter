@@ -291,7 +291,7 @@ public sealed class TesterViewModel : ViewModelBase
             _history?.AddReport(slots, complete, Effort.Normal, deck.Name, title, res.Sheet, detail, res.Report.Duels, res.Report.Elapsed.TotalSeconds, m);
         }
         catch (OperationCanceledException) { Status = "Test annulé."; }
-        catch (InvalidOperationException e) when (coordinator.IsBusy) { Status = "Un autre calcul est en cours (Générateur ?) : réessaie dans un instant. " + e.Message; }
+        catch (InvalidOperationException e) when (coordinator.IsBusy) { Status = "Un autre calcul est en cours (Cuisine ?) : réessaie dans un instant. " + e.Message; }
         catch (Exception e) { Status = "Test impossible : " + e.Message; }
         finally
         {
@@ -456,7 +456,7 @@ public sealed class TesterViewModel : ViewModelBase
             _history?.AddComparison(slotsA, slotsB, a.Name, b.Name, res);
         }
         catch (OperationCanceledException) { Status = "Confrontation annulée."; }
-        catch (InvalidOperationException e) when (coordinator.IsBusy) { Status = "Un autre calcul est en cours (Générateur ?) : réessaie dans un instant. " + e.Message; }
+        catch (InvalidOperationException e) when (coordinator.IsBusy) { Status = "Un autre calcul est en cours (Cuisine ?) : réessaie dans un instant. " + e.Message; }
         catch (Exception e) { Status = "Confrontation impossible : " + e.Message; }
         finally
         {
@@ -497,7 +497,7 @@ public sealed class TesterViewModel : ViewModelBase
         if (_deckA is not null || _deckB is not null) { _deckA = Fresh(_deckA); _deckB = Fresh(_deckB); RaiseSlots(); SyncCompare(); }
         var drafts = source.Count - testable.Count;
         Message = _library.Decks.Count == 0
-            ? "Aucun deck sauvegardé pour l'instant : crée-en un dans le Deck builder ou le Générateur."
+            ? "Aucun deck sauvegardé pour l'instant : crée-en un dans le Deck Builder ou la Cuisine."
             : testable.Count == 0
                 ? "Aucun deck complet ne correspond. Seuls les decks de 4 cartes peuvent être testés."
                 : $"{testable.Count} deck(s) testable(s)" + (drafts > 0 ? $" · {drafts} brouillon(s) incomplet(s) non proposé(s)." : ".");
