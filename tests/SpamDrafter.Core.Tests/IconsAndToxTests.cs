@@ -216,7 +216,7 @@ public class IconsAndToxTests : IDisposable
         Assert.Equal(2, w.Vm.InnateTox.Count);
         var common = w.Vm.InnateTox[0]; var epic = w.Vm.InnateTox[1];
         Assert.Equal("Phénix", common.Name);
-        Assert.Equal("Commune", common.RarityName);
+        Assert.Equal("Commun", common.RarityName);
         Assert.Equal("Épique", epic.RarityName);
         Assert.Equal(Color.Parse("#333333"), ((SolidColorBrush)common.Border).Color);
         Assert.Equal(Color.Parse("#8939FD"), ((SolidColorBrush)epic.Border).Color);

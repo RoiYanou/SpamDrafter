@@ -2,7 +2,7 @@
 
 SpamDrafter est une application **non officielle**, faite par un joueur pour les joueurs de **SPAM**. Elle n'est ni produite ni approuvée par l'éditeur du jeu. Les textes et les illustrations des cartes appartiennent à leurs auteurs.
 
-Ce guide explique comment l'installer et comment se servir de ses quatre onglets.
+Ce guide explique comment l'installer et comment se servir de ses onglets.
 
 ---
 
@@ -43,7 +43,7 @@ Les mises à jour ne touchent jamais à vos decks.
 
 ---
 
-## 3. Les quatre onglets
+## 3. Les onglets
 
 Dans les listes de cartes, vous pouvez **rechercher une carte** par son nom, par le nom d'une de ses **capacités** ou d'un de ses **talents**, et filtrer par **élément** et par **rareté**. La recherche ignore les accents et les majuscules (« panthere » trouve « Panthère imaginaire », « piou-piou-piou » trouve « Oisillons de Midas ») ; plusieurs mots se cumulent. **Échap** vide la recherche. Un **double-clic** sur une carte fait la même chose que le bouton d'ajout de l'onglet.
 
@@ -97,24 +97,38 @@ Pour retrouver, parmi **vos decks sauvegardés**, ceux qui contiennent certaines
 Le **Grand Cuisinier** complète une sélection de 1 à 4 cartes en un deck de 4 cartes, avec les talents, en faisant jouer des milliers de **duels simulés**.
 
 1. Choisissez 1 à 4 cartes (**Imposer cette carte**). Pour chacune, laissez « Talent au choix du Cuisinier » ou imposez un talent.
-2. Choisissez l'**Effort** : Rapide, Normal (environ 1 minute) ou Précis (2 à 3 fois plus de duels).
-3. Cliquez sur **Générer des decks**. Vous pouvez **Annuler** à tout moment.
+2. Cliquez sur **Générer des decks** (environ 1 minute ; la génération se fait toujours à l'effort « normal »).
+Vous pouvez **Annuler** à tout moment.
 
-Avec **une seule carte** et le talent au choix (effort rapide ou normal), les propositions s'affichent **tout de suite** : elles ont été calculées à l'avance.
+Avec **une seule carte** et le talent au choix, les propositions s'affichent **tout de suite** : elles ont été calculées à l'avance.
 
-Chaque proposition affiche une **note sur 100** et un qualificatif. La note vient du pourcentage de duels simulés que le deck gagne contre les 20 decks de la méta (une égalité compte pour une demi-victoire), ramené à une échelle de 0 à 100 : **0 = il ne gagne presque jamais, 100 = il gagne la moitié de ses duels ou plus contre la méta, donc il est au niveau d'un deck de la méta.** Faible : moins de 35 ; Correct : 35 à 54 ; Bon : 55 à 74 ; Excellent : 75 et plus. **La proposition et la fiche d'un même deck affichent toujours la même note** (la note de chaque proposition est mesurée avec les mêmes duels que sa fiche). Passez la souris sur la note pour voir le nombre de duels, le pourcentage de victoires et la marge d'erreur ; « à confirmer » s'affiche quand la mesure repose sur trop peu de duels. Pour une seule carte, les propositions préparées à l'avance s'affichent tout de suite, puis leur note est mesurée (environ 30 secondes la première fois, instantané ensuite grâce à l'historique). **Sauvegarder** ajoute le deck à vos decks (un deck généré garde son badge ⚙ ; ses cartes et ses talents sont verrouillés, voir le Deck builder). Le panneau **Comment ça marche ?**, en haut de l'onglet, explique le Cuisinier et la note en quelques lignes.
+Chaque proposition affiche une **note sur 100** et un qualificatif. La note vient du pourcentage de duels simulés que le deck gagne contre les 20 decks de la méta (une égalité compte pour une demi-victoire), ramené à une échelle de 0 à 100 : **0 = il ne gagne presque jamais, 100 = il gagne la moitié de ses duels ou plus contre la méta, donc il est au niveau d'un deck de la méta.** **Intankable** (0, rouge) ; **Faible** (1 à 34, orange) ; **Passable** (35 à 54, jaune) ; **Bon** (55 à 74, vert) ; **Excellent** (75 à 99, bleu) ; **Parfait** (100, multicolore). **La proposition et la fiche d'un même deck affichent toujours la même note** (la note de chaque proposition est mesurée avec les mêmes duels que sa fiche). Passez la souris sur la note pour voir le nombre de duels, le pourcentage de victoires et la marge d'erreur ; « à confirmer » s'affiche quand la mesure repose sur trop peu de duels. Pour une seule carte, les propositions préparées à l'avance s'affichent tout de suite, puis leur note est mesurée (environ 30 secondes la première fois, instantané ensuite grâce à l'historique). **Sauvegarder** ajoute le deck à vos decks (un deck généré garde son badge ⚙ ; ses cartes et ses talents sont verrouillés, voir le Deck builder). Le panneau **Comment ça marche ?**, en haut de l'onglet, explique le Cuisinier et la note en quelques lignes.
 
-**Fiche du deck** (environ 15 à 20 secondes) donne l'essentiel pour jouer ce deck :
+**Tester ce deck →** (sous chaque proposition) sauvegarde la proposition puis l'ouvre dans l'onglet **Tester**, qui donne sa fiche détaillée.
+
+**Résultat** : la colonne de droite affiche les decks proposés, chacun avec sa note, **Tester ce deck →** et **Sauvegarder**. Les 30 dernières générations sont gardées en mémoire : Redemander la même chose (mêmes cartes, mêmes talents, même effort) est **instantané** : « Résultat retrouvé en mémoire ». La mémoire est remise à zéro quand les données du jeu changent (nouvelle version de SPAM, nouvelle méta).
+
+### Tester
+
+Pour juger un deck. Choisissez un deck de 4 cartes dans la liste de gauche (mêmes recherche, tri et filtres que « Mes decks » ; les brouillons ne sont pas proposés ; la ✕ à côté du nom retire le deck choisi). Deux sous-onglets :
+
+**Un deck** : **Tester ce deck** (environ 15 secondes) calcule la **note sur 100** (même note que dans la Génération de deck) et la **Fiche rapport** :
 
 - **Verdict** : sa force contre les adversaires ;
 - **Pourquoi ça marche** : les éléments et les liens entre cartes qui font sa force ;
 - **Les cartes** : la carte clé, la plus faible, celle qui encaisse ;
 - **Talents** et **Tox à acheter**, quand une mesure les distingue nettement ;
-- **À craindre** : les adversaires qui le battent.
 
-**Mémoire et historique** : tout ce que vous calculez est gardé (les 30 dernières générations et les 30 derniers rapports). Redemander la même chose (mêmes cartes, mêmes talents, même effort) est **instantané** : « Résultat retrouvé en mémoire ». Le panneau **Historique** liste ces résultats : **Rouvrir** les affiche de nouveau (avec la sélection de cartes), ✕ en retire un, **Vider l'historique** efface tout. La mémoire est remise à zéro quand les données du jeu changent (nouvelle version de SPAM, nouvelle méta).
+**Analyse complète** (environ 1 minute) ajoute les liens entre chaque paire de cartes ; **Voir le détail** affiche alors le rapport complet. Un rapport déjà calculé s'affiche **tout de suite** quand vous choisissez le deck (« Rapport retrouvé en mémoire »).
 
-**Analyse complète** (environ 1 minute) ajoute les liens entre chaque paire de cartes. **Analyser un deck sauvegardé** fait la même analyse sur l'un de vos decks.
+**Comparer 2 decks** : un clic sur un deck de la liste le place en **A**, le suivant en **B** (les boutons « Deck A » et « Deck B » choisissent le camp à remplir ; **Retirer** vide un camp ; **⇄** échange A et B). **Comparer ces decks** les fait jouer l'un contre l'autre : 300 duels simulés, chaque deck commençant autant de fois que l'autre. Vous obtenez :
+
+- le **verdict** en haut, avec une jauge orange (Deck A) et bleue (Deck B) : un deck n'est déclaré meilleur que si l'écart dépasse la marge d'erreur, sinon « pas d'écart net » ; le texte parle de « Deck A » et « Deck B » (le vrai nom s'affiche au survol) ;
+- les **notes** des deux decks contre la méta, dans la couleur de leur niveau ;
+- le résultat selon **qui commence** (cela change une fois sur deux) et la **durée** des duels ;
+- un **tableau par deck** : l'illustration de chaque carte avec son talent, puis les moyennes par duel (dégâts infligés, soins, dégâts subis, éliminations, fréquence de chute).
+
+Les confrontations déjà faites sont gardées (« Confrontation retrouvée en mémoire »). Ce sont des parties simulées, pas de vraies parties.
 
 ### Contre qui sont mesurés les decks ?
 
@@ -128,6 +142,14 @@ Quand une nouvelle méta est calculée, elle arrive avec une mise à jour des do
 - L'IA ne joue pas comme un humain : certains decks réels sont sous-estimés en simulation. Prenez les propositions comme des **idées à essayer**, pas comme des certitudes.
 - Avec les mêmes cartes et les mêmes réglages, l'application donne toujours les mêmes propositions.
 
+### Ma collection (cartes et talents possédés)
+
+SPAM ne permet pas encore à SpamDrafter de lire ta collection : tu la saisis toi-même.
+
+- **Interrupteur** (sous l'en-tête) : **Toutes les cartes et talents** (tout le jeu) ou **Cartes et talents possédés**. Dans le second mode, la Bibliothèque, les listes de cartes, « Mes decks », le Drafter et le Générateur n'utilisent que ce que tu possèdes : un deck n'est montré que si ses cartes et ses talents sont tous à toi, et le Générateur ne propose que des decks que tu peux essayer dans SPAM (il faut au moins 4 cartes possédées).
+- **Ma collection…** : **Importation complète** (les cartes défilent une à une, dans l'ordre du jeu : *Pas de talent*, *Talent 1*, *Talent 2*, *Talent 3* ou *Carte non possédée*) ou **Importation précise** (tu cherches une carte et tu règles ce que tu en possèdes). *Talent 2* veut dire que tu possèdes aussi le Talent 1, *Talent 3* que tu possèdes aussi les Talents 1 et 2.
+- Pendant l'importation complète : **Continuer plus tard** (tu reprendras où tu t'es arrêté), **Annuler l'importation** (ta collection ne change pas) et **← Carte précédente**. Ta collection n'est remplacée qu'à la fin.
+
 ---
 
 ## 4. Où sont mes fichiers ?
@@ -137,7 +159,8 @@ Quand une nouvelle méta est calculée, elle arrive avec une mise à jour des do
 | Vos decks | `%APPDATA%\SpamDrafter\decks` (un fichier par deck) |
 | Le programme | `%LOCALAPPDATA%\SpamDrafter` |
 | Les données du jeu | `%LOCALAPPDATA%\SpamDrafter\data` |
-| Historique des générations et des rapports | `%APPDATA%\SpamDrafter\history.json` (le supprimer vide l'historique) |
+| Historique des générations, rapports et comparaisons | `%APPDATA%\SpamDrafter\history.json` (le supprimer vide l'historique) |
+| Ta collection de cartes et talents | `%APPDATA%\SpamDrafter\collection.json` (le supprimer vide la collection) |
 | Ce dont l'application se souvient (onglet, fenêtre, filtres) | `%APPDATA%\SpamDrafter\settings.json` (le supprimer remet tout à zéro) |
 
 Pour sauvegarder vos decks, utilisez **Sauvegarder mes decks…** dans le Deck builder (ou copiez le dossier `decks`).

@@ -43,12 +43,14 @@ public static class ThemeManager
         var p = Palettes.GetValueOrDefault(theme) ?? Palettes["default"];
         Set(app, "BrushNight", Color.Parse(p.Night));
         var panel = Color.Parse(p.Panel);
-        Set(app, "BrushPanel", Color.FromArgb(highContrast ? (byte)0xF2 : (byte)0xB8, panel.R, panel.G, panel.B));
+        Set(app, "BrushPanel", Color.FromArgb(highContrast ? (byte)0xF2 : (byte)0x84, panel.R, panel.G, panel.B));
         Set(app, "BrushPanelSolid", panel);
         Set(app, "BrushRail", panel);
         var violet = Color.Parse(p.Violet);
         if (highContrast) violet = Mix(violet, Colors.White, 0.45);          // bordures bien visibles
         Set(app, "BrushViolet", violet);
+        Set(app, "BrushCardFill", Mix(violet, Colors.White, 0.1));
+        Set(app, "BrushCardEdge", Mix(violet, Colors.White, 0.5));
         Set(app, "BrushTextSecondary", highContrast ? Colors.White : Color.FromArgb(0xB3, 255, 255, 255));
         var control = Mix(Mix(panel, violet, 0.55), Colors.White, 0.04);
         Set(app, "BrushControl", Color.FromArgb(0xA0, control.R, control.G, control.B));
@@ -67,14 +69,16 @@ public static class ThemeManager
         Set(app, "ComboBoxBorderBrush", edge);
         Set(app, "ScrollBarThumbFill", edge);
         Set(app, "ToolTipBackground", Color.FromArgb(0xF0, night.R, night.G, night.B));
-        Set(app, "ExpanderHeaderBackground", Color.FromArgb(0xB8, panel.R, panel.G, panel.B));
+        Set(app, "ExpanderHeaderBackground", Color.FromArgb(0x84, panel.R, panel.G, panel.B));
         Set(app, "ExpanderHeaderBackgroundPointerOver", violet);
         Set(app, "ExpanderHeaderBackgroundPressed", violet);
         // Dégradés : même thème, trois teintes douces + une touche de jaune sur les contours.
         Color e1 = Color.Parse(p.Edge1), e2 = Color.Parse(p.Edge2), e3 = Color.Parse(p.Edge3);
-        byte pa = highContrast ? (byte)0xF2 : (byte)0xD0;
+        byte pa = highContrast ? (byte)0xF2 : (byte)0x90;   // boîtes plus transparentes : on voit mieux la texture et les particules du fond
         SetStops(app, "BrushPanelFill", WithAlpha(Mix(panel, e1, 0.30), pa), WithAlpha(panel, (byte)(pa - 12)), WithAlpha(Mix(panel, e2, 0.28), pa));
-        SetStops(app, "BrushPanelEdge", e1, e2, Color.Parse(p.Accent), e3);
+        // Contour des boîtes : la couleur secondaire du thème, en quatre nuances.
+        var accEdge = Color.Parse(p.Accent);
+        SetStops(app, "BrushPanelEdge", Mix(accEdge, Colors.White, 0.3), accEdge, Mix(accEdge, Colors.Black, 0.15), Mix(accEdge, Colors.White, 0.15));
         SetStops(app, "BrushButtonFill", WithAlpha(Mix(violet, Colors.White, 0.30), 0xC8), WithAlpha(Mix(violet, Colors.Black, 0.12), 0xC8));
         SetStops(app, "BrushButtonHover", WithAlpha(Mix(violet, Colors.White, 0.5), 0xE6), WithAlpha(Mix(violet, e1, 0.25), 0xE6));
         SetStops(app, "BrushSelectFill", WithAlpha(Mix(violet, e1, 0.3), 0xC0), WithAlpha(Mix(violet, e2, 0.4), 0xC0));
@@ -82,6 +86,10 @@ public static class ThemeManager
         // Couleur secondaire : titres, boutons principaux, poignées, onglet actif, survols, lueurs (jaune par défaut).
         Color acc = Color.Parse(p.Accent), accEnd = Color.Parse(p.AccentEnd);
         Set(app, "BrushYellow", acc);
+        // Boutons ordinaires : fond sombre teinté de la couleur secondaire, liseré à cette couleur.
+        SetStops(app, "BrushActionFill", WithAlpha(Mix(acc, Colors.Black, 0.5), 0xD0), WithAlpha(Mix(acc, Colors.Black, 0.66), 0xD0));
+        SetStops(app, "BrushActionHover", WithAlpha(Mix(acc, Colors.Black, 0.28), 0xE8), WithAlpha(Mix(acc, Colors.Black, 0.5), 0xE8));
+        Set(app, "BrushActionEdge", acc);
         SetStops(app, "BrushPrimaryFill", Mix(acc, Colors.White, 0.15), accEnd);
         SetStops(app, "BrushPrimaryHover", Mix(acc, Colors.White, 0.4), Mix(accEnd, Colors.White, 0.25));
         Set(app, "BrushAccentDark", Mix(acc, Colors.Black, 0.2));
@@ -93,8 +101,29 @@ public static class ThemeManager
         Set(app, "ScrollBarThumbFillPointerOver", acc);
         Set(app, "ScrollBarThumbFillPressed", Mix(acc, Colors.Black, 0.2));
         if (app.TryGetResource("GlowEffect", app.ActualThemeVariant, out var glow) && glow is DropShadowEffect shadow) shadow.Color = acc;
+        SetSystemAccent(app, acc);
+        Set(app, "MenuFlyoutPresenterBackground", panel);
+        Set(app, "MenuFlyoutPresenterBorderBrush", edge);
         Accent = acc;
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Couleur d'accent de Fluent (soulignement de l'onglet choisi, cases cochées, curseurs, barres de progression…) : la couleur secondaire du thème.
+    /// Ces couleurs sont dans le dictionnaire « Dark » de App.axaml ; les réécrire met à jour tout ce qui les utilise.
+    /// </summary>
+    private static void SetSystemAccent(Application app, Color acc)
+    {
+        if (app.Resources.ThemeDictionaries.TryGetValue(Avalonia.Styling.ThemeVariant.Dark, out var d) && d is Avalonia.Controls.ResourceDictionary dict)
+        {
+            dict["SystemAccentColor"] = acc;
+            dict["SystemAccentColorDark1"] = Mix(acc, Colors.Black, 0.1);
+            dict["SystemAccentColorDark2"] = Mix(acc, Colors.Black, 0.22);
+            dict["SystemAccentColorDark3"] = Mix(acc, Colors.Black, 0.35);
+            dict["SystemAccentColorLight1"] = Mix(acc, Colors.White, 0.25);
+            dict["SystemAccentColorLight2"] = Mix(acc, Colors.White, 0.5);
+            dict["SystemAccentColorLight3"] = Mix(acc, Colors.White, 0.7);
+        }
     }
 
     private static Color WithAlpha(Color c, byte a) => Color.FromArgb(a, c.R, c.G, c.B);

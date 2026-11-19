@@ -29,9 +29,33 @@ public partial class HomeView : UserControl
     private bool _paused, _needsStart = true;
     private TipEffect _effect;
 
+    private readonly DispatcherTimer _greetTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
+    private readonly DateTime _greetStart = DateTime.UtcNow;
+
+    /// <summary>Couleur animée du bonjour : une teinte au hasard qui ondule et respire ; 1 fois sur 100, un arc-en-ciel qui défile.</summary>
+    private void AnimateGreeting()
+    {
+        if (DataContext is not ViewModels.HomeViewModel vm) return;
+        var t = Motion.Reduce ? 0 : (DateTime.UtcNow - _greetStart).TotalSeconds;
+        var color = vm.GreetingRainbow
+            ? FromHsv((t * 70) % 360, 0.75, 1)
+            : FromHsv((vm.GreetingHue + 14 * Math.Sin(t * 1.3) + 360) % 360, 0.55 + 0.15 * Math.Sin(t * 0.9), 0.9 + 0.1 * Math.Sin(t * 2.1));
+        GreetingText.Foreground = new SolidColorBrush(color);
+    }
+
+    private static Color FromHsv(double h, double s, double v)
+    {
+        var c = v * s; var x = c * (1 - Math.Abs(h / 60 % 2 - 1)); var m = v - c;
+        var (r, g, b) = (int)(h / 60) switch { 0 => (c, x, 0.0), 1 => (x, c, 0.0), 2 => (0.0, c, x), 3 => (0.0, x, c), 4 => (x, 0.0, c), _ => (c, 0.0, x) };
+        return Color.FromRgb((byte)((r + m) * 255), (byte)((g + m) * 255), (byte)((b + m) * 255));
+    }
+
     public HomeView()
     {
         InitializeComponent();
+        _greetTimer.Tick += (_, _) => AnimateGreeting();
+        AttachedToVisualTree += (_, _) => { AnimateGreeting(); _greetTimer.Start(); };
+        DetachedFromVisualTree += (_, _) => _greetTimer.Stop();
         // Un clic sur la carte du jour l'ouvre en grand ; un clic sur le fond assombri la referme.
         Tilt.Attach(CardOfDayBox); Tilt.Attach(ZoomBox);
         CardOfDayBox.PointerPressed += (_, _) => (DataContext as ViewModels.HomeViewModel)?.OpenZoomCommand.Execute(null);

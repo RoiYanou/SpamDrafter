@@ -28,6 +28,15 @@
       <Setter Property="BorderBrush" Value="#FFD35A" />
       <Setter Property="Background" Value="Transparent" />
     </Style>
+    <!-- Talents : le survol reste dans les violets de la carte (jamais jaune) ; un talent non possédé ne change pas de couleur mais reste cliquable. -->
+    <Style Selector="Button.talentbtn:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.talentbtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#5E4AA6" />
+      <Setter Property="BorderBrush" Value="#B9A6F0" />
+    </Style>
+    <Style Selector="Button.talentbtn.dim:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.talentbtn.dim:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushCardFill}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushCardEdge}" />
+    </Style>
   </UserControl.Styles>
   <UserControl.KeyBindings>
     <KeyBinding Gesture="Escape" Command="{Binding CloseOverlayCommand}" />
@@ -45,9 +54,9 @@
         <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:TalentLine">
-          <Button Background="#4A3A7A" BorderBrush="#8E78D0" BorderThickness="1.5" CornerRadius="12" Padding="12,8" Margin="0,0,8,0"
+          <Button Classes="talentbtn" Classes.dim="{Binding !Owned}" Background="{StaticResource BrushCardFill}" BorderBrush="{StaticResource BrushCardEdge}" BorderThickness="1.5" CornerRadius="12" Padding="12,8" Margin="0,0,8,0" Opacity="{Binding Dim}"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" ToolTip.Tip="Cliquer pour lire la description du talent">
-            <TextBlock Text="{Binding Name}" Classes="hot" FontSize="14" TextWrapping="Wrap" TextAlignment="Center" />
+            <v:OutlinedText Text="{Binding Name}" FontWeight="SemiBold" Foreground="White" FontSize="14" HorizontalAlignment="Stretch" />
             <Button.Flyout>
               <Flyout Placement="Bottom">
                 <StackPanel MaxWidth="340" Spacing="4">
@@ -125,10 +134,12 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:AbilityLine">
                 <!-- Capacité présentée comme un bouton du jeu : nom et recharge (icône du jeu derrière le nombre) ; dessous, description colorée et statistiques. -->
-                <Border Background="#4A3A7A" BorderBrush="#8E78D0" BorderThickness="1.5" CornerRadius="12" Padding="14,8" Margin="0,0,0,8">
+                <Border Background="{StaticResource BrushCardFill}" BorderBrush="{StaticResource BrushCardEdge}" BorderThickness="1.5" CornerRadius="12" Padding="14,8" Margin="0,0,0,8">
                   <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="14" RowSpacing="4">
                     <Grid Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
-                      <TextBlock Text="{Binding Name}" Classes="hot" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      <!-- Même illustration que sur la carte (éléments ou logos), à gauche du nom. -->
+                      <v:ElementCombo HorizontalAlignment="Left" VerticalAlignment="Center" Width="36" Height="36" Icons="{Binding Pictures}" IsVisible="{Binding HasPictures}" />
+                      <v:OutlinedText Text="{Binding Name}" FontWeight="SemiBold" Foreground="White" FontSize="18" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="44,0" />
                       <Grid Grid.Column="1" Width="40" Height="40" IsVisible="{Binding HasCooldown}" VerticalAlignment="Center" ToolTip.Tip="Temps de recharge, en tours">
                         <Image Source="{Binding CooldownIcon}" Stretch="Uniform" />
                         <TextBlock Text="{Binding CooldownText}" FontWeight="Bold" FontSize="17" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -143,7 +154,7 @@
                       </StackPanel>
                       <TextBlock Text="Critique" Classes="hint" Margin="0,4,0,0" IsVisible="{Binding CanCrit}" />
                       <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding CanCrit}" ToolTip.Tip="Chance de coup critique">
-                        <Rectangle Width="20" Height="20" Fill="#FFD84A"><Rectangle.OpacityMask><ImageBrush Source="{Binding CritIcon}" Stretch="Uniform" /></Rectangle.OpacityMask></Rectangle>
+                        <Image Source="{Binding CritIcon}" Width="20" Height="20" Stretch="Uniform" />
                         <TextBlock Text="{Binding CritChanceText}" Classes="value" FontSize="14" VerticalAlignment="Center" />
                       </StackPanel>
                       <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding CanCrit}" ToolTip.Tip="Dégâts critiques (multiplicateur)">
@@ -160,7 +171,7 @@
           <ItemsControl ItemsSource="{Binding InnateTox}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:ToxLine">
-                <Border Background="#4A3A7A" BorderBrush="#8E78D0" BorderThickness="1.5" CornerRadius="12" Padding="14,8" Margin="0,0,0,8">
+                <Border Background="{StaticResource BrushCardFill}" BorderBrush="{StaticResource BrushCardEdge}" BorderThickness="1.5" CornerRadius="12" Padding="14,8" Margin="0,0,0,8">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                   <Border Width="52" Height="52" CornerRadius="8" BorderThickness="2" BorderBrush="{Binding Border}" Background="#22000000" ClipToBounds="True">
                     <Image Source="{Binding Image}" Stretch="Uniform" Margin="4" IsVisible="{Binding HasImage}" />
@@ -199,7 +210,7 @@
       </StackPanel>
     </ScrollViewer>
     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,22,0" Spacing="6" Width="48">
-      <Button Content="✕" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding CloseOverlayCommand}" Padding="0,4" FontSize="16"
+      <Button Content="✕" Classes="neutral" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding CloseOverlayCommand}" Padding="0,4" FontSize="16"
               ToolTip.Tip="Fermer la fiche (Échap ou clic en dehors)" />
       <Button Content="Lore" IsVisible="{Binding HasLore}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0,4" FontSize="12"
               ToolTip.Tip="Lire le lore de la carte">

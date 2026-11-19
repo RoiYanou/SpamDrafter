@@ -5,6 +5,6 @@
              x:Class="SpamDrafter.App.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
   <Grid Margin="12">
-    <v:CardGridPanel ClickOpensDetail="True" DataContext="{Binding Browser}" TileWidth="140" TileHeight="200" />
+    <v:CardGridPanel ClickOpensDetail="True" DataContext="{Binding Browser}" TileWidth="140" TileHeight="200" Columns="6" />
   </Grid>
 </UserControl>

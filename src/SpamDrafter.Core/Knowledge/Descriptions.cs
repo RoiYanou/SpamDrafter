@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace SpamDrafter.Core.Knowledge;
 
 /// <summary>Une action d'une capacité ou d'un talent : son effet et sa plage de valeurs (min à max).</summary>
-public sealed record AbilityAction(string Effect, double Min, double Max);
+public sealed record AbilityAction(string Effect, double Min, double Max, string? Element = null);
 
 /// <summary>
 /// Ce qu'il faut d'une capacité ou d'un talent (abilities.json, talents.json) pour écrire sa description : ses valeurs, sa
@@ -15,7 +15,7 @@ public sealed record AbilityAction(string Effect, double Min, double Max);
 public sealed record AbilityRecord(string Id, IReadOnlyList<AbilityAction> Actions, int Duration, int NumberOfActivation,
     double ChanceOfResetCooldown, IReadOnlyList<string> ChainAbilities, bool ChoiceSelector,
     double ChanceOfMiss = 0, bool CanCrit = false, double ChanceOfCrit = 0, double CritDamageRatio = 1, int Cooldown = 0, string? Element = null,
-    IReadOnlyList<string>? Passives = null);
+    IReadOnlyList<string>? Passives = null, IReadOnlyList<string>? CostElements = null);
 
 /// <summary>
 /// Descriptions chiffrées des capacités et des talents (phase 12, lot C, KI-021).
@@ -64,7 +64,7 @@ public sealed class DescriptionFormatter
                 var actions = new List<AbilityAction>();
                 if (e.TryGetProperty("actions", out var acts) && acts.ValueKind == JsonValueKind.Array)
                     foreach (var a in acts.EnumerateArray())
-                        actions.Add(new AbilityAction(Str(a, "effect"), Num(a, "min"), Num(a, "max")));
+                        actions.Add(new AbilityAction(Str(a, "effect"), Num(a, "min"), Num(a, "max"), Str(a, "element") is { Length: > 0 } ae ? ae : null));
                 var chain = new List<string>();
                 if (e.TryGetProperty("chainAbilities", out var ch) && ch.ValueKind == JsonValueKind.Array)
                     chain.AddRange(ch.EnumerateArray().Select(x => x.GetString()).OfType<string>());
@@ -72,7 +72,10 @@ public sealed class DescriptionFormatter
                     Num(e, "chanceOfResetCooldown"), chain, Str(e, "target") == "ChoiceSelector",
                     Num(e, "chanceOfMiss"), Bool(e, "canCrit"), Num(e, "chanceOfCrit"), Num(e, "critDamageRatio"), (int)Num(e, "cooldown"),
                     Str(e, "element") is { Length: > 0 } el ? el : null,
-                    e.TryGetProperty("passives", out var ps) && ps.ValueKind == JsonValueKind.Array ? ps.EnumerateArray().Select(x => x.GetString()).OfType<string>().ToList() : null);
+                    e.TryGetProperty("passives", out var ps) && ps.ValueKind == JsonValueKind.Array ? ps.EnumerateArray().Select(x => x.GetString()).OfType<string>().ToList() : null,
+                    e.TryGetProperty("costs", out var cs) && cs.ValueKind == JsonValueKind.Array
+                        ? cs.EnumerateArray().Select(x => Str(x, "cost")).Where(c => c.StartsWith("CostElement", StringComparison.Ordinal))
+                            .Select(c => c["CostElement".Length..].ToLowerInvariant()).ToList() : null);
             }
         }
         catch (Exception e) when (e is JsonException or IOException or InvalidOperationException) { result.Clear(); }
@@ -110,6 +113,52 @@ public sealed class DescriptionFormatter
 
     public const char ElementOpen = '';
     public const char ElementClose = '';
+
+    /// <summary>
+    /// Ce qu'illustre une capacité de carte : les éléments qu'elle met en jeu, sinon le critique et/ou la précision.
+    /// Éléments : ceux de la première catégorie d'effets présente, dans l'ordre dégâts infligés, soins, bonus élémentaire généré, résistances
+    /// baissées, résistances octroyées, puis éléments du coût (ordre demandé par l'utilisateur). Les capacités enchaînées (« Écho… ») comptent :
+    /// Chaos élémentaire inflige ainsi dans tous les éléments. Sans élément, une capacité qui ne touche que le critique ou la précision
+    /// donne le logo correspondant. 🃏 Les effets viennent de abilities.json ; le classement par nom d'effet est un choix d'affichage.
+    /// </summary>
+    private static int Category(string effect)
+    {
+        if (effect.StartsWith("damage", StringComparison.OrdinalIgnoreCase)) return 0;
+        if (effect.Contains("heal", StringComparison.OrdinalIgnoreCase)) return 1;
+        if (effect.StartsWith("AddAllPlayerAttack", StringComparison.Ordinal) || effect.StartsWith("AddAllOpponentAttack", StringComparison.Ordinal)
+            || effect is "AddCardBaseDamage" or "AddAbilityBaseDamage") return 2;
+        if (effect.StartsWith("AddOppCardResistance", StringComparison.Ordinal)) return 3;
+        if (effect is "AddCardResistance" or "AddAllPlayerResistance") return 4;
+        return -1;
+    }
+
+    private static readonly HashSet<string> SixElements = new() { "fire", "water", "earth", "nature", "light", "shadow" };
+
+    public AbilityVisual AbilityVisual(string abilityId)
+    {
+        var actions = new List<AbilityAction>();
+        var costs = new List<string>();
+        var seen = new HashSet<string>();
+        void Visit(string id)
+        {
+            if (!seen.Add(id) || !_abilities.Value.TryGetValue(id, out var r)) return;
+            // Dégâts ou soins sans élément écrit : ils prennent celui de la capacité (s'il en est un des six).
+            actions.AddRange(r.Actions.Select(a => a.Element is null && Category(a.Effect) is 0 or 1 && r.Element is not null && SixElements.Contains(r.Element)
+                ? a with { Element = r.Element } : a));
+            if (r.CostElements is not null) costs.AddRange(r.CostElements);
+            foreach (var c in r.ChainAbilities) Visit(c);
+        }
+        Visit(abilityId);
+        var elements = actions.Where(a => a.Element is not null && Category(a.Effect) >= 0)
+            .GroupBy(a => Category(a.Effect)).OrderBy(g => g.Key).FirstOrDefault()?
+            .Select(a => a.Element!).Distinct().ToList() ?? [];
+        if (elements.Count == 0) elements = costs.Distinct().ToList();
+        if (elements.Count > 0) return new AbilityVisual(elements, false, false);
+        return new AbilityVisual([], actions.Any(a => a.Effect.Contains("Critic", StringComparison.OrdinalIgnoreCase)),
+                                 actions.Any(a => a.Effect.Contains("Miss", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    public IReadOnlyList<string> AbilityElements(string abilityId) => AbilityVisual(abilityId).Elements;
 
     /// <summary>Précision, critiques et recharge d'une capacité de carte ; null si la capacité est inconnue.</summary>
     public AbilityStats? Stats(string abilityId) => _abilities.Value.TryGetValue(abilityId, out var r)

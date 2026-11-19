@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!-- Version du programme ; le numéro du paquet Velopack (vpk pack -v) doit être le même. -->
-    <Version>1.2.1</Version>
+    <Version>1.3.0</Version>
     <AssemblyName>SpamDrafter</AssemblyName>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -26,6 +26,7 @@
     <PackageReference Include="Avalonia" Version="12.1.6" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+    <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
     <PackageReference Include="NVorbis" Version="0.10.5" />
     <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>

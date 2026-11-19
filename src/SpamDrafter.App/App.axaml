@@ -63,7 +63,7 @@
 
       <!-- Une carte : nom en haut, élément à gauche, rareté sur le cadre. La taille vient du conteneur (ContentControl). -->
       <DataTemplate x:Key="CardThumb" x:DataType="vm:CardItem">
-        <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" />
+        <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" ShowAbilities="True" />
       </DataTemplate>
       <!-- Carte moyenne (listes, talents, Tox, artistes) : élément et rareté, le nom est écrit à côté. -->
       <DataTemplate x:Key="CardThumbMedium" x:DataType="vm:CardItem">
@@ -71,7 +71,11 @@
       </DataTemplate>
       <!-- Même carte que CardThumb, sans agrandissement au survol (cartes du deck en cours). -->
       <DataTemplate x:Key="CardThumbFlat" x:DataType="vm:CardItem">
-        <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" HoverZoom="False" />
+        <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" ShowAbilities="True" HoverZoom="False" CompactAbilities="True" />
+      </DataTemplate>
+      <!-- Carte des sélecteurs du Builder, du Drafter et du Générateur : capacités rapprochées des PV. -->
+      <DataTemplate x:Key="CardThumbPicker" x:DataType="vm:CardItem">
+        <v:CardFace Item="{Binding}" ShowName="True" ShowElement="True" ShowRarity="True" ShowIncome="True" ShowAbilities="True" CompactAbilities="True" />
       </DataTemplate>
       <!-- Mini carte (liste « Mes decks », à droite du nom). -->
       <DataTemplate x:Key="DeckChipMini" x:DataType="vm:DeckChip">
@@ -90,13 +94,13 @@
       <DataTemplate x:Key="DeckChipTemplate" x:DataType="vm:DeckChip">
         <Grid Width="56" Height="80" ToolTip.Tip="{Binding TalentName}">
           <Border IsVisible="{Binding IsEmpty}" BorderBrush="{StaticResource BrushViolet}" BorderThickness="2" CornerRadius="8" Opacity="0.8" />
-          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowRarity="True" />
+          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowRarity="True" HoverZoom="False" />
         </Grid>
       </DataTemplate>
       <DataTemplate x:Key="DeckChipLarge" x:DataType="vm:DeckChip">
         <Grid Width="84" Height="118" ToolTip.Tip="{Binding TalentName}">
           <Border IsVisible="{Binding IsEmpty}" BorderBrush="{StaticResource BrushViolet}" BorderThickness="2" CornerRadius="9" Opacity="0.8" />
-          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowRarity="True" />
+          <v:CardFace IsVisible="{Binding HasCard}" Item="{Binding Card}" TalentTag="{Binding TalentTag}" ShowRarity="True" HoverZoom="False" />
         </Grid>
       </DataTemplate>
       <DataTemplate x:Key="DeckChipHome" x:DataType="vm:DeckChip">

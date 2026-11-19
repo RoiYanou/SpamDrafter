@@ -26,6 +26,118 @@ public static class Icons
         });
     }
 
+    private static readonly ConcurrentDictionary<(Bitmap, Color), Bitmap?> TintCache = new();
+
+    /// <summary>Copie d'une icône peinte d'une seule couleur (l'icône sert de masque : sa forme est gardée, sa couleur remplacée).</summary>
+    public static Bitmap? Tinted(Bitmap source, Color color) => TintCache.GetOrAdd((source, color), k =>
+    {
+        try
+        {
+            var rt = new Avalonia.Media.Imaging.RenderTargetBitmap(source.PixelSize, new Avalonia.Vector(96, 96));
+            var rect = new Avalonia.Rect(0, 0, source.PixelSize.Width, source.PixelSize.Height);
+            using (var ctx = rt.CreateDrawingContext())
+            using (ctx.PushOpacityMask(new ImageBrush(source) { Stretch = Stretch.Uniform }, rect))
+                ctx.DrawRectangle(new SolidColorBrush(color), null, rect);
+            return rt;
+        }
+        catch (Exception) { return null; }
+    });
+
+    /// <summary>
+    /// Illustration d'une capacité : icônes de ses éléments, ou, sans élément, logo de chance de critique (jaune, comme la fiche) et/ou de précision.
+    /// </summary>
+    public static (IReadOnlyList<Bitmap> Elements, IReadOnlyList<Bitmap> Logos) AbilityPictures(KnowledgeBase kb, string abilityId)
+    {
+        var visual = kb.Descriptions.AbilityVisual(abilityId);
+        var elements = visual.Elements.Select(e => Element(kb, e, 64)).OfType<Bitmap>().ToList();
+        var logos = new List<Bitmap>();
+        if (visual.Crit && CritChanceIcon(kb) is { } yellow) logos.Add(yellow);
+        if (visual.Precision && Load(kb, "images/icons/stats/accuracy.webp", 64) is { } prec) logos.Add(prec);
+        return (elements, logos);
+    }
+
+    private static readonly ConcurrentDictionary<Bitmap, (Bitmap Badge, Bitmap Mask)?> BadgeCache = new();
+
+    /// <summary>
+    /// Icône avec un contour noir qui colle à la forme du PNG (silhouette noire décalée dans 16 directions, icône par-dessus), et la même image
+    /// sans contour (même taille, pour masquer le reflet métallique). Null si l'image manque.
+    /// </summary>
+    public static (Bitmap Badge, Bitmap Mask)? OutlinedBadge(Bitmap? icon)
+    {
+        if (icon is null) return null;
+        return BadgeCache.GetOrAdd(icon, src =>
+        {
+            try
+            {
+                const int pad = 5;
+                var size = new Avalonia.PixelSize(src.PixelSize.Width + 2 * pad, src.PixelSize.Height + 2 * pad);
+                var from = new Avalonia.Rect(0, 0, src.PixelSize.Width, src.PixelSize.Height);
+                var inner = new Avalonia.Rect(pad, pad, src.PixelSize.Width, src.PixelSize.Height);
+                var black = Tinted(src, Colors.Black);
+                var badge = new Avalonia.Media.Imaging.RenderTargetBitmap(size, new Avalonia.Vector(96, 96));
+                using (var ctx = badge.CreateDrawingContext())
+                {
+                    if (black is not null)
+                        for (var i = 0; i < 16; i++)
+                        {
+                            var a = 2 * Math.PI * i / 16;
+                            ctx.DrawImage(black, from, inner.Translate(new Avalonia.Vector(pad * 0.8 * Math.Cos(a), pad * 0.8 * Math.Sin(a))));
+                        }
+                    ctx.DrawImage(src, from, inner);
+                }
+                var mask = new Avalonia.Media.Imaging.RenderTargetBitmap(size, new Avalonia.Vector(96, 96));
+                using (var ctx = mask.CreateDrawingContext()) ctx.DrawImage(src, from, inner);
+                return (badge, mask);
+            }
+            catch (Exception) { return null; }
+        });
+    }
+
+    /// <summary>Icône d'élément d'une carte avec contour noir et masque (voir <see cref="OutlinedBadge"/>).</summary>
+    public static (Bitmap Badge, Bitmap Mask)? ElementBadge(KnowledgeBase kb, string? elementId) =>
+        elementId is null ? null : OutlinedBadge(Element(kb, elementId, 96));
+
+    /// <summary>Spamton avec contour noir et masque.</summary>
+    public static (Bitmap Badge, Bitmap Mask)? SpamtonBadge(KnowledgeBase kb) => OutlinedBadge(Spamton(kb, 96));
+
+    private static readonly ConcurrentDictionary<Bitmap, Bitmap?> CritCache = new();
+
+    /// <summary>
+    /// Logo « chance de coup critique » : le logo du jeu (étoile bleue au liseré blanc) repeint, l'intérieur en jaune et le liseré blanc en noir.
+    /// Le liseré garde son épaisseur d'origine et reste à l'intérieur de la forme : le logo ne grandit pas. Null sans image.
+    /// </summary>
+    public static Bitmap? CritChanceIcon(KnowledgeBase kb)
+    {
+        if (Load(kb, "images/icons/stats/critical.webp", 128) is not { } src) return null;
+        return CritCache.GetOrAdd(src, s =>
+        {
+            try
+            {
+                int w = s.PixelSize.Width, h = s.PixelSize.Height, stride = w * 4;
+                var buf = new byte[stride * h];
+                var handle = System.Runtime.InteropServices.GCHandle.Alloc(buf, System.Runtime.InteropServices.GCHandleType.Pinned);
+                try { s.CopyPixels(new Avalonia.PixelRect(0, 0, w, h), handle.AddrOfPinnedObject(), buf.Length, stride); }
+                finally { handle.Free(); }
+                var format = s.Format ?? Avalonia.Platform.PixelFormat.Bgra8888;
+                int ri = format == Avalonia.Platform.PixelFormat.Rgba8888 ? 0 : 2, bi = 2 - ri;
+                for (var i = 0; i < buf.Length; i += 4)
+                {
+                    int alpha = buf[i + 3];
+                    if (alpha == 0) continue;
+                    var red = Math.Min(255.0, buf[i + ri] * 255.0 / alpha);          // couleur d'origine (non prémultipliée)
+                    var rim = Math.Clamp((red - 127) / (255 - 127.0), 0, 1);        // 0 : intérieur bleu, 1 : liseré blanc
+                    double r = 255 + (0x16 - 255) * rim, g = 0xD8 + (0x0E - 0xD8) * rim, b = 0x4A + (0x2A - 0x4A) * rim;
+                    buf[i + ri] = (byte)(r * alpha / 255); buf[i + 1] = (byte)(g * alpha / 255); buf[i + bi] = (byte)(b * alpha / 255);
+                }
+                var wb = new Avalonia.Media.Imaging.WriteableBitmap(s.PixelSize, new Avalonia.Vector(96, 96), format, Avalonia.Platform.AlphaFormat.Premul);
+                using (var fb = wb.Lock())
+                    for (var y = 0; y < h; y++) System.Runtime.InteropServices.Marshal.Copy(buf, y * stride, fb.Address + y * fb.RowBytes, stride);
+                return wb;
+            }
+            catch (Exception) { return null; }
+        });
+    }
+
     public static Bitmap? Element(KnowledgeBase kb, string? elementId, int height = 40) =>
         elementId is null ? null : Load(kb, kb.Element(elementId)?.Icon, height);
 

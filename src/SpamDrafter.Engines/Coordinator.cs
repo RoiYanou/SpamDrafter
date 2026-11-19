@@ -85,7 +85,7 @@ public sealed class Coordinator
     /// À changer quand un moteur change de façon à modifier ses résultats : les résultats gardés en mémoire (phase 12, lot B)
     /// d'une autre version des moteurs ne sont alors plus réutilisés.
     /// </summary>
-    public const int EngineVersion = 2;   // 2 : note sur 100 mesurée de la même façon partout (D-074)
+    public const int EngineVersion = 4;   // 2 : note sur 100 mesurée de la même façon partout (D-074) ; 3 : nouveaux libellés de note (Parfait… Intankable) ; 4 : plus aucun nom de deck de la méta dans les analyses
 
     /// <summary>
     /// Ce dont dépendent les résultats d'un moteur en dehors de la demande : version de SPAM, adversaires (méta), poids du
@@ -124,6 +124,8 @@ public sealed class Coordinator
     public CookSettings? CookOverride { get; init; }
     /// <summary>Tests automatiques seulement : réglages miniatures de l'Analyseur (fiche et analyse complète).</summary>
     public AnalysisSettings? AnalysisOverride { get; init; }
+    /// <summary>Tests automatiques seulement : réglages miniatures de la confrontation.</summary>
+    public ConfrontationSettings? ConfrontationOverride { get; init; }
 
     public static CookSettings CookSettingsFor(Effort e) => e switch
     {
@@ -169,9 +171,11 @@ public sealed class Coordinator
     }
 
     /// <summary>Complète une sélection de 1 à 4 cartes (talent null = au choix du Cuisinier).</summary>
+    /// <param name="owned">Collection du joueur (carte → niveau de talent, phase 15) : seuls ses cartes et talents sont proposés.
+    /// Les propositions pré-calculées (toutes les cartes du jeu) ne servent alors pas.</param>
     public Task<IReadOnlyList<GeneratedDeck>> GenerateAsync(IReadOnlyList<FixedCard> selection, Effort effort, ulong seed = 1,
-        CancellationToken cancel = default, IProgress<WorkProgress>? progress = null) =>
-        Precomputed(selection, effort, seed) is { } ready ? Task.FromResult(ready) : RunExclusive(() =>
+        CancellationToken cancel = default, IProgress<WorkProgress>? progress = null, IReadOnlyDictionary<string, int>? owned = null) =>
+        owned is null && Precomputed(selection, effort, seed) is { } ready ? Task.FromResult(ready) : RunExclusive(() =>
         {
             // 90 % du temps pour la recherche, 10 % pour la mesure de la note de chaque proposition (D-074).
             var p = progress is null ? null : new Relay<CookProgress>(c => progress.Report(new WorkProgress(c.Stage switch
@@ -181,7 +185,7 @@ public sealed class Coordinator
                 _ => "Mesure de la note…",
             }, 0.9 * c.Fraction)));
             var meta = ActiveMeta?.Select(m => m.Deck).ToList();
-            var res = GrandCuisinier.Cook(_kb, selection, (CookOverride ?? CookSettingsFor(effort)) with { Seed = seed, Meta = meta }, cancel, p);
+            var res = GrandCuisinier.Cook(_kb, selection, (CookOverride ?? CookSettingsFor(effort)) with { Seed = seed, Meta = meta, Owned = owned }, cancel, p);
             var proposals = res.Proposals.Select(x => new GeneratedDeck(x.Deck, x.Confirmation.Score,
                 x.Confirmation.Margin95, x.Confirmation.Counted, res.RandomOpponents, res.UsesMeta)).ToList();
             return MeasureNotes(proposals, seed, cancel, progress, 0.9, 1.0);
@@ -217,6 +221,38 @@ public sealed class Coordinator
             report = report with { NoteStrength = complete && settings != reference ? GrandAnalyseur.MeasureStrength(_kb, deck, reference, cancel) : report.Strength };
             return new AnalysisResult(report, SheetWriter.ToText(_kb, report), ReportWriter.ToMarkdown(_kb, report));
         }, cancel);
+
+    /// <summary>
+    /// Confrontation de deux decks de 4 cartes (phase 14, lot D) : A et B s'affrontent (le joueur fin tient les deux camps), puis
+    /// les deux notes sont mesurées contre la méta avec la mesure de référence (D-074), sauf celles déjà connues
+    /// (<paramref name="knownNoteA"/>, <paramref name="knownNoteB"/> : reprises d'un rapport, sans nouveau calcul).
+    /// </summary>
+    public Task<ComparisonResult> CompareAsync(IReadOnlyList<DuelSlot> deckA, IReadOnlyList<DuelSlot> deckB, Measured? knownNoteA = null,
+        Measured? knownNoteB = null, ulong seed = 1, CancellationToken cancel = default, IProgress<WorkProgress>? progress = null) =>
+        RunExclusive(() =>
+        {
+            var settings = (ConfrontationOverride ?? ConfrontationSettings.Default) with { Seed = seed };
+            var needed = (knownNoteA is null ? 1 : 0) + (knownNoteB is null ? 1 : 0);
+            var share = needed == 0 ? 1.0 : 0.7;   // part de la barre pour la confrontation ; le reste pour les notes
+            var total = settings.Pairs * 2;
+            var p = progress is null ? null : new Relay<int>(n => progress.Report(new WorkProgress("Confrontation des deux decks…", share * Math.Min(1.0, (double)n / total))));
+            var result = SpamDrafter.Engines.Analysis.Confrontation.Play(_kb, deckA, deckB, settings, cancel, p);
+            var reference = NoteSettings(seed);
+            var step = 0;
+            Measured? Note(IReadOnlyList<DuelSlot> deck, Measured? known, string who)
+            {
+                if (known is not null) return known;
+                progress?.Report(new WorkProgress($"Mesure de la note de {who}…", share + (1 - share) * step++ / Math.Max(1, needed)));
+                return GrandAnalyseur.MeasureStrength(_kb, deck, reference, cancel);
+            }
+            var a = Note(deckA, knownNoteA, "A");
+            var b = Note(deckB, knownNoteB, "B");
+            progress?.Report(new WorkProgress("Terminé.", 1));
+            return new ComparisonResult(result, a, b);
+        }, cancel);
+
+    /// <summary>Le texte d'une confrontation (verdict, notes, qui commence, durée, cartes), pour l'affichage.</summary>
+    public string Describe(string nameA, string nameB, ComparisonResult result) => ConfrontationWriter.ToText(_kb, nameA, nameB, result);
 
     private Task<T> RunExclusive<T>(Func<T> work, CancellationToken cancel)
     {

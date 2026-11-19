@@ -13,6 +13,9 @@ public partial class CardGridPanel : UserControl
     public static readonly StyledProperty<double> FitWidthProperty = AvaloniaProperty.Register<CardGridPanel, double>(nameof(FitWidth), 130);
     public static readonly StyledProperty<double> FitHeightProperty = AvaloniaProperty.Register<CardGridPanel, double>(nameof(FitHeight), 185);
     public static readonly StyledProperty<bool> ClickToAddProperty = AvaloniaProperty.Register<CardGridPanel, bool>(nameof(ClickToAdd));
+    /// <summary>Nombre de colonnes imposé (0 : autant que la largeur en permet). Les vignettes s'agrandissent pour remplir la ligne.</summary>
+    public static readonly StyledProperty<int> ColumnsProperty = AvaloniaProperty.Register<CardGridPanel, int>(nameof(Columns));
+    public int Columns { get => GetValue(ColumnsProperty); set => SetValue(ColumnsProperty, value); }
     public double TileWidth { get => GetValue(TileWidthProperty); set => SetValue(TileWidthProperty, value); }
     public double TileHeight { get => GetValue(TileHeightProperty); set => SetValue(TileHeightProperty, value); }
     /// <summary>Taille réellement affichée : les vignettes sont ajustées pour remplir chaque ligne, donc le même espace partout (côtés, haut, bas, entre les cartes).</summary>
@@ -23,6 +26,9 @@ public partial class CardGridPanel : UserControl
     /// <summary>Vrai (Bibliothèque) : un clic gauche ouvre la fiche rapide, comme un clic droit (elle suit le joueur d'un onglet à l'autre).</summary>
     public bool ClickOpensDetail { get => GetValue(ClickOpensDetailProperty); set => SetValue(ClickOpensDetailProperty, value); }
     public bool ClickToAdd { get => GetValue(ClickToAddProperty); set => SetValue(ClickToAddProperty, value); }
+    /// <summary>Modèle de carte : celui des sélecteurs (capacités rapprochées des PV) quand un clic ajoute la carte, sinon celui de la Bibliothèque.</summary>
+    public Avalonia.Controls.Templates.IDataTemplate? ThumbTemplate =>
+        Application.Current?.TryFindResource(ClickToAdd ? "CardThumbPicker" : "CardThumb", out var t) == true ? t as Avalonia.Controls.Templates.IDataTemplate : null;
 
     // Espace autour d'une vignette : marge 9 de chaque côté, sans remplissage (voir Theme.axaml, « ListBox.grid »).
     private const double Around = 18;
@@ -31,11 +37,11 @@ public partial class CardGridPanel : UserControl
     {
         var sv = List.Scroll as ScrollViewer;
         var avail = (sv is { Viewport.Width: > 0 } ? sv.Viewport.Width : List.Bounds.Width) - List.Padding.Left - List.Padding.Right;
-        if (avail < TileWidth || TileWidth <= 0) return;
+        if ((Columns <= 0 && avail < TileWidth) || TileWidth <= 0 || avail <= 0) return;
         avail -= 4;   // marge de sécurité : sans elle, une dernière colonne « juste » ne tient pas et passe à la ligne
-        var columns = Math.Max(1, (int)Math.Floor(avail / (TileWidth + Around)));
+        var columns = Columns > 0 ? Columns : Math.Max(1, (int)Math.Floor(avail / (TileWidth + Around)));
         var width = Math.Floor((avail / columns - Around) * 2) / 2;
-        width = Math.Min(width, TileWidth * 1.35);   // une seule colonne dans un panneau large : la carte ne devient pas géante
+        if (Columns <= 0) width = Math.Min(width, TileWidth * 1.35);   // une seule colonne dans un panneau large : la carte ne devient pas géante
         if (Math.Abs(width - FitWidth) < 0.5) return;
         FitWidth = width; FitHeight = width * TileHeight / TileWidth;
     }
@@ -53,7 +59,7 @@ public partial class CardGridPanel : UserControl
         List.AddHandler(PointerPressedEvent, OnTilePressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         List.SizeChanged += (_, _) => Fit();
         List.TemplateApplied += (_, _) => { if (List.Scroll is ScrollViewer sv) sv.ScrollChanged += (_, _) => Fit(); Fit(); };
-        PropertyChanged += (_, e) => { if (e.Property == TileWidthProperty || e.Property == TileHeightProperty) Fit(); };
+        PropertyChanged += (_, e) => { if (e.Property == TileWidthProperty || e.Property == TileHeightProperty || e.Property == ColumnsProperty) Fit(); };
         SearchBox.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape && DataContext is ViewModels.CardBrowser b) { b.Search = ""; e.Handled = true; }

@@ -1,0 +1,245 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.TesterView"
+             x:DataType="vm:TesterViewModel">
+  <!-- Phase 14, lot A : le cadre. Choix du deck à gauche ; à droite, le deck choisi (la note et la Fiche rapport arrivent au lot B). -->
+  <Grid x:Name="RootGrid" Margin="12">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="1.3*" MinWidth="260" />
+      <ColumnDefinition Width="10" />
+      <ColumnDefinition Width="1.7*" MinWidth="260" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Choix du deck : mêmes recherche, tri et filtres que « Mes decks » du Builder (partagés). -->
+    <Border Classes="panel" Padding="14">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Choisir un deck" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+      <StackPanel DockPanel.Dock="Top" Spacing="8">
+        <TextBlock Text="{Binding Message}" Classes="good" TextWrapping="Wrap" Margin="0,0,0,4" />
+        <StackPanel Spacing="8" Margin="0,0,0,6" DataContext="{Binding Decks}" IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    x:DataType="vm:DeckBuilderViewModel">
+          <TextBox Text="{Binding DeckFilter}" PlaceholderText="Rechercher un deck…" />
+          <v:Collapse HorizontalAlignment="Stretch" FontSize="12" Padding="0">
+            <v:Collapse.Header>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Tri et filtres" />
+                <TextBlock Text="● filtre actif" Foreground="{StaticResource BrushYellow}" FontWeight="Bold" IsVisible="{Binding DeckFiltersActive}" />
+              </StackPanel>
+            </v:Collapse.Header>
+            <StackPanel Spacing="8" Margin="10,8,10,10">
+              <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}" HorizontalAlignment="Stretch" />
+              <ComboBox ItemsSource="{Binding OriginOptions}" SelectedItem="{Binding OriginFilter}" HorizontalAlignment="Stretch" />
+              <ComboBox ItemsSource="{Binding TagOptions}" SelectedItem="{Binding TagFilter}" HorizontalAlignment="Stretch" />
+              <WrapPanel ItemSpacing="10" LineSpacing="6">
+                <CheckBox Content="★ Favoris seulement" IsChecked="{Binding FavoritesOnly}" />
+                <Button Content="Réinitialiser" Command="{Binding ClearDeckFiltersCommand}" FontSize="12" Padding="10,4" />
+              </WrapPanel>
+            </StackPanel>
+          </v:Collapse>
+        </StackPanel>
+      </StackPanel>
+      <ListBox x:Name="DeckList" Classes="decks" ItemsSource="{Binding Results}" SelectedItem="{Binding Selected}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:TesterDeck">
+            <Grid Height="60" ClipToBounds="True">
+              <v:DeckStrip Chips="{Binding Deck.Slots, Converter={x:Static vm:DeckChipsConverter.Instance}}" />
+              <Border Width="4" Margin="14,9,0,9" CornerRadius="2" HorizontalAlignment="Left" Background="{Binding Deck.Id, Converter={x:Static vm:DeckDecor.ColorBrush}}" />
+              <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
+                <TextBlock Text="★" Foreground="#FFD35A" IsVisible="{Binding Deck.Favorite}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Deck.Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />
+                <v:MarqueeText Grid.Column="2" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}">
+                  <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>
+                </v:MarqueeText>
+              </Grid>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    </Border>
+    <GridSplitter Classes="vgrip" Grid.Column="1" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" ToolTip.Tip="Tirer pour régler la largeur des colonnes" />
+
+    <!-- Le deck à tester -->
+    <Border Grid.Column="2" Classes="panel" Padding="14">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Tester" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+      <!-- Deux modes : un deck (note et fiche) ou deux decks (confrontation) -->
+      <!-- Mêmes sous-onglets que « Cartes / Talents / Tox / Artistes » de la Bibliothèque : en-têtes seuls, le contenu est dessous. -->
+      <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding ModeIndex}">
+        <TabControl.Styles>
+          <Style Selector="TabItem">
+            <Setter Property="Width" Value="200" />
+            <Setter Property="Margin" Value="0,4,6,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+          </Style>
+        </TabControl.Styles>
+        <TabItem Header="Un deck" FontSize="18" />
+        <TabItem Header="Comparer 2 decks" FontSize="18" />
+      </TabControl>
+      <!-- Aucun deck choisi -->
+      <StackPanel IsVisible="{Binding ShowNoSelection}" Spacing="8" Margin="0,16,0,0">
+        <TextBlock Text="Choisis un deck à gauche pour le tester." TextWrapping="Wrap" />
+        <TextBlock Text="Seuls les decks de 4 cartes peuvent être testés." Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+      </StackPanel>
+      <!-- Un deck choisi -->
+      <ScrollViewer IsVisible="{Binding HasSelection}">
+        <StackPanel Spacing="8" Margin="0,8,10,8">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBlock Text="{Binding SelectedTitle}" Classes="title" FontSize="20" TextWrapping="Wrap" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="✕" Classes="danger" Padding="9,3" VerticalAlignment="Top" Command="{Binding ClearSelectionCommand}"
+                    ToolTip.Tip="Retirer ce deck" />
+          </Grid>
+          <ItemsControl ClipToBounds="False" ItemsSource="{Binding SelectedChips}" ItemTemplate="{StaticResource DeckChipLarge}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="12" LineSpacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          </ItemsControl>
+          <WrapPanel ItemSpacing="8" LineSpacing="6">
+            <Button Content="Tester ce deck" Command="{Binding TestCommand}" Classes="primary" Padding="16,8" IsVisible="{Binding CanCompute}"
+                    ToolTip.Tip="Note sur 100 et Fiche rapport (quelques secondes ; instantané si déjà calculé)" />
+            <Button Content="Analyse complète (liens entre cartes, ≈ 1 min)" Command="{Binding CompleteCommand}" Classes="info" Padding="12,8" IsVisible="{Binding CanRunComplete}" />
+            <Button Content="Annuler" Command="{Binding CancelCommand}" Classes="danger" Padding="12,8" IsVisible="{Binding IsBusy}" />
+            <Button Content="Ouvrir dans le Deck builder" Command="{Binding OpenInBuilderCommand}" Padding="12,8" />
+          </WrapPanel>
+          <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" IsVisible="{Binding IsBusy}" Height="6" />
+          <TextBlock Text="{Binding Step}" Opacity="0.7" FontSize="12" IsVisible="{Binding IsBusy}" />
+          <TextBlock Text="{Binding Tip, StringFormat='Astuce : {0}'}" IsVisible="{Binding IsBusy}" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource BrushYellow}" />
+          <TextBlock Text="{Binding Status}" Classes="good" TextWrapping="Wrap" />
+          <!-- La note -->
+          <Border IsVisible="{Binding HasReport}" Background="#22000000" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="1" CornerRadius="10" Padding="14"
+                  ToolTip.Tip="{Binding NoteDetail}">
+            <StackPanel Spacing="6">
+              <WrapPanel ItemSpacing="12" LineSpacing="2">
+                <TextBlock Text="Note" Classes="title" FontSize="18" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding NoteText}" Classes="value" FontSize="28" VerticalAlignment="Center" Foreground="{Binding NoteBrush}" />
+                <TextBlock Text="{Binding NoteLabel}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{Binding NoteBrush}" />
+                <TextBlock Text="{Binding NoteHint}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" IsVisible="{Binding HasNoteHint}" />
+              </WrapPanel>
+              <ProgressBar Classes="gauge" Minimum="0" Maximum="100" Value="{Binding Gauge}" Height="8" />
+              <TextBlock Text="{Binding NoteExplanation}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding ReportTitle}" Classes="title" FontSize="16" TextWrapping="Wrap" IsVisible="{Binding HasReport}" />
+          <Button Content="{Binding DetailButtonLabel}" Command="{Binding ToggleDetailCommand}" IsVisible="{Binding CanShowDetail}" HorizontalAlignment="Left" />
+          <v:RichReport Source="{Binding Report}" TextWrapping="Wrap" FontSize="13" LineHeight="21" IsVisible="{Binding HasReport}" />
+        </StackPanel>
+      </ScrollViewer>
+      <!-- Mode « Comparer 2 decks » -->
+      <ScrollViewer IsVisible="{Binding IsCompare}">
+        <StackPanel Spacing="10" Margin="0,8,10,8">
+          <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+            <Border Classes="panel" Padding="10" BorderThickness="2" BorderBrush="{StaticResource BrushControlBorder}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <Button Classes="toggle" Classes.on="{Binding ActiveA}" Content="Deck A" Command="{Binding ActivateACommand}" Padding="10,4" HorizontalAlignment="Left" />
+                  <Button Grid.Column="1" Content="✕" Classes="danger" Padding="9,3" Command="{Binding ClearACommand}" IsVisible="{Binding HasA}" ToolTip.Tip="Retirer ce deck" />
+                </Grid>
+                <TextBlock Text="{Binding TitleA}" Classes="title" FontSize="16" TextWrapping="Wrap" Foreground="{x:Static v:CompareColors.A}" />
+                <ItemsControl ItemsSource="{Binding ChipsA}" ItemTemplate="{StaticResource DeckChipTemplate}" IsVisible="{Binding HasA}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <Button Grid.Column="1" Content="⇄" Command="{Binding SwapCommand}" VerticalAlignment="Center" FontSize="18" Padding="10,6" ToolTip.Tip="Échanger A et B" />
+            <Border Grid.Column="2" Classes="panel" Padding="10" BorderThickness="2" BorderBrush="{StaticResource BrushControlBorder}">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <Button Classes="toggle" Classes.on="{Binding ActiveB}" Content="Deck B" Command="{Binding ActivateBCommand}" Padding="10,4" HorizontalAlignment="Left" />
+                  <Button Grid.Column="1" Content="✕" Classes="danger" Padding="9,3" Command="{Binding ClearBCommand}" IsVisible="{Binding HasB}" ToolTip.Tip="Retirer ce deck" />
+                </Grid>
+                <TextBlock Text="{Binding TitleB}" Classes="title" FontSize="16" TextWrapping="Wrap" Foreground="{x:Static v:CompareColors.B}" />
+                <ItemsControl ItemsSource="{Binding ChipsB}" ItemTemplate="{StaticResource DeckChipTemplate}" IsVisible="{Binding HasB}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </Grid>
+          <TextBlock Text="{Binding CompareHint}" IsVisible="{Binding HasCompareHint}" Opacity="0.8" TextWrapping="Wrap" />
+          <WrapPanel ItemSpacing="8" LineSpacing="6">
+            <Button Content="Comparer ces decks" Command="{Binding CompareCommand}" Classes="primary" Padding="16,8" IsVisible="{Binding CanCompute}"
+                    ToolTip.Tip="Les deux decks se jouent l'un contre l'autre (quelques secondes ; instantané si déjà calculé)" />
+            <Button Content="Annuler" Command="{Binding CancelCommand}" Classes="danger" Padding="12,8" IsVisible="{Binding IsBusy}" />
+          </WrapPanel>
+          <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress}" IsVisible="{Binding IsBusy}" Height="6" />
+          <TextBlock Text="{Binding Step}" Opacity="0.7" FontSize="12" IsVisible="{Binding IsBusy}" />
+          <TextBlock Text="{Binding Tip, StringFormat='Astuce : {0}'}" IsVisible="{Binding IsBusy}" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource BrushYellow}" />
+          <TextBlock Text="{Binding Status}" Classes="good" TextWrapping="Wrap" />
+          <Border IsVisible="{Binding HasCompareResult}" Background="#22000000" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="1" CornerRadius="10" Padding="14">
+            <StackPanel Spacing="8">
+              <v:RichReport Source="{Binding CompareScoreText}" NameA="{Binding CompareNameA}" NameB="{Binding CompareNameB}" TipA="{Binding CompareTipA}" TipB="{Binding CompareTipB}" FontSize="18" TextWrapping="Wrap" />
+              <!-- L'opposition des deux decks : la part des duels gagnés par A en orange, celle de B (le reste) en bleu. -->
+              <ProgressBar Minimum="0" Maximum="100" Value="{Binding CompareBar}" Height="10" Foreground="{x:Static v:CompareColors.A}" Background="{x:Static v:CompareColors.B}" />
+              <v:RichReport Source="{Binding CompareVerdict}" NameA="{Binding CompareNameA}" NameB="{Binding CompareNameB}" TipA="{Binding CompareTipA}" TipB="{Binding CompareTipB}" TextWrapping="Wrap" FontSize="15" />
+            </StackPanel>
+          </Border>
+          <v:RichReport Source="{Binding CompareReport}" NameA="{Binding CompareNameA}" NameB="{Binding CompareNameB}" TipA="{Binding CompareTipA}" TipB="{Binding CompareTipB}" TextWrapping="Wrap" FontSize="13" LineHeight="21" IsVisible="{Binding HasCompareResult}" />
+          <!-- Cartes de Deck A : moyennes par duel, l'illustration de la carte (avec son talent) puis les chiffres. -->
+          <StackPanel IsVisible="{Binding HasCompareResult}" Spacing="4" Margin="0,8,0,0">
+            <WrapPanel ItemSpacing="6">
+              <TextBlock Text="CARTES" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BrushYellow}" />
+              <TextBlock Text="(Deck A)" FontSize="17" FontWeight="Bold" Foreground="{x:Static v:CompareColors.A}" />
+            </WrapPanel>
+            <TextBlock Text="Moyennes par duel" FontSize="12" Opacity="0.75" />
+            <Grid ColumnDefinitions="76,*,*,*,*,*" ColumnSpacing="4">
+              <TextBlock Grid.Column="1" Text="Dégâts infligés" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="Soins" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="3" Text="Dégâts subis" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="4" Text="Éliminations" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="5" Text="Taux de mort" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding CardsA}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CompareCardRow">
+                  <Border Background="#22000000" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="0,0,0,1" Padding="0,4">
+                    <Grid ColumnDefinitions="76,*,*,*,*,*" ColumnSpacing="4">
+                      <ContentControl Content="{Binding Chip}" ContentTemplate="{StaticResource DeckChipTemplate}" HorizontalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Damage}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="2" Text="{Binding Healing}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="3" Text="{Binding Taken}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="4" Text="{Binding Kills}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="5" Text="{Binding Fall}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" Foreground="#7DE3FF" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <!-- Cartes de Deck B : moyennes par duel, l'illustration de la carte (avec son talent) puis les chiffres. -->
+          <StackPanel IsVisible="{Binding HasCompareResult}" Spacing="4" Margin="0,8,0,0">
+            <WrapPanel ItemSpacing="6">
+              <TextBlock Text="CARTES" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BrushYellow}" />
+              <TextBlock Text="(Deck B)" FontSize="17" FontWeight="Bold" Foreground="{x:Static v:CompareColors.B}" />
+            </WrapPanel>
+            <TextBlock Text="Moyennes par duel" FontSize="12" Opacity="0.75" />
+            <Grid ColumnDefinitions="76,*,*,*,*,*" ColumnSpacing="4">
+              <TextBlock Grid.Column="1" Text="Dégâts infligés" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="Soins" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="3" Text="Dégâts subis" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="4" Text="Éliminations" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Grid.Column="5" Text="Taux de mort" FontSize="11" Classes="hot" TextWrapping="Wrap" TextAlignment="Center" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding CardsB}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CompareCardRow">
+                  <Border Background="#22000000" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="0,0,0,1" Padding="0,4">
+                    <Grid ColumnDefinitions="76,*,*,*,*,*" ColumnSpacing="4">
+                      <ContentControl Content="{Binding Chip}" ContentTemplate="{StaticResource DeckChipTemplate}" HorizontalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Damage}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="2" Text="{Binding Healing}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="3" Text="{Binding Taken}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="4" Text="{Binding Kills}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="5" Text="{Binding Fall}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold" Foreground="#7DE3FF" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+    </Border>
+    <Button x:Name="ResetLayout" Grid.ColumnSpan="3" Content="Réinitialiser les dimensions" IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0,16,22,0" Padding="10,4" FontSize="12" Classes="info" ZIndex="20" ToolTip.Tip="Remet les colonnes à leur largeur d'origine" />
+  </Grid>
+</UserControl>

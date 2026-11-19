@@ -7,36 +7,63 @@
         Classes.reduce="{Binding ReduceAnimations}"
         Title="SpamDrafter (non officiel)" Icon="/Assets/SpamDrafter.ico" Width="1280" Height="800" MinWidth="1000" MinHeight="640">
   <Window.KeyBindings>
-    <KeyBinding Gesture="Escape" Command="{Binding QuickDetail.CloseOverlayCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding EscapeCommand}" />
     <KeyBinding Gesture="Ctrl+1" Command="{Binding SelectTabCommand}" CommandParameter="4" />
     <KeyBinding Gesture="Ctrl+2" Command="{Binding SelectTabCommand}" CommandParameter="0" />
     <KeyBinding Gesture="Ctrl+3" Command="{Binding SelectTabCommand}" CommandParameter="1" />
     <KeyBinding Gesture="Ctrl+4" Command="{Binding SelectTabCommand}" CommandParameter="2" />
     <KeyBinding Gesture="Ctrl+5" Command="{Binding SelectTabCommand}" CommandParameter="3" />
+    <KeyBinding Gesture="Ctrl+6" Command="{Binding SelectTabCommand}" CommandParameter="5" />
   </Window.KeyBindings>
   <LayoutTransformControl LayoutTransform="{Binding UiTransform}">
   <DockPanel>
     <DockPanel DockPanel.Dock="Top" Margin="14,6">
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" DataContext="{Binding Updater}">
-        <TextBlock Text="{Binding Status}" Opacity="0.7" FontSize="12" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Status}" Opacity="0.7" FontSize="12" VerticalAlignment="Center" MaxWidth="80" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status}" />
         <Button Content="Redémarrer pour mettre à jour" Command="{Binding RestartCommand}"
                 IsVisible="{Binding UpdateReady}" FontSize="12" Padding="8,2" />
         <Button Content="Rechercher une mise à jour" Command="{Binding CheckCommand}"
                 IsVisible="{Binding IsInstalled}" FontSize="12" Padding="8,2" />
-        <Button Content="Réglages" FontSize="12" Padding="8,2" DataContext="{Binding $parent[Window].DataContext}">
+        <!-- Phase 15 : interrupteur « Toutes les cartes et talents / Cartes et talents possédés » et accès à la collection, à côté de « Paramètres ». -->
+        <StackPanel Orientation="Horizontal" Spacing="8" DataContext="{Binding $parent[Window].((vm:MainViewModel)DataContext).Collection}" x:DataType="vm:CollectionViewModel">
+          <StackPanel Orientation="Horizontal" Spacing="0" ToolTip.Tip="Choisis ce que les listes affichent : tout le jeu, ou seulement ce que tu possèdes dans SPAM.">
+            <Button Classes="toggle" Classes.on="{Binding !OwnedOnly}" Command="{Binding SetModeCommand}" CommandParameter="all" Content="Toutes les cartes et talents" FontSize="11" Padding="6,2" CornerRadius="6,0,0,6" />
+            <Button Classes="toggle" Classes.on="{Binding OwnedOnly}" Command="{Binding SetModeCommand}" CommandParameter="owned" Content="Cartes et talents possédés" FontSize="11" Padding="6,2" CornerRadius="0,6,6,0" />
+          </StackPanel>
+          <Button Content="Importer" Command="{Binding OpenCommand}" FontSize="11" Padding="6,2" ToolTip.Tip="Importer les cartes et talents que tu possèdes dans SPAM" />
+        </StackPanel>
+        <Button FontSize="12" Padding="8,2" DataContext="{Binding $parent[Window].DataContext}" ToolTip.Tip="Réglages, aide et données">
+          <Button.Content>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <!-- Engrenage (Material Design Icons, Apache 2.0) -->
+              <Path Width="14" Height="14" Stretch="Uniform" Fill="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"
+                    Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+              <TextBlock Text="Paramètres" VerticalAlignment="Center" />
+              <TextBlock Text="▾" FontSize="10" VerticalAlignment="Center" Opacity="0.8" />
+            </StackPanel>
+          </Button.Content>
           <Button.Flyout>
             <Flyout Placement="BottomEdgeAlignedRight">
               <ScrollViewer MaxHeight="600" Width="310">
               <StackPanel Spacing="8" Margin="0,0,14,0" x:DataType="vm:MainViewModel">
-                <TextBlock Classes="title" Text="Réglages" FontSize="20" />
+                <TextBlock Classes="title" Text="Paramètres" FontSize="20" />
                 <TextBlock Classes="title glow" Text="Couleurs" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <StackPanel Spacing="2"><TextBlock Text="Thème de couleur" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding ThemeIndex}" HorizontalAlignment="Stretch" /></StackPanel>
+                <StackPanel Spacing="2"><TextBlock Text="Contour des cartes" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding CardFrameOptions}" SelectedIndex="{Binding CardFrameIndex}" HorizontalAlignment="Stretch" /></StackPanel>
                 <TextBlock Classes="title glow" Text="Accessibilité" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <StackPanel Spacing="2"><TextBlock Text="Taille de l'interface" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding UiScaleOptions}" SelectedIndex="{Binding UiScaleIndex}" HorizontalAlignment="Stretch" /></StackPanel>
                 <CheckBox Content="Contraste élevé" IsChecked="{Binding HighContrast}" />
                 <TextBlock Classes="title glow" Text="Sons" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <CheckBox Content="Effets sonores" IsChecked="{Binding SoundsEnabled}" />
                 <StackPanel Spacing="2"><TextBlock Text="Volume" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding SoundVolume}" /></StackPanel>
+                <CheckBox Content="Musique du jeu" IsChecked="{Binding MusicEnabled}" IsEnabled="{Binding HasMusic}" />
+                <TextBlock Text="{Binding MusicHint}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" IsVisible="{Binding !HasMusic}" />
+                <StackPanel Spacing="2" IsVisible="{Binding HasMusic}">
+                    <TextBlock Text="Musique" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" />
+                    <ComboBox ItemsSource="{Binding MusicTitles}" SelectedIndex="{Binding MusicIndex}" HorizontalAlignment="Stretch" />
+                    <TextBlock Text="Volume de la musique" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,4,0,0" />
+                    <Slider Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding MusicVolume}" />
+                </StackPanel>
                 <TextBlock Classes="title glow" Text="Animations" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
                 <CheckBox Content="Réduire les animations" IsChecked="{Binding ReduceAnimations}" />
                 <Grid ColumnDefinitions="*,Auto">
@@ -47,36 +74,34 @@
                 <StackPanel Spacing="2"><TextBlock Text="Nombre de particules" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0" Maximum="400" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding StarCount}" /></StackPanel>
                 <StackPanel Spacing="2"><TextBlock Text="Taille des particules" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><Slider Minimum="0.3" Maximum="4" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding StarSize}" /></StackPanel>
                 <StackPanel Spacing="2"><TextBlock Text="Couleur des particules" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" /><ComboBox ItemsSource="{Binding StarColorOptions}" SelectedIndex="{Binding StarColorIndex}" HorizontalAlignment="Stretch" /></StackPanel>
-              </StackPanel>
-              </ScrollViewer>
-            </Flyout>
-          </Button.Flyout>
-        </Button>
-        <Button Content="?" FontSize="12" Padding="9,2" ToolTip.Tip="Raccourcis clavier">
-          <Button.Flyout>
-            <Flyout Placement="BottomEdgeAlignedRight">
-              <StackPanel Spacing="4" Width="300">
-                <TextBlock Classes="title" Text="Raccourcis clavier" FontSize="20" />
-                <TextBlock Text="Ctrl+1 à Ctrl+5 : Accueil, Biblio, Builder, Drafter, Générateur" TextWrapping="Wrap" />
+                <TextBlock Classes="title glow" Text="Aide" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
+                <TextBlock Text="Raccourcis clavier" FontWeight="SemiBold" FontSize="13" />
+                <StackPanel Spacing="4">
+                <TextBlock Text="Ctrl+1 à Ctrl+6 : Accueil, Biblio, Builder, Drafter, Générateur, Tester" TextWrapping="Wrap" />
                 <TextBlock Text="Ctrl+F : aller à la recherche" TextWrapping="Wrap" />
                 <TextBlock Text="Échap : fermer la fiche d'une carte, vider la recherche" TextWrapping="Wrap" />
                 <TextBlock Text="Clic sur une carte (Builder, Drafter, Générateur) : l'ajouter" TextWrapping="Wrap" />
                 <TextBlock Text="Deck builder : Ctrl+S sauvegarder, Ctrl+N nouveau, Ctrl+D dupliquer, Ctrl+Z annuler, Ctrl+Y rétablir" TextWrapping="Wrap" />
                 <TextBlock Text="Flèches ▲ ▼ dans « Mes decks » : choisir l'ordre des decks" TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Classes="title glow" Text="Données" FontSize="15" Foreground="{StaticResource BrushYellow}" Margin="-24,-6,-24,-12" />
+                <!-- Le moins utilisé : tout en bas. -->
+                <Button Content="Importer des données…" Click="ImportData_Click" FontSize="12" Padding="8,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        ToolTip.Tip="Installer un fichier SpamDrafter-donnees-….zip (sans connexion)" />
               </StackPanel>
+              </ScrollViewer>
             </Flyout>
           </Button.Flyout>
         </Button>
-        <Button Content="Importer des données…" Click="ImportData_Click" FontSize="12" Padding="8,2"
-                ToolTip.Tip="Installer un fichier SpamDrafter-donnees-….zip (sans connexion)" />
         <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
       </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="12">
-        <TextBlock x:Name="AppTitle" Classes="title glow apptitle" Text="SpamDrafter" FontSize="26" VerticalAlignment="Center"
+      <DockPanel>
+        <TextBlock x:Name="AppTitle" DockPanel.Dock="Left" Margin="0,0,12,0" Classes="title glow apptitle" Text="SpamDrafter" FontSize="26" VerticalAlignment="Center"
                    IsVisible="{Binding IsLoaded}" ToolTip.Tip="SpamDrafter (non officiel)" />
-        <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" />
-      </StackPanel>
+        <TextBlock Text="{Binding Header}" Opacity="0.6" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
     </DockPanel>
+    <!-- Phase 15 : interrupteur « Toutes les cartes et talents / Cartes et talents possédés » et accès à la collection. -->
     <!-- Sans données (premier lancement, erreur) : la bannière en grand au lieu d'une fenêtre vide. -->
     <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="SpamDrafter" FontSize="64" Foreground="{StaticResource BrushYellow}" Margin="-10,48,-10,-12"
                HorizontalAlignment="Center" IsVisible="{Binding !IsLoaded}" />
@@ -106,6 +131,8 @@
                Foreground="#E07070" Margin="14" TextWrapping="Wrap" />
     <!-- Colonne d'icônes (opaque) + contenu sur panneau semi-transparent, devant le fond étoilé (phase 13, D-078). -->
     <Grid IsVisible="{Binding IsLoaded}" ColumnDefinitions="Auto,*">
+      <!-- Texture animée du thème, derrière les particules. -->
+      <v:ThemeTexture Grid.ColumnSpan="2" />
       <v:StarField Grid.ColumnSpan="2" />
       <Border Background="{StaticResource BrushRail}" Width="84" Padding="6,12">
         <StackPanel Spacing="8">
@@ -139,6 +166,12 @@
               <TextBlock Text="Générateur" FontSize="11" HorizontalAlignment="Center" />
             </StackPanel>
           </Button>
+          <Button Classes="toggle rail" Classes.on="{Binding IsTab5}" Command="{Binding SelectTabCommand}" CommandParameter="5" IsEnabled="{Binding HasTester}" ToolTip.Tip="Tester un deck">
+            <StackPanel Spacing="4">
+              <Path Data="M12 14l4-5 M4 18a9 9 0 1 1 16 0 M12 14h.01 M6 17h.01 M18 17h.01" Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="2" StrokeJoin="Round" StrokeLineCap="Round" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" />
+              <TextBlock Text="Tester" FontSize="11" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </StackPanel>
       </Border>
       <Border Grid.Column="1" Classes="panel" Margin="12" Padding="0">
@@ -148,6 +181,7 @@
           <v:DeckBuilderView x:Name="PageBuilder" v:PageFx.Enter="True" DataContext="{Binding DeckBuilder}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab1}" />
           <v:DrafterView x:Name="PageDrafter" v:PageFx.Enter="True" DataContext="{Binding Drafter}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab2}" />
           <v:GeneratorView x:Name="PageGenerator" v:PageFx.Enter="True" DataContext="{Binding Generator}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab3}" />
+          <v:TesterView x:Name="PageTester" v:PageFx.Enter="True" DataContext="{Binding Tester}" IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).IsTab5}" />
           <!-- Voile de démarrage : cache les pages pendant leur préchargement (elles sont affichées une fraction de seconde), puis s'efface en fondu. -->
           <Border x:Name="PrewarmCover" ZIndex="100" Background="{StaticResource BrushPanelSolid}" CornerRadius="{StaticResource RadiusPanel}">
             <Border.Transitions><Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.3" /></Transitions></Border.Transitions>
@@ -156,6 +190,8 @@
       </Border>
       <!-- Fiche d'une carte ouverte par un clic droit : par-dessus l'onglet en cours, sans le quitter. -->
       <v:CardDetailView Grid.ColumnSpan="2" DataContext="{Binding QuickDetail}" />
+      <!-- Ma collection (phase 15), par-dessus tout. -->
+      <v:CollectionView Grid.ColumnSpan="2" DataContext="{Binding Collection}" />
     </Grid>
   </DockPanel>
   </LayoutTransformControl>

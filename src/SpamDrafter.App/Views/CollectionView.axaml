@@ -1,0 +1,207 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.CollectionView"
+             x:DataType="vm:CollectionViewModel">
+  <!-- Phase 15 : « Ma collection », par-dessus l'onglet en cours. Trois écrans : menu, importation complète, importation précise. -->
+  <Border Background="#99120A24" IsVisible="{Binding IsOpen}">
+  <Grid>
+    <Border Classes="panel" Background="{StaticResource BrushPanelSolid}" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="2"
+            Padding="22" Margin="36,28" MaxWidth="980" MaxHeight="680" HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 12 40 0 #AA000000">
+      <Grid>
+        <!-- ===== Menu ===== -->
+        <ScrollViewer IsVisible="{Binding IsMenu}">
+          <StackPanel Spacing="10" MinWidth="520">
+            <TextBlock Classes="title" Text="Importer" FontSize="26" />
+            <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" />
+            <TextBlock TextWrapping="Wrap" Opacity="0.85" FontSize="13"
+                       Text="SPAM ne permet pas encore de lire ta collection : importe ta collection du jeu officiel !" />
+            <TextBlock Text="{Binding Message}" IsVisible="{Binding HasMessage}" Foreground="{StaticResource BrushYellow}" TextWrapping="Wrap" />
+            <Button Classes="primary" Command="{Binding FullCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,10">
+              <TextBlock Text="{Binding MenuFull}" FontWeight="SemiBold" />
+            </Button>
+            <TextBlock Text="Toutes les cartes défilent l'une après l'autre : pour chacune, tu indiques ce que tu possèdes." Classes="hint" TextWrapping="Wrap" />
+            <Button Classes="primary" Command="{Binding PreciseCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12,10">
+              <TextBlock Text="Importation précise" FontWeight="SemiBold" />
+            </Button>
+            <TextBlock Text="Tu cherches une carte dans la liste et tu indiques ce que tu possèdes (pour en ajouter ou corriger). Les changements sont à confirmer à la fin." Classes="hint" TextWrapping="Wrap" />
+            <DockPanel LastChildFill="True">
+              <!-- « Effacer ma collection » est à droite, à l'écart des autres boutons. -->
+              <Button DockPanel.Dock="Right" Content="Effacer ma collection" Command="{Binding ClearCommand}" Classes="danger" Padding="10,4" IsVisible="{Binding !ConfirmingClear}" VerticalAlignment="Top" />
+              <WrapPanel ItemSpacing="8" LineSpacing="6">
+                <Button Content="Annuler l'importation en pause" Command="{Binding CancelImportCommand}" IsVisible="{Binding HasDraft}" Classes="danger" Padding="10,4" />
+                <Button Content="Fermer" Command="{Binding CloseCommand}" Padding="10,4" />
+              </WrapPanel>
+            </DockPanel>
+            <Border IsVisible="{Binding ConfirmingClear}" BorderBrush="#E07070" BorderThickness="1" CornerRadius="8" Padding="12">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Effacer toute ta collection ? Cette action est définitive." FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="Pour confirmer, écris « confirmer » ci-dessous." TextWrapping="Wrap" FontSize="13" />
+                <TextBox Text="{Binding ClearText}" PlaceholderText="confirmer" />
+                <WrapPanel ItemSpacing="8">
+                  <Button Content="Effacer définitivement" Command="{Binding ConfirmClearCommand}" Classes="danger" Padding="10,4" />
+                  <Button Content="Annuler" Command="{Binding CancelClearCommand}" Padding="10,4" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- ===== Importation complète ===== -->
+        <Grid IsVisible="{Binding IsFull}" ColumnDefinitions="Auto,*" ColumnSpacing="24" MinWidth="780">
+          <Border Width="300" Height="430" VerticalAlignment="Top">
+            <v:CardFace Item="{Binding Current}" ImageOverride="{Binding CurrentImage}" ShowName="True" ShowRarity="True" ShowElement="True" ShowIncome="True" HoverZoom="False" />
+          </Border>
+          <DockPanel Grid.Column="1">
+          <!-- Les options du bas restent toujours visibles. -->
+          <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
+            <WrapPanel ItemSpacing="8" LineSpacing="6">
+              <Button Content="← Carte précédente" Command="{Binding BackCommand}" Padding="10,4" />
+              <Button Content="Continuer plus tard" Command="{Binding LaterCommand}" Padding="10,4" />
+              <Button Content="Annuler l'importation" Command="{Binding CancelImportCommand}" Classes="danger" Padding="10,4" />
+            </WrapPanel>
+          </StackPanel>
+          <ScrollViewer>
+            <StackPanel Spacing="6" Margin="0,0,10,0">
+              <TextBlock Classes="title" Text="Importation complète" FontSize="22" />
+              <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold" />
+              <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressValue}" Height="6" />
+              <TextBlock Text="{Binding CardTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
+              <ItemsControl ItemsSource="{Binding TalentLines}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" FontSize="13" Opacity="0.9" TextWrapping="Wrap" /></DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="Que possèdes-tu de cette carte ? « Talent 2 » veut dire que tu as aussi le Talent 1, « Talent 3 » que tu as aussi les Talents 1 et 2."
+                         Classes="hint" TextWrapping="Wrap" />
+              <Button Classes="primary" Command="{Binding AnswerCommand}" CommandParameter="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Pas de talent" />
+              <Button Classes="primary" Command="{Binding AnswerCommand}" CommandParameter="1" IsEnabled="{Binding CanTalent1}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Talent 1" />
+              <Button Classes="primary" Command="{Binding AnswerCommand}" CommandParameter="2" IsEnabled="{Binding CanTalent2}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Talent 2" />
+              <Button Classes="primary" Command="{Binding AnswerCommand}" CommandParameter="3" IsEnabled="{Binding CanTalent3}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Talent 3" />
+              <Button Classes="danger" Command="{Binding AnswerCommand}" CommandParameter="-1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Carte non possédée" />
+              <TextBlock Text="{Binding CurrentAnswerText}" Foreground="{StaticResource BrushYellow}" FontSize="12" />
+            </StackPanel>
+          </ScrollViewer>
+          </DockPanel>
+        </Grid>
+
+        <!-- ===== Importation précise ===== -->
+        <Grid IsVisible="{Binding IsPrecise}" ColumnDefinitions="300,*" ColumnSpacing="24" MinWidth="780">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Classes="title" Text="Importation précise" FontSize="22" Margin="0,0,0,8" />
+            <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+              <TextBox Text="{Binding Search}" PlaceholderText="Rechercher une carte…" />
+              <TextBlock Text="{Binding RowsCount}" Opacity="0.7" FontSize="12" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,0">
+              <TextBlock Text="{Binding PendingText}" IsVisible="{Binding HasPending}" Foreground="{StaticResource BrushYellow}" FontSize="12" />
+              <WrapPanel ItemSpacing="8">
+                <Button Content="Vérifier et enregistrer" Command="{Binding ReviewCommand}" Classes="primary" Padding="10,4" />
+                <Button Content="← Retour" Command="{Binding MenuCommand}" Padding="10,4" />
+              </WrapPanel>
+            </StackPanel>
+            <ListBox Classes="rows" ItemsSource="{Binding Rows}" SelectedItem="{Binding PreciseSelected}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:CollectionRow">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding Item.Name}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Status}" Opacity="0.6" FontSize="12" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+          <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="20">
+            <TextBlock Grid.ColumnSpan="2" Text="Choisis une carte dans la liste." IsVisible="{Binding !HasPrecise}" Opacity="0.6" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            <Border Width="230" Height="330" VerticalAlignment="Top" IsVisible="{Binding HasPrecise}">
+              <v:CardFace Item="{Binding PreciseCurrent}" ImageOverride="{Binding PreciseImage}" ShowName="True" ShowRarity="True" ShowElement="True" ShowIncome="True" HoverZoom="False" />
+            </Border>
+            <ScrollViewer Grid.Column="1" IsVisible="{Binding HasPrecise}">
+              <StackPanel Spacing="8" Margin="0,0,10,0">
+                <TextBlock Text="{Binding PreciseStatus}" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{StaticResource BrushYellow}" />
+                <ItemsControl ItemsSource="{Binding PreciseTalentLines}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" FontSize="13" Opacity="0.9" TextWrapping="Wrap" /></DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="primary" Command="{Binding SetPreciseCommand}" CommandParameter="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Pas de talent" />
+                <Button Classes="primary" Command="{Binding SetPreciseCommand}" CommandParameter="1" IsEnabled="{Binding PreciseCanTalent1}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Talent 1" />
+                <Button Classes="primary" Command="{Binding SetPreciseCommand}" CommandParameter="2" IsEnabled="{Binding PreciseCanTalent2}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Talent 2" />
+                <Button Classes="primary" Command="{Binding SetPreciseCommand}" CommandParameter="3" IsEnabled="{Binding PreciseCanTalent3}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Talent 3" />
+                <Button Classes="danger" Command="{Binding SetPreciseCommand}" CommandParameter="-1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10,6" Content="Carte non possédée" />
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+        <!-- ===== Importation précise : confirmation ===== -->
+        <DockPanel IsVisible="{Binding IsPreciseConfirm}" MinWidth="560">
+          <TextBlock DockPanel.Dock="Top" Classes="title" Text="{Binding ConfirmTitle}" FontSize="22" Margin="0,0,0,8" />
+          <TextBlock DockPanel.Dock="Top" Text="Voici ce qui va changer dans ta collection :" Opacity="0.85" Margin="0,0,0,8" />
+          <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="8" LineSpacing="6" Margin="0,10,0,0">
+            <Button Content="Enregistrer ces changements" Command="{Binding ConfirmPreciseCommand}" Classes="primary" Padding="12,6" />
+            <Button Content="Continuer à modifier" Command="{Binding KeepEditingCommand}" Padding="10,4" />
+            <Button Content="Abandonner les changements" Command="{Binding DiscardPendingCommand}" Classes="danger" Padding="10,4" />
+          </WrapPanel>
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Changes}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String"><TextBlock Text="{Binding StringFormat='• {0}'}" TextWrapping="Wrap" Margin="0,2" /></DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+
+        <!-- Tutoriel de l'importation complète : couvre l'écran ; le bouton « Tutoriel » (au-dessus) le ferme. -->
+        <!-- Confirmation avant d'annuler l'importation (les réponses données seraient perdues). -->
+        <Border IsVisible="{Binding ConfirmingCancel}" Background="#E6120A24" CornerRadius="10">
+          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" MaxWidth="460">
+            <TextBlock Text="Annuler l'importation ?" Classes="title" FontSize="22" HorizontalAlignment="Center" />
+            <TextBlock Text="Les réponses déjà données seront perdues. Ta collection actuelle ne change pas." TextWrapping="Wrap" TextAlignment="Center" />
+            <WrapPanel ItemSpacing="10" HorizontalAlignment="Center">
+              <Button Content="Oui, annuler l'importation" Command="{Binding ConfirmCancelImportCommand}" Classes="danger" Padding="14,8" />
+              <Button Content="Non, continuer" Command="{Binding KeepImportCommand}" Classes="primary" Padding="14,8" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+        <!-- Tutoriel : bouton bien visible en haut à droite, sur tous les écrans. -->
+        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="6" MaxWidth="340" IsVisible="{Binding ShowTutorialButton}">
+          <Button Classes="primary" Command="{Binding TutorialCommand}" HorizontalAlignment="Right" Padding="14,6" FontWeight="Bold">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <v:OutlinedText Text="?" Foreground="#E53935" FontWeight="Black" FontSize="20" VerticalAlignment="Center" />
+              <TextBlock Text="Tutoriel" VerticalAlignment="Center" Margin="0,0,0,3" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <!-- Tutoriel de l'importation complète : en diapositives (une étape par page), presque en plein écran par-dessus la fenêtre « Importer ». -->
+    <Border IsVisible="{Binding ShowTutorial}" Classes="panel" Background="{StaticResource BrushPanelSolid}" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="2"
+            Margin="20" Padding="20" Width="760" Height="500" HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 12 40 0 #AA000000">
+      <DockPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+          <Button DockPanel.Dock="Right" Content="✕ Fermer" Command="{Binding TutorialCommand}" Padding="12,6" VerticalAlignment="Top" />
+          <TextBlock Classes="title" Text="Tutoriel : importation complète" FontSize="22" VerticalAlignment="Center" TextWrapping="Wrap" />
+        </DockPanel>
+        <!-- Navigation : page précédente, « Page n / N », page suivante. -->
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,*" Margin="0,10,0,0">
+          <Button Content="← Précédent" Command="{Binding PreviousPageCommand}" HorizontalAlignment="Left" Padding="14,6" />
+          <TextBlock Grid.Column="1" Text="{Binding PageText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Content="{Binding NextLabel}" Command="{Binding NextPageCommand}" Classes="primary" HorizontalAlignment="Right" Padding="14,6" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding CurrentStep.Lines}" DockPanel.Dock="Top" Margin="0,0,0,8" HorizontalAlignment="Center">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Text="{Binding}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center"
+                         Foreground="{StaticResource BrushYellow}" Margin="0,2" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Image DataContext="{Binding CurrentStep}" x:DataType="vm:TutorialStep" Source="{Binding Image}" IsVisible="{Binding HasImage}" Stretch="Uniform"
+               RenderOptions.BitmapInterpolationMode="HighQuality" />
+      </DockPanel>
+    </Border>
+  </Grid>
+  </Border>
+</UserControl>

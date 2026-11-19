@@ -29,10 +29,18 @@ public sealed class BrowserSettings
 public sealed class AppSettings
 {
     public int SelectedTab { get; set; }
+    /// <summary>Phase 15 : vrai = n'afficher que les cartes et talents possédés par le joueur ; faux (par défaut) = tout le jeu.</summary>
+    public bool OwnedOnly { get; set; } = true;   // jamais relu : l'application démarre toujours en mode « possédés » (voir MainViewModel)
     /// <summary>Effets sonores (phase 13) : actifs par défaut.</summary>
     public bool SoundsEnabled { get; set; } = true;
     /// <summary>Volume des effets sonores, de 0 à 1.</summary>
     public double SoundVolume { get; set; } = 0.5;
+    /// <summary>Musique du jeu : désactivée par défaut ; volume de 0 à 1 ; identifiant de la musique choisie (vide : la première).</summary>
+    public bool MusicEnabled { get; set; }
+    public double MusicVolume { get; set; } = 0.4;
+    public string MusicTrack { get; set; } = "";
+    /// <summary>Contour des cartes : « rarity » (par défaut, couleur de la rareté), « black » ou « multicolor ».</summary>
+    public string CardFrame { get; set; } = "rarity";
     /// <summary>« Réduire les animations » : coupe l'inclinaison, le retournement, le reflet, les étoiles et les transitions.</summary>
     public bool ReduceAnimations { get; set; }
     /// <summary>Thème de couleur : « default » (violet), un élément : fire, light, earth, nature, shadow, water.</summary>

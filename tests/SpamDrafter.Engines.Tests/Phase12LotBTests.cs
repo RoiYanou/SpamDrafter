@@ -24,15 +24,15 @@ public class Phase12LotBTests : IDisposable
     // ----- Note sur 100 (D-074) -----
 
     [Theory]
-    [InlineData(0.00, 0, "Faible")]
-    [InlineData(0.05, 0, "Faible")]            // plancher : presque aucune victoire
+    [InlineData(0.00, 0, "Intankable")]
+    [InlineData(0.05, 0, "Intankable")]        // plancher : presque aucune victoire
     [InlineData(0.10, 11, "Faible")]
     [InlineData(0.20, 33, "Faible")]
-    [InlineData(0.23, 40, "Correct")]
+    [InlineData(0.23, 40, "Passable")]
     [InlineData(0.30, 56, "Bon")]
     [InlineData(0.40, 78, "Excellent")]
-    [InlineData(0.50, 100, "Excellent")]       // plafond : il gagne la moitié de ses duels contre la méta
-    [InlineData(0.75, 100, "Excellent")]
+    [InlineData(0.50, 100, "Parfait")]          // plafond : il gagne la moitié de ses duels contre la méta
+    [InlineData(0.75, 100, "Parfait")]
     public void La_note_va_de_0_a_100_selon_les_victoires(double score, int points, string label)
     {
         var n = DeckNote.From(score, 0.05);

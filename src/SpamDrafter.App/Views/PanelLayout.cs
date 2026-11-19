@@ -13,7 +13,18 @@ namespace SpamDrafter.App.Views;
 /// </summary>
 public static class PanelLayout
 {
-    public static AppSettings? Settings { get; set; }
+    private static AppSettings? _settings;
+    private static event Action? Reload;
+
+    /// <summary>
+    /// Réglages du joueur. Les vues sont construites AVANT que les réglages soient lus (la fenêtre est créée avant le modèle de vue) :
+    /// quand ils arrivent, chaque disposition enregistrée est réappliquée.
+    /// </summary>
+    public static AppSettings? Settings
+    {
+        get => _settings;
+        set { _settings = value; Reload?.Invoke(); }
+    }
     public static Action? Save { get; set; }
 
     /// <param name="grid">La grille : colonnes de contenu aux rangs pairs, barres aux rangs impairs.</param>
@@ -38,8 +49,13 @@ public static class PanelLayout
         }
         void Refresh() => reset.IsVisible = IsModified();
 
-        if (Settings is not null && Settings.PanelLayouts.TryGetValue(key, out var start) && start.Count == content.Count && start.All(v => v > 0)) Apply(start);
-        Refresh();
+        void ApplySaved()
+        {
+            if (Settings is not null && Settings.PanelLayouts.TryGetValue(key, out var start) && start.Count == content.Count && start.All(v => v > 0)) Apply(start);
+            Refresh();
+        }
+        ApplySaved();
+        Reload += ApplySaved;
 
         foreach (var splitter in grid.Children.OfType<GridSplitter>())
             splitter.DragCompleted += (_, _) =>

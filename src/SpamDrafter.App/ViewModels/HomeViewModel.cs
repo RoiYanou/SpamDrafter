@@ -132,17 +132,43 @@ public sealed class HomeViewModel : ViewModelBase
         "Tu trouves pas le regard de la carte de droite un peu vicieux ?", "Si tu gagnes avec ce deck, je t'offre un cookie !",
         "Ça c'est du deck qui deckapote !",
     };
-    private Guid _featured;
-    private readonly string _mention = Mentions[Random.Shared.Next(Mentions.Length)];
+    // Un deck mis en avant et une phrase pour CHAQUE mode (« toutes » = 0, « possédés » = 1), tirés indépendamment à chaque démarrage.
+    private readonly Guid[] _featuredByMode = new Guid[2];
+    private readonly string[] _mentionByMode = { Mentions[Random.Shared.Next(Mentions.Length)], Mentions[Random.Shared.Next(Mentions.Length)] };
+    /// <summary>Vrai en mode « Cartes et talents possédés ».</summary>
+    public Func<bool> OwnedMode { get; set; } = () => false;
+    private int Mode => OwnedMode() ? 1 : 0;
+    /// <summary>Vrai quand le joueur n'a importé aucune carte en mode « possédés » : l'accueil l'invite à importer.</summary>
+    public Func<bool> NoCards { get; set; } = () => false;
+    public Action? OpenImport { get; set; }
+    public RelayCommand OpenImportCommand => _openImport ??= new RelayCommand(_ => OpenImport?.Invoke());
+    private RelayCommand? _openImport;
+    public bool ShowImportPrompt => LastDeck is null && NoCards();
+    public bool ShowCreatePrompt => LastDeck is null && !NoCards();
 
-    public string Greeting => "Bon retour !";
+    private static readonly (string Text, string Language)[] Greetings =
+    {
+        ("Bonjour !", "Français"), ("Hello!", "Anglais"), ("Hola!", "Espagnol"), ("Ciao!", "Italien"), ("Hallo!", "Allemand"),
+        ("Olá!", "Portugais"), ("Hej!", "Suédois"), ("Hei!", "Finnois"), ("Merhaba!", "Turc"), ("Aloha!", "Hawaïen"),
+        ("Namaste!", "Hindi"), ("Shalom!", "Hébreu"), ("Привет!", "Russe"), ("こんにちは！", "Japonais"), ("안녕하세요!", "Coréen"),
+        ("你好！", "Chinois"), ("Γειά σου!", "Grec"), ("Salam!", "Arabe"), ("Dzień dobry!", "Polonais"), ("Ahoj!", "Tchèque"),
+        ("Szia!", "Hongrois"), ("Sawubona!", "Zoulou"), ("Jambo!", "Swahili"),
+    };
+    private static readonly (string Text, string Language) PickedGreeting = Greetings[Random.Shared.Next(Greetings.Length)];
+    /// <summary>« Bonjour ! » dans une langue au hasard, changé à chaque démarrage (le même pour les deux modes).</summary>
+    public string Greeting => PickedGreeting.Text;
+    /// <summary>Nom de la langue du bonjour, affiché au survol.</summary>
+    public string GreetingLanguage => PickedGreeting.Language;
+    /// <summary>Teinte de départ (0 à 360) de la couleur animée du bonjour ; 1 chance sur 100 : arc-en-ciel animé.</summary>
+    public double GreetingHue { get; } = Random.Shared.NextDouble() * 360;
+    public bool GreetingRainbow { get; } = Random.Shared.NextDouble() < 0.01;
 
     public Deck? LastDeck { get; private set; }
     public bool HasLastDeck => LastDeck is not null;
     public bool HasNoDeck => LastDeck is null;
     /// <summary>Le deck mis en avant : un deck de la collection tiré au hasard à chaque démarrage, avec une petite phrase au hasard.</summary>
     public string LastDeckTitle => LastDeck is null ? "" : LastDeck.Name;
-    public string DeckMention => LastDeck is null ? "" : _mention;
+    public string DeckMention => LastDeck is null ? "" : _mentionByMode[Mode];
     public IReadOnlyList<DeckChip> LastDeckChips { get; private set; } = Array.Empty<DeckChip>();
     /// <summary>« 3 cartes · 2 talents choisis » : un résumé sans calcul de synergie (la note vient de l'onglet Génération).</summary>
     public string LastDeckSummary { get; private set; } = "";
@@ -240,19 +266,23 @@ public sealed class HomeViewModel : ViewModelBase
         _doneCount = n;
     }
 
-    private void Refresh()
+    /// <summary>Decks que le Deck builder montre (mode « possédés » : decks entièrement possédés) ; le deck mis en avant en fait partie.</summary>
+    public Func<Deck, bool> DeckFilter { get; set; } = _ => true;
+
+    public void Refresh()
     {
+        var visible = _decks.Decks.Where(DeckFilter).ToList();
         // Le deck mis en avant est tiré une fois par démarrage ; s'il disparaît (supprimé), on en tire un autre.
-        LastDeck = _decks.Decks.FirstOrDefault(d => d.Id == _featured);
-        if (LastDeck is null && _decks.Decks.Count > 0)
+        LastDeck = visible.FirstOrDefault(d => d.Id == _featuredByMode[Mode]);
+        if (LastDeck is null && visible.Count > 0)
         {
-            LastDeck = _decks.Decks[Random.Shared.Next(_decks.Decks.Count)];
-            _featured = LastDeck.Id;
+            LastDeck = visible[Random.Shared.Next(visible.Count)];
+            _featuredByMode[Mode] = LastDeck.Id;
         }
         LastDeckChips = LastDeck is null ? Array.Empty<DeckChip>() : DeckChipsConverter.Build(LastDeck.Slots);
         LastDeckSummary = LastDeck is null ? "" :
             $"{LastDeck.Slots.Count} carte{(LastDeck.Slots.Count > 1 ? "s" : "")} · {LastDeck.Slots.Count(s => s.TalentId is not null)} talent(s) choisi(s)";
-        foreach (var n in new[] { nameof(LastDeck), nameof(HasLastDeck), nameof(HasNoDeck), nameof(LastDeckTitle), nameof(DeckMention), nameof(LastDeckChips), nameof(LastDeckSummary), nameof(Achievements) })
+        foreach (var n in new[] { nameof(LastDeck), nameof(HasLastDeck), nameof(HasNoDeck), nameof(ShowImportPrompt), nameof(ShowCreatePrompt), nameof(LastDeckTitle), nameof(DeckMention), nameof(LastDeckChips), nameof(LastDeckSummary), nameof(Achievements) })
             Raise(n);
         OpenLastDeckCommand.RaiseCanExecuteChanged();
         CheckAchievements();

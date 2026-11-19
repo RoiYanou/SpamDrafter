@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:v="using:SpamDrafter.App.Views"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:imaging="using:Avalonia.Media.Imaging"
              x:Class="SpamDrafter.App.Views.CardFace"
              x:DataType="v:CardFace">
   <!-- Une carte (phase 13) : illustration rognée aux coins arrondis, cadre de rareté dessiné PAR-DESSUS l'image (le contour épouse
@@ -14,6 +16,9 @@
         <Border Margin="{Binding ImageMargin}" CornerRadius="{Binding ImageCorner}" ClipToBounds="True" Background="#33000000">
           <Grid>
             <Image Source="{Binding Item.Thumbnail}" Stretch="UniformToFill"
+                   IsVisible="{Binding ImageOverride, Converter={x:Static ObjectConverters.IsNull}}" />
+            <!-- Grande tuile : version nette (440 px) par-dessus la miniature, qui reste dessous le temps du chargement. -->
+            <Image Source="{Binding LargeImage}" Stretch="UniformToFill" IsHitTestVisible="False"
                    IsVisible="{Binding ImageOverride, Converter={x:Static ObjectConverters.IsNull}}" />
             <Image Source="{Binding ImageOverride}" Stretch="UniformToFill"
                    IsVisible="{Binding ImageOverride, Converter={x:Static ObjectConverters.IsNotNull}}" />
@@ -32,21 +37,33 @@
                   <GradientStop Color="#00120A24" Offset="1" />
                 </LinearGradientBrush>
               </Border.Background>
-              <TextBlock Classes="title" Text="{Binding Item.Name}" FontSize="{Binding NameSize}" TextAlignment="Center"
-                         TextTrimming="CharacterEllipsis" Foreground="White" />
+              <v:OutlinedText Text="{Binding Item.Name}" FontSize="{Binding NameSize}" HorizontalAlignment="Stretch"
+                              FontFamily="{StaticResource FontTitle}" FontWeight="SemiBold" Foreground="White" />
             </Border>
           </Grid>
         </Border>
         <!-- Profondeur : ombre portée autour de la carte et ombre rentrante le long du cadre ; cadre métallique (reflets de la couleur de rareté). -->
         <Border CornerRadius="{Binding Corner}" BorderBrush="{Binding FrameShine}" BorderThickness="{Binding FrameThickness}" IsHitTestVisible="False"
                 BoxShadow="0 3 9 0 #80000000, inset 0 0 12 2 #A0000000" />
-        <Border IsVisible="{Binding ShowElement}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding OverlayMargin}"
-                Width="{Binding Glyph}" Height="{Binding Glyph}" CornerRadius="999" Background="#B0120A24" IsHitTestVisible="False">
-          <Image Source="{Binding Item.ElementIcon}" Margin="3" Stretch="Uniform" />
-        </Border>
+        <!-- Petit contour noir : au bord extérieur du cadre et là où il touche l'illustration. -->
+        <Border CornerRadius="{Binding Corner}" BorderBrush="#E0000000" BorderThickness="1" IsHitTestVisible="False" />
+        <Border CornerRadius="{Binding ImageCorner}" BorderBrush="#B0000000" BorderThickness="1" Margin="{Binding FrameThickness}" IsHitTestVisible="False" />
+        <!-- Élément : l'icône seule, sans fond, avec un reflet métallique permanent. -->
+        <Grid IsVisible="{Binding ShowElement}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding OverlayMargin}"
+              Width="{Binding Glyph}" Height="{Binding Glyph}" IsHitTestVisible="False">
+          <Image Source="{Binding Item.ElementBadge}" Stretch="Uniform" />
+          <!-- Reflet métallique animé en permanence : un éclat clair, bordé d'une ombre, traverse l'icône en diagonale (pinceau partagé, voir ElementSheen). -->
+          <Rectangle Fill="{x:Static v:ElementSheen.Brush}">
+
+            <Rectangle.OpacityMask><ImageBrush Source="{Binding Item.ElementBadgeMask}" Stretch="Uniform" /></Rectangle.OpacityMask>
+          </Rectangle>
+        </Grid>
         <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding OverlayMargin}" Spacing="3" IsHitTestVisible="False">
           <Grid IsVisible="{Binding ShowIncome}" HorizontalAlignment="Right" Width="{Binding Glyph}" Height="{Binding Glyph}">
-            <Image Source="{Binding Item.SpamtonIcon}" Stretch="Uniform" />
+            <Image Source="{Binding Item.SpamtonBadge}" Stretch="Uniform" />
+            <Rectangle Fill="{x:Static v:ElementSheen.Brush}" IsHitTestVisible="False">
+              <Rectangle.OpacityMask><ImageBrush Source="{Binding Item.SpamtonBadgeMask}" Stretch="Uniform" /></Rectangle.OpacityMask>
+            </Rectangle>
             <TextBlock Text="{Binding Item.IncomeText}" FontSize="{Binding IncomeFont}" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" Foreground="#6E3B14"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Grid>
@@ -55,19 +72,67 @@
             <TextBlock Text="{Binding TopTag}" FontSize="{Binding TagSize}" FontWeight="Bold" Foreground="{StaticResource BrushOnYellow}" />
           </Border>
         </StackPanel>
-        <!-- Talent en bas à gauche (présentation d'un deck) : « T1 » puis son nom, en gras. -->
-        <!-- PV dans le coin bas gauche : un cœur vert puis « 500 PV », sans fond. L'ombre est faite avec un double texte noir (pas d'effet : un effet rend le texte
-             plus fin et transparent quand la carte est agrandie ou inclinée au survol). -->
-        <Grid IsVisible="{Binding HpVisible}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HpMargin}" IsHitTestVisible="False">
-          <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,1,0,0" Opacity="0.85">
-            <TextBlock Text="♥" Foreground="Black" FontSize="{Binding HpSize}" FontWeight="Black" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding Item.HpText}" Foreground="Black" FontWeight="Black" FontSize="{Binding HpSize}" VerticalAlignment="Center" />
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="3">
-            <TextBlock Text="♥" Foreground="#5FD86B" FontSize="{Binding HpSize}" FontWeight="Black" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding Item.HpText}" Foreground="White" FontWeight="Black" FontSize="{Binding HpSize}" VerticalAlignment="Center" />
-          </StackPanel>
+        <!-- Capacités (comme dans le jeu) : un bandeau sombre translucide par capacité, nom en majuscules au centre, recharge à droite. -->
+        <Grid IsVisible="{Binding AbilitiesVisible}" VerticalAlignment="Bottom" Height="{Binding AbilitiesHeight}" Margin="{Binding AbilitiesMargin}" IsHitTestVisible="False">
+        <ItemsControl ItemsSource="{Binding Item.AbilityTags}" VerticalAlignment="Top">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:AbilityTag">
+              <Border Background="{Binding Back}" CornerRadius="5"
+                      Height="{Binding $parent[v:CardFace].AbilityRow}" Padding="3,0,3,0">
+                <!-- Colonnes de largeur fixe (même sans icône ni recharge) : les noms sont toujours alignés d'une capacité à l'autre. -->
+                <Grid>
+                  <!-- Tox de base : logo collé au nom, le tout centré. -->
+                  <StackPanel IsVisible="{Binding IsTox}" Orientation="Horizontal" Spacing="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- Seul le logo est encadré, à la couleur de rareté du Tox (comme dans la fiche détaillée). -->
+                    <Border BorderBrush="{Binding Frame}" BorderThickness="1.5" CornerRadius="{Binding $parent[v:CardFace].ToxCorner}" Background="#22000000" VerticalAlignment="Center"
+                            Width="{Binding $parent[v:CardFace].AbilityIcon}" Height="{Binding $parent[v:CardFace].AbilityIcon}">
+                      <Image Source="{Binding Logos[0]}" Stretch="Uniform" Margin="1" />
+                    </Border>
+                    <v:OutlinedText Text="{Binding Name}" FontSize="{Binding $parent[v:CardFace].AbilitySize}" FontWeight="ExtraBold" Foreground="White"
+                                    VerticalAlignment="Center" MaxWidth="{Binding $parent[v:CardFace].ToxNameWidth}" />
+                    <!-- Nom de la rareté du Tox, de la couleur de la rareté. -->
+                    <v:OutlinedText Text="{Binding RarityName}" IsVisible="{Binding RarityName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    FontSize="{Binding $parent[v:CardFace].AbilitySize}" FontWeight="Bold" Foreground="{Binding RarityText}"
+                                    VerticalAlignment="Center" MaxWidth="{Binding $parent[v:CardFace].ToxRarityWidth}" />
+                  </StackPanel>
+                  <!-- Éléments mis en jeu : un seul, ou un disque partagé en 2, 3 ou 6 parts comme dans le jeu. Sans élément : logo de critique et/ou de précision (fusionnés s'il y en a deux). -->
+                  <v:ElementCombo HorizontalAlignment="Left" VerticalAlignment="Center" Icons="{Binding Elements}" IsVisible="{Binding HasElements}"
+                                  Width="{Binding $parent[v:CardFace].AbilityIcon}" Height="{Binding $parent[v:CardFace].AbilityIcon}" />
+                  <v:ElementCombo HorizontalAlignment="Left" VerticalAlignment="Center" Icons="{Binding Logos}" IsVisible="{Binding HasLogosOfAbility}"
+                                  Width="{Binding $parent[v:CardFace].AbilityIcon}" Height="{Binding $parent[v:CardFace].AbilityIcon}" />
+                  <v:OutlinedText IsVisible="{Binding IsAbility}" Text="{Binding Name}" FontSize="{Binding $parent[v:CardFace].AbilitySize}" FontWeight="ExtraBold" Foreground="White"
+                                  VerticalAlignment="Center" Margin="{Binding $parent[v:CardFace].AbilityTextMargin}" />
+                  <!-- Recharge : le logo « cooldown » de la fiche, avec le nombre de tours dedans. -->
+                  <Grid HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding HasCooldown}"
+                        Width="{Binding $parent[v:CardFace].AbilityLogo}" Height="{Binding $parent[v:CardFace].AbilityLogo}">
+                    <Image Source="{Binding CooldownIcon}" Stretch="Uniform" />
+                    <TextBlock Text="{Binding Cooldown}" FontWeight="Bold" FontSize="{Binding $parent[v:CardFace].CooldownFont}" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Grid>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         </Grid>
+        <!-- Talent en bas à gauche (présentation d'un deck) : « T1 » puis son nom, en gras. -->
+        <!-- PV dans le coin bas gauche : un cœur vert puis « 500 PV », sans fond, avec un contour noir (texte noir décalé dessiné autour, voir OutlinedText). -->
+        <StackPanel IsVisible="{Binding HpVisible}" Orientation="Horizontal" Spacing="1" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                    Margin="{Binding HpMargin}" IsHitTestVisible="False">
+          <!-- Pas de fond : cœur vert et « 500 PV » en blanc, avec un contour noir. -->
+          <v:OutlinedText Text="♥" Foreground="#5FD86B" FontWeight="Black" FontSize="{Binding HpSize}" VerticalAlignment="Center" />
+          <v:OutlinedText Text="{Binding Item.HpText}" Foreground="White" FontWeight="Black" FontSize="{Binding HpSize}" VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- Talents possédés (mode « possédés ») : une étoile par talent, jaune si possédé, grise sinon, en bas à droite (à l'opposé des PV). -->
+        <ItemsControl ItemsSource="{Binding Item.Stars}" IsVisible="{Binding HpVisible}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{Binding StarMargin}" IsHitTestVisible="False">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="0" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StarItem">
+              <v:OutlinedText Text="★" Foreground="{Binding Fill}" FontWeight="Black" FontSize="{Binding $parent[v:CardFace].StarSize}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding BottomLeftMargin}" Spacing="3" IsHitTestVisible="False"
                     IsVisible="{Binding BottomTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
           <Border HorizontalAlignment="Left" Background="{StaticResource BrushYellow}" CornerRadius="999" Padding="7,0">
@@ -82,8 +147,13 @@
       <!-- Symbole de rareté : une arche sombre (même fond que l'icône d'élément) au contour du cadre, posée sur le bord bas et reliée à lui. -->
       </Grid>
       <!-- Logo de la rareté, seul, centré sur le bord bas du corps de la carte : la moitié du logo est sous le cadre, dans l'espace réservé. -->
-      <Image IsVisible="{Binding ShowRarity}" Source="{Binding Item.RarityIcon}" Width="{Binding RarityLogo}" Height="{Binding RarityLogoHeight}" Stretch="Uniform"
-             HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding RarityLogoMargin}" IsHitTestVisible="False" />
+      <Grid IsVisible="{Binding ShowRarity}" Width="{Binding RarityLogo}" Height="{Binding RarityLogoHeight}" RenderOptions.BitmapInterpolationMode="HighQuality"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding RarityLogoMargin}" IsHitTestVisible="False">
+        <Image Source="{Binding Item.RarityIcon}" Stretch="Uniform" />
+        <Rectangle Fill="{x:Static v:ElementSheen.Brush}">
+          <Rectangle.OpacityMask><ImageBrush Source="{Binding Item.RarityIcon}" Stretch="Uniform" /></Rectangle.OpacityMask>
+        </Rectangle>
+      </Grid>
     </Grid>
   </Border>
 </UserControl>

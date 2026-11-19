@@ -65,7 +65,7 @@
         <DataTemplate x:DataType="vm:CardItem">
           <!-- Le nom est écrit sur la carte (en haut au centre), plus besoin de le répéter dessous. -->
           <ContentControl ClipToBounds="False" Width="{Binding $parent[v:CardGridPanel].FitWidth}" Height="{Binding $parent[v:CardGridPanel].FitHeight}"
-                          Content="{Binding}" ContentTemplate="{StaticResource CardThumb}" />
+                          Content="{Binding}" ContentTemplate="{Binding $parent[v:CardGridPanel].ThumbTemplate}" />
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>

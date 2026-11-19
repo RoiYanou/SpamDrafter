@@ -5,10 +5,19 @@
              x:Class="SpamDrafter.App.Views.HomeView"
              x:DataType="vm:HomeViewModel">
   <Grid>
+  <!-- Le contenu qui défile s'estompe en bas (et un peu en haut) de la boîte au lieu d'être coupé net, comme les listes des autres pages. -->
   <ScrollViewer>
+    <ScrollViewer.OpacityMask>
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#00000000" Offset="0" />
+        <GradientStop Color="#FF000000" Offset="0.025" />
+        <GradientStop Color="#FF000000" Offset="0.93" />
+        <GradientStop Color="#00000000" Offset="1" />
+      </LinearGradientBrush>
+    </ScrollViewer.OpacityMask>
     <StackPanel Margin="24" Spacing="14">
       <StackPanel Spacing="2">
-        <TextBlock Classes="title" Text="{Binding Greeting}" FontSize="{StaticResource FontSizeTitle}" />
+        <TextBlock x:Name="GreetingText" Classes="title" Text="{Binding Greeting}" ToolTip.Tip="{Binding GreetingLanguage}" FontSize="{StaticResource FontSizeTitle}" />
       </StackPanel>
       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
         <!-- Carte du jour à gauche : elle s'incline avec la souris comme dans la fiche ; seuls le nom, la bordure et l'illustrateur s'affichent. -->
@@ -24,7 +33,7 @@
             </StackPanel>
             <Border x:Name="CardOfDayBox" Width="280" Height="412" Cursor="Hand" Background="Transparent" ToolTip.Tip="Cliquer pour voir la carte en grand">
               <v:CardFace Item="{Binding CardOfDay}" ImageOverride="{Binding CardOfDayImage}" Credit="{Binding CardOfDayCredit}"
-                          ShowName="True" ShowElement="False" ShowIncome="False" ShowRarity="False" HoverZoom="False" Holo="True" />
+                          ShowName="True" ShowElement="False" ShowIncome="False" ShowRarity="True" HoverZoom="False" Holo="True" />
             </Border>
           </StackPanel>
           </Grid>
@@ -40,7 +49,11 @@
               </ItemsControl>
             </Viewbox>
             <Button Classes="primary" Content="Ouvrir le deck" Command="{Binding OpenLastDeckCommand}" HorizontalAlignment="Center" Padding="16,8" IsVisible="{Binding HasLastDeck}" />
-            <StackPanel Spacing="14" HorizontalAlignment="Center" IsVisible="{Binding HasNoDeck}">
+            <StackPanel Spacing="14" HorizontalAlignment="Center" IsVisible="{Binding ShowImportPrompt}">
+              <TextBlock Text="Importe tes cartes SPAM en 5 minutes !" Classes="title glow" FontSize="24" Foreground="{StaticResource BrushYellow}" TextAlignment="Center" TextWrapping="Wrap" />
+              <Button Classes="primary" Content="Importer" Command="{Binding OpenImportCommand}" HorizontalAlignment="Center" Padding="20,10" FontSize="16" />
+            </StackPanel>
+            <StackPanel Spacing="14" HorizontalAlignment="Center" IsVisible="{Binding ShowCreatePrompt}">
               <TextBlock Text="Pas de deck ? Essaye d'en créer un !" Classes="title glow" FontSize="24" Foreground="{StaticResource BrushYellow}" TextAlignment="Center" TextWrapping="Wrap" />
               <Button Classes="primary" Content="Aller au Deck builder" Command="{Binding OpenBuilderCommand}" HorizontalAlignment="Center" Padding="20,10" FontSize="16" />
             </StackPanel>
@@ -89,7 +102,7 @@
         <TextBlock Text="Carte du jour" Classes="title glow" FontSize="24" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" />
         <Border x:Name="ZoomBox" Width="400" Height="590" Background="Transparent">
           <v:CardFace Item="{Binding CardOfDay}" ImageOverride="{Binding CardOfDayImage}" Credit="{Binding CardOfDayCredit}" ShowName="True" ShowElement="False"
-                      ShowIncome="False" ShowRarity="False" HoverZoom="False" Holo="True" />
+                      ShowIncome="False" ShowRarity="True" HoverZoom="False" Holo="True" />
         </Border>
         <WrapPanel ItemSpacing="10" HorizontalAlignment="Center">
           <Button Classes="primary" Content="Ouvrir la fiche" Command="{Binding OpenCardOfDayCommand}" Padding="16,8" />

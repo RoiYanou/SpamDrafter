@@ -7,7 +7,7 @@
   <UserControl.Styles>
     <Style Selector="TextBlock.shop"><Setter Property="Foreground" Value="#7BC67B" /></Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="360,*" Margin="12" ColumnSpacing="16">
+  <Grid ColumnDefinitions="360,*" Margin="12" ColumnSpacing="16" MaxWidth="1000" HorizontalAlignment="Stretch">
     <DockPanel>
       <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
         <TextBox Text="{Binding Search}" PlaceholderText="Rechercher un Tox…" />
@@ -28,7 +28,15 @@
         </ListBox.ItemTemplate>
       </ListBox>
     </DockPanel>
-    <ScrollViewer Grid.Column="1">
+    <Border Grid.Column="1" CornerRadius="14" Background="#26000000" BorderBrush="{StaticResource BrushPanelEdge}" BorderThickness="1" Padding="6,4,0,4">
+    <Grid>
+    <!-- Décor du panneau vide : étoile, filet doré et consigne. -->
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10" IsHitTestVisible="False" Opacity="0.35" IsVisible="{Binding !HasSelection}">
+      <TextBlock Text="✦" FontSize="72" HorizontalAlignment="Center" Foreground="{StaticResource BrushYellow}" />
+      <Rectangle Width="160" Height="2" HorizontalAlignment="Center" Fill="{StaticResource BrushYellow}" Opacity="0.6" />
+      <TextBlock Text="Choisis un Tox dans la liste" FontSize="16" HorizontalAlignment="Center" />
+    </StackPanel>
+    <ScrollViewer>
       <StackPanel Spacing="8" Margin="0,0,12,0">
         <StackPanel Orientation="Horizontal" Spacing="14">
           <Border Width="76" Height="76" CornerRadius="12" Background="#22000000" ClipToBounds="True" BorderBrush="{Binding Frame}" BorderThickness="4" IsVisible="{Binding HasSelection}">
@@ -60,5 +68,7 @@
         <ItemsControl ItemsSource="{Binding InnateCards}" ItemTemplate="{StaticResource CardLinkRow}" />
       </StackPanel>
     </ScrollViewer>
+    </Grid>
+    </Border>
   </Grid>
 </UserControl>

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -60,6 +61,56 @@ public partial class CardFace : UserControl
     public static readonly StyledProperty<double> TagSizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(TagSize), 11);
     public static readonly StyledProperty<double> TalentMaxWidthProperty = AvaloniaProperty.Register<CardFace, double>(nameof(TalentMaxWidth), 80);
     public static readonly StyledProperty<Thickness> OverlayMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(OverlayMargin), new Thickness(4));
+    public static readonly StyledProperty<IImage?> LargeImageProperty = AvaloniaProperty.Register<CardFace, IImage?>(nameof(LargeImage));
+    /// <summary>Version nette de l'illustration, seulement pour une grande tuile (voir <see cref="RefreshLarge"/>).</summary>
+    public IImage? LargeImage { get => GetValue(LargeImageProperty); private set => SetValue(LargeImageProperty, value); }
+    private CardItem? _watched;
+
+    /// <summary>La miniature de 256 px suffit jusqu'à ≈ 230 pixels réels ; au-delà (tuile large, écran à fort zoom), on charge la version nette.</summary>
+    private void RefreshLarge()
+    {
+        var scale = (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1) * 1.3;   // 1,3 : taille d'interface par défaut
+        LargeImage = Item is { } it && ImageOverride is null && Bounds.Width * scale > 230 ? it.LargeThumbnail : null;
+    }
+
+    public static readonly StyledProperty<bool> CompactAbilitiesProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(CompactAbilities));
+    /// <summary>Vrai : le bloc des capacités est rapproché des PV (cartes des sélecteurs et des decks du Builder, du Drafter et du Générateur : l'écart sous la 3ᵉ capacité y paraissait trop grand).</summary>
+    public bool CompactAbilities { get => GetValue(CompactAbilitiesProperty); set => SetValue(CompactAbilitiesProperty, value); }
+    public static readonly StyledProperty<bool> ShowAbilitiesProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(ShowAbilities));
+    public static readonly StyledProperty<bool> AbilitiesVisibleProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(AbilitiesVisible));
+    public static readonly StyledProperty<double> AbilitySizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(AbilitySize), 9);
+    public static readonly StyledProperty<Thickness> AbilitiesMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(AbilitiesMargin));
+    /// <summary>Vrai : les capacités de la carte (nom et recharge) sont écrites sur l'illustration, comme dans le jeu ; masquées si la carte est trop petite.</summary>
+    public bool ShowAbilities { get => GetValue(ShowAbilitiesProperty); set => SetValue(ShowAbilitiesProperty, value); }
+    public bool AbilitiesVisible { get => GetValue(AbilitiesVisibleProperty); private set => SetValue(AbilitiesVisibleProperty, value); }
+    public static readonly StyledProperty<double> AbilityRowProperty = AvaloniaProperty.Register<CardFace, double>(nameof(AbilityRow), 20);
+    public static readonly StyledProperty<double> AbilitiesHeightProperty = AvaloniaProperty.Register<CardFace, double>(nameof(AbilitiesHeight), 70);
+    /// <summary>Hauteur d'un bandeau de capacité, et de la zone qui en contient trois (les bandeaux sont alignés par le haut dans cette zone).</summary>
+    /// <summary>Taille de l'illustration des éléments et du logo de recharge dans un bandeau.</summary>
+    public static readonly StyledProperty<double> CooldownFontProperty = AvaloniaProperty.Register<CardFace, double>(nameof(CooldownFont), 8);
+    /// <summary>Taille du nombre de tours dans le logo de recharge d'un bandeau (petit : il doit tenir dans le logo, même à deux chiffres).</summary>
+    public double CooldownFont { get => GetValue(CooldownFontProperty); private set => SetValue(CooldownFontProperty, value); }
+    public static readonly StyledProperty<CornerRadius> ToxCornerProperty = AvaloniaProperty.Register<CardFace, CornerRadius>(nameof(ToxCorner), new CornerRadius(2));
+    public CornerRadius ToxCorner { get => GetValue(ToxCornerProperty); private set => SetValue(ToxCornerProperty, value); }
+    public static readonly StyledProperty<double> ToxNameWidthProperty = AvaloniaProperty.Register<CardFace, double>(nameof(ToxNameWidth), 80);
+    /// <summary>Largeur disponible pour le nom d'un Tox de base (le logo est collé à gauche du nom).</summary>
+    public double ToxNameWidth { get => GetValue(ToxNameWidthProperty); private set => SetValue(ToxNameWidthProperty, value); }
+    public static readonly StyledProperty<double> ToxSizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(ToxSize), 14);
+    public static readonly StyledProperty<Thickness> ToxMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(ToxMargin));
+    public static readonly StyledProperty<Thickness> AbilityTextMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(AbilityTextMargin));
+    /// <summary>Taille d'une icône de Tox de base (bas droite), marge de cette rangée, et marges du nom d'une capacité (place des deux colonnes d'icônes).</summary>
+    public double ToxSize { get => GetValue(ToxSizeProperty); private set => SetValue(ToxSizeProperty, value); }
+    public Thickness ToxMargin { get => GetValue(ToxMarginProperty); private set => SetValue(ToxMarginProperty, value); }
+    public Thickness AbilityTextMargin { get => GetValue(AbilityTextMarginProperty); private set => SetValue(AbilityTextMarginProperty, value); }
+    public static readonly StyledProperty<double> AbilityIconProperty = AvaloniaProperty.Register<CardFace, double>(nameof(AbilityIcon), 16);
+    public static readonly StyledProperty<double> AbilityLogoProperty = AvaloniaProperty.Register<CardFace, double>(nameof(AbilityLogo), 18);
+    public double AbilityIcon { get => GetValue(AbilityIconProperty); private set => SetValue(AbilityIconProperty, value); }
+    public double AbilityLogo { get => GetValue(AbilityLogoProperty); private set => SetValue(AbilityLogoProperty, value); }
+    public double AbilityRow { get => GetValue(AbilityRowProperty); private set => SetValue(AbilityRowProperty, value); }
+    public double AbilitiesHeight { get => GetValue(AbilitiesHeightProperty); private set => SetValue(AbilitiesHeightProperty, value); }
+    public double AbilitySize { get => GetValue(AbilitySizeProperty); private set => SetValue(AbilitySizeProperty, value); }
+    public Thickness AbilitiesMargin { get => GetValue(AbilitiesMarginProperty); private set => SetValue(AbilitiesMarginProperty, value); }
+
     public static readonly StyledProperty<Thickness> BodyMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(BodyMargin));
 
     public CardItem? Item { get => GetValue(ItemProperty); set => SetValue(ItemProperty, value); }
@@ -78,6 +129,12 @@ public partial class CardFace : UserControl
     public string? BottomTag { get => GetValue(BottomTagProperty); private set => SetValue(BottomTagProperty, value); }
     public static readonly StyledProperty<Thickness> HpMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(HpMargin));
     public Thickness HpMargin { get => GetValue(HpMarginProperty); private set => SetValue(HpMarginProperty, value); }
+    public static readonly StyledProperty<Thickness> StarMarginProperty = AvaloniaProperty.Register<CardFace, Thickness>(nameof(StarMargin));
+    public Thickness StarMargin { get => GetValue(StarMarginProperty); private set => SetValue(StarMarginProperty, value); }
+    public static readonly StyledProperty<double> StarSizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(StarSize), 8);
+    public double StarSize { get => GetValue(StarSizeProperty); private set => SetValue(StarSizeProperty, value); }
+    public static readonly StyledProperty<double> ToxRarityWidthProperty = AvaloniaProperty.Register<CardFace, double>(nameof(ToxRarityWidth), 30);
+    public double ToxRarityWidth { get => GetValue(ToxRarityWidthProperty); private set => SetValue(ToxRarityWidthProperty, value); }
     public static readonly StyledProperty<double> HpSizeProperty = AvaloniaProperty.Register<CardFace, double>(nameof(HpSize), 8);
     public double HpSize { get => GetValue(HpSizeProperty); private set => SetValue(HpSizeProperty, value); }
     public static readonly StyledProperty<bool> HpVisibleProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(HpVisible));
@@ -146,18 +203,38 @@ public partial class CardFace : UserControl
     {
         if (Item?.RarityBrush is not SolidColorBrush sb) { FrameShine = null; _shine = null; return; }
         var c = sb.Color;
+        var stops = new GradientStops();
+        switch (CardFrameStyle.Mode)
+        {
+            case CardFrameMode.Black:
+                var k = Color.FromRgb(22, 20, 28);
+                stops.Add(new GradientStop(k, 0)); stops.Add(new GradientStop(Mix(k, Colors.White, 0.35), 0.2)); stops.Add(new GradientStop(k, 0.38));
+                stops.Add(new GradientStop(Colors.Black, 0.62)); stops.Add(new GradientStop(Mix(k, Colors.White, 0.2), 0.82)); stops.Add(new GradientStop(k, 1));
+                break;
+            case CardFrameMode.Multicolor:
+                foreach (var (hex, at) in new[] { ("#FF5A5A", 0.0), ("#FFC93C", 0.17), ("#7BE08A", 0.34), ("#5BC0F0", 0.5), ("#9A7BFF", 0.67), ("#FF70D0", 0.84), ("#FF5A5A", 1.0) })
+                    stops.Add(new GradientStop(Color.Parse(hex), at));
+                break;
+            case CardFrameMode.Theme:
+                var t = ThemeManager.Accent;   // couleur secondaire du thème en cours
+                stops.Add(new GradientStop(t, 0)); stops.Add(new GradientStop(Mix(t, Colors.White, 0.6), 0.2)); stops.Add(new GradientStop(t, 0.38));
+                stops.Add(new GradientStop(Mix(t, Colors.Black, 0.35), 0.62)); stops.Add(new GradientStop(Mix(t, Colors.White, 0.3), 0.82)); stops.Add(new GradientStop(t, 1));
+                break;
+            default:
+                stops.Add(new GradientStop(c, 0)); stops.Add(new GradientStop(Mix(c, Colors.White, 0.6), 0.2)); stops.Add(new GradientStop(c, 0.38));
+                stops.Add(new GradientStop(Mix(c, Colors.Black, 0.35), 0.62)); stops.Add(new GradientStop(Mix(c, Colors.White, 0.3), 0.82)); stops.Add(new GradientStop(c, 1));
+                break;
+        }
         _shine = new LinearGradientBrush
         {
             SpreadMethod = GradientSpreadMethod.Repeat,
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
-            GradientStops =
-            {
-                new GradientStop(c, 0), new GradientStop(Mix(c, Colors.White, 0.6), 0.2), new GradientStop(c, 0.38),
-                new GradientStop(Mix(c, Colors.Black, 0.35), 0.62), new GradientStop(Mix(c, Colors.White, 0.3), 0.82), new GradientStop(c, 1),
-            },
+            GradientStops = stops,
         };
         FrameShine = _shine;
     }
+
+    private void OnFrameStyleChanged() => RebuildShine();
 
     /// <summary>Fait glisser les reflets sur le cadre (survol, fiche détaillée) ; la couleur de la rareté ne change pas.</summary>
     public void StartShine()
@@ -306,11 +383,16 @@ public partial class CardFace : UserControl
         AttachedToVisualTree += (_, _) =>
         {
             DismissZooms += DismissZoom;
+            CardFrameStyle.Changed += OnFrameStyleChanged;
+            ThemeManager.Changed += OnFrameStyleChanged;
+            RebuildShine();
             if (Holo) StartShine();
         };
         DetachedFromVisualTree += (_, _) =>
         {
             DismissZooms -= DismissZoom;
+            CardFrameStyle.Changed -= OnFrameStyleChanged;
+            ThemeManager.Changed -= OnFrameStyleChanged;
             StopShine();
             ResetZoom();
         };
@@ -320,11 +402,18 @@ public partial class CardFace : UserControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ItemProperty) RebuildShine();
+        if (change.Property == ItemProperty)
+        {
+            RebuildShine();
+            if (_watched is not null) _watched.PropertyChanged -= OnItemChanged;
+            _watched = Item;
+            if (_watched is not null) _watched.PropertyChanged += OnItemChanged;
+            RefreshLarge();
+        }
         if (change.Property == CreditCommandProperty) CreditBox.IsHitTestVisible = CreditCommand is not null;
         if (change.Property == ShowIncomeProperty || change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
             HpVisible = ShowIncome && !(TalentAtBottom && !string.IsNullOrEmpty(TalentTag));
-        if (change.Property == ShowNameProperty || change.Property == ShowRarityProperty) Adapt();
+        if (change.Property == ShowNameProperty || change.Property == ShowRarityProperty || change.Property == ShowAbilitiesProperty || change.Property == CompactAbilitiesProperty) Adapt();
         else if (change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
         {
             TopTag = TalentAtBottom ? null : TalentTag;
@@ -332,13 +421,26 @@ public partial class CardFace : UserControl
         }
     }
 
+    private void OnItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CardItem.LargeThumbnail) or nameof(CardItem.SelectedSkinId)) RefreshLarge();
+    }
+
     /// <summary>Rebond au clic : fait par la vignette de la liste (la carte agrandie est la carte elle-même) ; toujours faux ici.</summary>
     public bool BounceZoom() => false;
 
     /// <summary>Tailles qui suivent la largeur de la carte : coins, nom, pastilles, médaillon de rareté.</summary>
+    private double _adaptWidth = -1;
+    private int _adaptKey = -1;
+
     private void Adapt()
     {
         var w = Math.Max(Bounds.Width, 30);
+        RefreshLarge();
+        // Redimensionner une boîte relance Adapt pour chaque carte : on ne refait le calcul que si la largeur ou les options ont changé.
+        var key = (ShowName ? 1 : 0) | (ShowRarity ? 2 : 0) | (ShowAbilities ? 4 : 0) | (ShowElement ? 8 : 0) | (ShowIncome ? 16 : 0) | (CompactAbilities ? 32 : 0);
+        if (Math.Abs(w - _adaptWidth) < 0.3 && key == _adaptKey) return;
+        _adaptWidth = w; _adaptKey = key;
         Corner = new CornerRadius(Math.Clamp(w / 12, 6, 18));
         NameSize = Math.Clamp(w / 11.5, 8, 17);
         Glyph = Math.Clamp(w / 6.2, 14, 40);
@@ -368,6 +470,25 @@ public partial class CardFace : UserControl
         CreditMargin = new Thickness(inset, inset, inset, lift);
         BottomLeftMargin = new Thickness(inset + 1, 0, 0, lift);
         HpMargin = new Thickness(inset + 5, 0, 0, inset + 3);
-        HpSize = Math.Max(7, NameSize * 0.68);   // assez petit pour tenir entre le bord gauche et le médaillon de rareté
+        StarMargin = new Thickness(0, 0, inset + 5, inset + 3);
+        StarSize = Math.Max(7, NameSize * 0.78);
+        // Capacités : au bas de l'illustration, au-dessus de la ligne des PV ; trop petites pour être lues sous 120 px de large.
+        HpSize = Math.Max(7, NameSize * 0.68);   // calculé AVANT les marges des capacités qui en dépendent (sinon la valeur du calcul précédent servait : capacités trop hautes)
+        AbilitiesVisible = ShowAbilities && w >= 70;
+        AbilitySize = Math.Clamp(w / 17, 7, 14);
+        AbilityRow = AbilitySize * 2.2;
+        AbilityIcon = AbilityRow * 0.74;      // disque d'éléments, logos de statistiques et icônes de Tox : une seule taille
+        AbilityLogo = AbilityRow * 0.7;       // logo de recharge : jamais plus grand que les logos d'élément
+        AbilityTextMargin = new Thickness(AbilityIcon + 3, 0, AbilityIcon + 3, 0);   // même marge des deux côtés : le nom reste centré et aligné
+        AbilitiesHeight = AbilityRow * 3 + 10;   // 3 bandeaux + leurs 2 espaces + une marge : aucun bas de bandeau coupé   // trois bandeaux au plus : une carte à une capacité l'affiche à la même hauteur que le premier d'une carte à trois
+        CooldownFont = Math.Max(5.5, AbilitySize * 0.68);
+        var side = inset + 2 + w * 0.045;   // bandeaux un peu moins larges que la carte
+        AbilitiesMargin = new Thickness(side, 0, side, inset + 3 + HpSize * 2.4 + AbilityRow * 0.55 - 6 - AbilityRow * 0.2 - (CompactAbilities ? AbilityRow * 0.5 : 0));   // 0,2 ligne plus bas qu'avant (retouche phase 15)
+        ToxSize = Math.Max(11, AbilityIcon * 1.1);
+        ToxCorner = new CornerRadius(Math.Max(1, AbilityIcon * 0.12));   // coins à peine arrondis : le cadre du logo ne devient jamais un cercle
+        var toxRoom = Math.Max(30, w - 2 * (inset + 2 + w * 0.045) - AbilityIcon - 14);
+        ToxNameWidth = toxRoom * 0.55;     // le nom du Tox et le nom de sa rareté se partagent la place
+        ToxRarityWidth = toxRoom * 0.45;
+        ToxMargin = new Thickness(0, 0, inset + 4, inset + 3);
     }
 }

@@ -25,7 +25,7 @@ public class GeneratorMemoryTests : IDisposable
         return null;
     }
 
-    private (GeneratorViewModel Vm, KnowledgeBase Kb, GenerationHistory History, Coordinator Coordinator)? Make(string context = "ctx")
+    private (GeneratorViewModel Vm, KnowledgeBase Kb, GenerationHistory History, Coordinator Coordinator, DeckLibrary Library)? Make(string context = "ctx")
     {
         if (FindKnowledge() is not { } p) return null;
         var kb = KnowledgeBase.Load(p);
@@ -46,7 +46,7 @@ public class GeneratorMemoryTests : IDisposable
         };
         var history = new GenerationHistory(Path.Combine(_dir, "history.json"), context);
         var vm = new GeneratorViewModel(new CardBrowser(items, kb), items, kb, coordinator, library, post: a => a(), history: history);
-        return (vm, kb, history, coordinator);
+        return (vm, kb, history, coordinator, library);
     }
 
     private static void Pick(GeneratorViewModel vm, int index)
@@ -65,7 +65,7 @@ public class GeneratorMemoryTests : IDisposable
         foreach (var p in w.Vm.Proposals)
         {
             Assert.Matches(@"^\d{1,3} / 100$", p.NoteText);
-            Assert.Contains(p.NoteLabel, new[] { "Faible", "Correct", "Bon", "Excellent" });
+            Assert.Contains(p.NoteLabel, new[] { "Intankable", "Faible", "Passable", "Bon", "Excellent", "Parfait" });
             Assert.DoesNotContain("duels de confirmation", p.NoteText + p.NoteLabel + p.NoteHint);
             Assert.DoesNotContain("±", p.NoteText + p.NoteLabel + p.NoteHint);
         }
@@ -80,8 +80,8 @@ public class GeneratorMemoryTests : IDisposable
         Pick(w.Vm, 0); Pick(w.Vm, 1); Pick(w.Vm, 2);
         await w.Vm.GenerateAsync();
         var proposal = w.Vm.Proposals[0];
-        await w.Vm.AnalyseAsync(proposal.Deck.Deck, proposal.Title);
-        Assert.Contains($"Note : {proposal.NoteText} — {proposal.NoteLabel}", w.Vm.Sheet);
+        var sheet = await w.Coordinator.AnalyseAsync(proposal.Deck.Deck, complete: false, Effort.Normal, Coordinator.AppSeed);
+        Assert.Contains($"Note : {proposal.NoteText} — {proposal.NoteLabel}", sheet.Sheet);
     }
 
     [Fact]
@@ -132,49 +132,115 @@ public class GeneratorMemoryTests : IDisposable
     }
 
     [Fact]
-    public async Task La_fiche_et_l_analyse_sont_gardees_puis_reprises()
+    public async Task L_historique_du_Generateur_liste_et_rouvre_les_generations_seulement()
     {
         if (Make() is not { } w) return;
+        Pick(w.Vm, 0); Pick(w.Vm, 1);
+        await w.Vm.GenerateAsync();
+        // Un rapport et une confrontation gardés par l'onglet Tester ne sont pas dans cette liste.
         var deck = w.Kb.Cards.Take(4).Select(c => new DuelSlot(c.Id, c.Talents[0])).ToList();
-        await w.Vm.AnalyseAsync(deck, "mon deck");
-        var sheet = w.Vm.Sheet;
-        Assert.Contains("VERDICT", sheet);
-        Assert.Contains(w.History.Entries, e => e.Kind == HistoryKind.Report && !e.Complete);
+        w.History.AddReport(deck, false, Effort.Normal, "mon deck", "Fiche du deck — mon deck", "VERDICT", "", 10, 1);
+        Assert.Equal(2, w.History.Entries.Count);
+        Assert.Single(w.Vm.HistoryItems);
+        Assert.Equal("Historique (1)", w.Vm.HistoryTitle);
+        Assert.StartsWith("Génération", w.Vm.HistoryItems[0].Subtitle);
 
-        w.Vm.ShowDetail = false;
-        await w.Vm.AnalyseAsync(deck, "mon deck");
-        Assert.Contains("retrouvé en mémoire", w.Vm.Status);
-        Assert.Equal(sheet, w.Vm.Sheet);
-        Assert.Equal(sheet, w.Vm.Report);
+        // Repartir de zéro puis rouvrir la génération : la sélection et les propositions reviennent.
+        w.Vm.ClearCommand.Execute(null);
+        w.Vm.Proposals.Clear();
+        w.Vm.OpenHistoryCommand.Execute(w.Vm.HistoryItems[0]);
+        Assert.Equal(2, w.Vm.Fixed.Count);
+        Assert.NotEmpty(w.Vm.Proposals);
+        Assert.Contains("rouverte", w.Vm.Status);
     }
 
     [Fact]
-    public async Task L_historique_liste_et_rouvre_une_generation_et_un_rapport()
+    public async Task Vider_l_historique_du_Generateur_garde_les_rapports_de_Tester()
     {
         if (Make() is not { } w) return;
         Pick(w.Vm, 0); Pick(w.Vm, 1);
         await w.Vm.GenerateAsync();
         var deck = w.Kb.Cards.Take(4).Select(c => new DuelSlot(c.Id, c.Talents[0])).ToList();
-        await w.Vm.AnalyseAsync(deck, "mon deck");
-        Assert.Equal(2, w.Vm.HistoryItems.Count);
-        Assert.Contains("Historique (2)", w.Vm.HistoryTitle);
-        Assert.Contains(w.Vm.HistoryItems, i => i.Subtitle.StartsWith("Génération"));
-        Assert.Contains(w.Vm.HistoryItems, i => i.Subtitle.StartsWith("Fiche du deck"));
+        w.History.AddReport(deck, false, Effort.Normal, "mon deck", "t", "VERDICT", "", 10, 1);
+        w.Vm.ClearHistoryCommand.Execute(null);
+        Assert.Empty(w.Vm.HistoryItems);
+        Assert.Single(w.History.Entries);
+        Assert.Equal(SpamDrafter.Engines.History.HistoryKind.Report, w.History.Entries[0].Kind);
+    }
 
-        // Repartir de zéro puis rouvrir la génération : la sélection et les propositions reviennent.
-        w.Vm.ClearCommand.Execute(null);
+    [Fact]
+    public async Task La_colonne_Resultat_a_des_propositions_apres_la_generation()
+    {
+        if (Make() is not { } w) return;
+        Assert.False(w.Vm.HasProposals);
+        Pick(w.Vm, 0); Pick(w.Vm, 1); Pick(w.Vm, 2);
+        await w.Vm.GenerateAsync();
+        Assert.True(w.Vm.HasProposals);
         w.Vm.Proposals.Clear();
-        var gen = w.Vm.HistoryItems.First(i => i.Entry.Kind == HistoryKind.Generation);
-        w.Vm.OpenHistoryCommand.Execute(gen);
-        Assert.Equal(2, w.Vm.Fixed.Count);
-        Assert.NotEmpty(w.Vm.Proposals);
-        Assert.Contains("rouverte", w.Vm.Status);
+        Assert.False(w.Vm.HasProposals);
+    }
 
-        // Rouvrir le rapport.
-        var rep = w.Vm.HistoryItems.First(i => i.Entry.Kind == HistoryKind.Report);
-        w.Vm.OpenHistoryCommand.Execute(rep);
-        Assert.Contains("VERDICT", w.Vm.Report);
-        Assert.True(w.Vm.CompleteAnalysisCommand.CanExecute(null));
+    [Fact]
+    public void Seuls_les_problemes_sont_affiches_dans_la_colonne_Generateur()
+    {
+        if (Make() is not { } w) return;
+        Assert.False(w.Vm.HasProblem);
+        w.Vm.AddCommand.Execute(null);                                  // aucune carte choisie dans la liste
+        Assert.True(w.Vm.HasProblem);
+        Assert.Contains("Choisis d'abord", w.Vm.Problem);
+        Pick(w.Vm, 0);
+        Assert.False(w.Vm.HasProblem);                                  // une action réussie efface le message
+        w.Vm.Browser.Selected = w.Vm.Browser.Items[0];
+        w.Vm.AddCommand.Execute(null);                                  // la même carte une 2e fois
+        Assert.Contains("déjà choisie", w.Vm.Problem);
+    }
+
+    [Fact]
+    public async Task Une_generation_reussie_n_affiche_aucun_message_et_l_effort_reste_normal()
+    {
+        if (Make() is not { } w) return;
+        Pick(w.Vm, 0); Pick(w.Vm, 1); Pick(w.Vm, 2);
+        Assert.Equal(Effort.Normal, w.Vm.SelectedEffort.Value);
+        await w.Vm.GenerateAsync();
+        Assert.True(w.Vm.HasProposals);
+        Assert.False(w.Vm.HasProblem);
+        Assert.Equal(Effort.Normal, w.Vm.SelectedEffort.Value);
+    }
+
+    [Fact]
+    public void Comment_ca_marche_met_en_couleur_le_conseil_et_ne_parle_plus_du_bouton_Tester()
+    {
+        if (Make() is not { } w) return;
+        Assert.Contains("{{prends les propositions comme des idées à essayer}}", w.Vm.HowItWorks);
+        Assert.DoesNotContain("Tester ce deck", w.Vm.HowItWorks);
+        Assert.DoesNotContain("historique", w.Vm.HowItWorks);
+    }
+
+    [Fact]
+    public async Task Tester_ce_deck_sauvegarde_la_proposition_puis_demande_l_onglet_Tester()
+    {
+        if (Make() is not { } w) return;
+        Pick(w.Vm, 0); Pick(w.Vm, 1); Pick(w.Vm, 2);
+        await w.Vm.GenerateAsync();
+        var asked = new List<Deck>();
+        w.Vm.TestRequested += asked.Add;
+        var proposal = w.Vm.Proposals[0];
+        Assert.False(proposal.Saved);
+
+        w.Vm.TestCommand.Execute(proposal);
+        Assert.True(proposal.Saved);
+        var saved = Assert.Single(w.Library.Decks);
+        Assert.Equal(DeckOrigin.Generated, saved.Origin);
+        Assert.Equal(saved.Id, Assert.Single(asked).Id);
+
+        w.Vm.TestCommand.Execute(proposal);                       // déjà sauvegardée : pas de doublon
+        Assert.Single(w.Library.Decks);
+        Assert.Equal(2, asked.Count);
+
+        // L'onglet Tester choisit ce deck.
+        var tester = new TesterViewModel(w.Library);
+        Assert.True(tester.Select(asked[0]));
+        Assert.Equal(saved.Name, tester.SelectedTitle);
     }
 
     [Fact]

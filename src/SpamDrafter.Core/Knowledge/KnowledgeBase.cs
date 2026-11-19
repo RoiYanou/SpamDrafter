@@ -179,7 +179,8 @@ public sealed class KnowledgeBase
     public string TalentName(string id) => Text("Talent.Name." + id);
     public string TalentDescription(string id) => Text("Talent.Description." + id);
     public string ElementName(string id) => Text("Element.Name." + id);
-    public string RarityName(string id) => Text("Rarity.Name." + id.Replace("rarity-", ""));
+    /// <summary>Nom de la rareté ; « Commune » (texte du jeu) s'écrit « Commun » dans l'application (demande de l'utilisateur).</summary>
+    public string RarityName(string id) => Text("Rarity.Name." + id.Replace("rarity-", "")) is "Commune" ? "Commun" : Text("Rarity.Name." + id.Replace("rarity-", ""));
 
     /// <summary>Chemin absolu d'une image (chemin relatif de la base), ou null si le fichier manque.</summary>
     public string? ImagePath(string? relative)

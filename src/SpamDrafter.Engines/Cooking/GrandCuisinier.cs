@@ -54,6 +54,11 @@ public sealed record CookSettings
     /// </summary>
     public IReadOnlyList<IReadOnlyList<DuelSlot>>? Meta { get; init; }
     /// <summary>
+    /// Collection du joueur (phase 15, D-087) : identifiant de carte → niveau de talent (0 = aucun talent, 1 à 3 = les n premiers
+    /// talents de la carte). Si elle est donnée, le Cuisinier ne propose que des cartes et des talents possédés. Null = tout le jeu.
+    /// </summary>
+    public IReadOnlyDictionary<string, int>? Owned { get; init; }
+    /// <summary>
     /// Part des cartes essayées choisies selon les profils (lot G) : les cartes qui aident celles déjà dans le deck
     /// (éléments générés, critique donné) ont plus de chances d'être essayées. 0 = tirage purement au hasard.
     /// </summary>
@@ -106,10 +111,13 @@ public static class GrandCuisinier
     {
         var s = settings ?? CookSettings.Default;
         var size = kb.Settings.CardsPerDeck;
-        Validate(kb, selection, size);
+        Validate(kb, selection, size, s.Owned);
         var watch = System.Diagnostics.Stopwatch.StartNew();
         var rng = new Rng(s.Seed);
-        var allIds = kb.Cards.Select(c => c.Id).Order(StringComparer.Ordinal).ToArray();
+        var owned = s.Owned;
+        var allIds = kb.Cards.Select(c => c.Id).Where(id => owned is null || owned.ContainsKey(id)).Order(StringComparer.Ordinal).ToArray();
+        if (owned is not null && allIds.Length < size)
+            throw new ArgumentException($"Il faut au moins {size} cartes possédées pour générer un deck (tu en as {allIds.Length}).");
         var free = size - selection.Count;
         var guide = s.Guided > 0 ? new Guide(CardProfiles.For(kb), s.Guided) : null;
 
@@ -156,7 +164,7 @@ public static class GrandCuisinier
         var start = new List<IReadOnlyList<DuelSlot>>();
         for (var tries = 0; start.Count < s.Population && tries < s.Population * 20; tries++)
         {
-            var d = RandomCompletion(kb, selection, allIds, rng, guide);
+            var d = RandomCompletion(kb, selection, allIds, rng, guide, owned);
             if (start.All(x => Key(x) != Key(d))) start.Add(d);
         }
         Screen(start);
@@ -183,7 +191,7 @@ public static class GrandCuisinier
                 for (var m = 0; m < s.MutantsPerElite; m++)
                     for (var tries = 0; tries < 10; tries++)
                     {
-                        var d = Mutate(kb, selection, e.Deck, allIds, rng, guide);
+                        var d = Mutate(kb, selection, e.Deck, allIds, rng, guide, owned);
                         var k = Key(d);
                         if (seen.Contains(k) || !keys.Add(k)) continue;
                         batch.Add(d);
@@ -225,7 +233,7 @@ public static class GrandCuisinier
     /// <summary>Clé d'un deck (ordre des cartes compris : la place change le jeu, §1.2).</summary>
     public static string Key(IReadOnlyList<DuelSlot> deck) => string.Join("|", deck.Select(x => x.CardId + "/" + x.TalentId));
 
-    internal static void Validate(SimKnowledge kb, IReadOnlyList<FixedCard> selection, int size)
+    internal static void Validate(SimKnowledge kb, IReadOnlyList<FixedCard> selection, int size, IReadOnlyDictionary<string, int>? owned = null)
     {
         if (selection.Count is 0 || selection.Count > size)
             throw new ArgumentException($"La sélection doit contenir de 1 à {size} cartes.");
@@ -236,6 +244,12 @@ public static class GrandCuisinier
             var card = kb.Cards.FirstOrDefault(c => c.Id == f.CardId) ?? throw new ArgumentException($"Carte inconnue : {f.CardId}.");
             if (f.TalentId is not null && !card.Talents.Contains(f.TalentId))
                 throw new ArgumentException($"Le talent {f.TalentId} n'appartient pas à la carte {kb.CardName(card)}.");
+            if (owned is not null)
+            {
+                if (!owned.ContainsKey(f.CardId)) throw new ArgumentException($"La carte {kb.CardName(card)} n'est pas dans ta collection.");
+                if (f.TalentId is not null && !Allowed(kb, f.CardId, owned).Contains(f.TalentId))
+                    throw new ArgumentException($"Tu ne possèdes pas ce talent de la carte {kb.CardName(card)}.");
+            }
         }
     }
 
@@ -250,22 +264,31 @@ public static class GrandCuisinier
             ? x with { TalentId = t } : x with { TalentId = RandomTalent(kb, x.CardId, rng) }).ToList();
 
     /// <summary>Talent au hasard parmi ceux de la carte, ou aucun (comme le Deck builder).</summary>
-    private static string? RandomTalent(SimKnowledge kb, string cardId, Rng rng)
+    private static string? RandomTalent(SimKnowledge kb, string cardId, Rng rng, IReadOnlyDictionary<string, int>? owned = null)
     {
-        var talents = kb.Card(cardId).Talents;
+        var talents = Allowed(kb, cardId, owned);
         var k = rng.Next(0, talents.Count + 1);
         return k == 0 ? null : talents[k - 1];
     }
 
-    internal static IReadOnlyList<DuelSlot> RandomCompletion(SimKnowledge kb, IReadOnlyList<FixedCard> selection, string[] allIds, Rng rng,
-        Guide? guide = null)
+    /// <summary>Les talents qu'on peut mettre sur la carte : tous (sans collection), ou les n premiers que le joueur possède.</summary>
+    internal static IReadOnlyList<string> Allowed(SimKnowledge kb, string cardId, IReadOnlyDictionary<string, int>? owned)
     {
-        var deck = selection.Select(f => new DuelSlot(f.CardId, f.TalentId ?? RandomTalent(kb, f.CardId, rng))).ToList();
+        var talents = kb.Card(cardId).Talents;
+        if (owned is null) return talents;
+        var level = owned.TryGetValue(cardId, out var l) ? l : 0;
+        return talents.Take(Math.Max(0, level)).ToList();
+    }
+
+    internal static IReadOnlyList<DuelSlot> RandomCompletion(SimKnowledge kb, IReadOnlyList<FixedCard> selection, string[] allIds, Rng rng,
+        Guide? guide = null, IReadOnlyDictionary<string, int>? owned = null)
+    {
+        var deck = selection.Select(f => new DuelSlot(f.CardId, f.TalentId ?? RandomTalent(kb, f.CardId, rng, owned))).ToList();
         var used = deck.Select(d => d.CardId).ToHashSet();
         while (deck.Count < kb.Settings.CardsPerDeck)
         {
             var id = guide?.Pick(deck.Select(d => d.CardId).ToList(), allIds, used, rng) ?? allIds[rng.Next(0, allIds.Length)];
-            if (used.Add(id)) deck.Add(new DuelSlot(id, RandomTalent(kb, id, rng)));
+            if (used.Add(id)) deck.Add(new DuelSlot(id, RandomTalent(kb, id, rng, owned)));
         }
         // Place des cartes au hasard (les cartes imposées n'ont pas de place imposée).
         return deck.OrderBy(_ => rng.NextULong()).ToList();
@@ -273,13 +296,13 @@ public static class GrandCuisinier
 
     /// <summary>Une variante : changer une carte libre (avec un talent au hasard), changer un talent libre, ou échanger deux places.</summary>
     internal static IReadOnlyList<DuelSlot> Mutate(SimKnowledge kb, IReadOnlyList<FixedCard> selection, IReadOnlyList<DuelSlot> deck,
-        string[] allIds, Rng rng, Guide? guide = null)
+        string[] allIds, Rng rng, Guide? guide = null, IReadOnlyDictionary<string, int>? owned = null)
     {
         var d = deck.ToList();
         var fixedIds = selection.ToDictionary(f => f.CardId, f => f.TalentId);
         var freeSlots = Enumerable.Range(0, d.Count).Where(i => !fixedIds.ContainsKey(d[i].CardId)).ToList();
         var talentSlots = Enumerable.Range(0, d.Count)
-            .Where(i => (!fixedIds.TryGetValue(d[i].CardId, out var t) || t is null) && kb.Card(d[i].CardId).Talents.Count > 0).ToList();
+            .Where(i => (!fixedIds.TryGetValue(d[i].CardId, out var t) || t is null) && Allowed(kb, d[i].CardId, owned).Count > 0).ToList();
         var roll = rng.NextDouble();
         if (freeSlots.Count > 0 && roll < 0.5)
         {
@@ -289,12 +312,12 @@ public static class GrandCuisinier
             var id = guide?.Pick(others, allIds, used, rng);
             if (id is null)
                 do id = allIds[rng.Next(0, allIds.Length)]; while (used.Contains(id));
-            d[i] = new DuelSlot(id, RandomTalent(kb, id, rng));
+            d[i] = new DuelSlot(id, RandomTalent(kb, id, rng, owned));
         }
         else if (talentSlots.Count > 0 && roll < 0.85)
         {
             var i = talentSlots[rng.Next(0, talentSlots.Count)];
-            var talents = kb.Card(d[i].CardId).Talents;
+            var talents = Allowed(kb, d[i].CardId, owned);
             var options = new List<string?> { null };
             options.AddRange(talents);
             options.Remove(d[i].TalentId);

@@ -4,7 +4,7 @@ using SpamDrafter.Simulator.Engine;
 
 namespace SpamDrafter.Engines.History;
 
-public enum HistoryKind { Generation, Report }
+public enum HistoryKind { Generation, Report, Comparison }
 
 /// <summary>
 /// Un résultat gardé en mémoire (phase 12, lot B) : les propositions d'une génération, ou la fiche / l'analyse d'un deck.
@@ -29,6 +29,16 @@ public sealed class HistoryEntry
     public string? Detail { get; set; }
     public int Duels { get; set; }
     public double ElapsedSeconds { get; set; }
+    /// <summary>Rapport : la mesure de la note (taux de victoires, marge à 95 %, duels), pour la réafficher sans recalcul (phase 14).
+    /// Absente (null) dans les rapports gardés avant la phase 14.</summary>
+    public double? NoteScore { get; set; }
+    public double NoteMargin95 { get; set; }
+    public int NoteGames { get; set; }
+    /// <summary>Confrontation de deux decks (phase 14, lot D) : <see cref="Slots"/> = deck A, <see cref="SlotsB"/> = deck B.</summary>
+    public List<DuelSlot>? SlotsB { get; set; }
+    public Analysis.ComparisonResult? Comparison { get; set; }
+    public string? NameA { get; set; }
+    public string? NameB { get; set; }
 }
 
 /// <summary>
@@ -85,11 +95,17 @@ public sealed class GenerationHistory
     // ----- Clés des demandes -----
     private static string SlotsKey(IEnumerable<DuelSlot> slots) => string.Join(",", slots.Select(s => $"{s.CardId}:{s.TalentId}"));
 
-    public static string GenerationKey(IReadOnlyList<DuelSlot> selection, Effort effort) => $"gen|{effort}|{SlotsKey(selection)}";
+    /// <param name="ownedScope">Empreinte de la collection du joueur quand le générateur est limité à ses cartes (vide = tout le jeu) :
+    /// une autre collection donne un autre résultat.</param>
+    public static string GenerationKey(IReadOnlyList<DuelSlot> selection, Effort effort, string ownedScope = "") =>
+        ownedScope.Length == 0 ? $"gen|{effort}|{SlotsKey(selection)}" : $"gen|{effort}|{SlotsKey(selection)}|own:{ownedScope}";
 
     /// <summary>La fiche joueur ne dépend pas de l'effort ; l'analyse complète, si.</summary>
     public static string ReportKey(IReadOnlyList<DuelSlot> deck, bool complete, Effort effort) =>
         complete ? $"full|{effort}|{SlotsKey(deck)}" : $"sheet|{SlotsKey(deck)}";
+
+    /// <summary>Une confrontation est lue du point de vue de A : A contre B et B contre A sont deux demandes.</summary>
+    public static string ComparisonKey(IReadOnlyList<DuelSlot> a, IReadOnlyList<DuelSlot> b) => $"cmp|{SlotsKey(a)}|{SlotsKey(b)}";
 
     // ----- Lecture -----
     public HistoryEntry? Find(string key)
@@ -97,24 +113,33 @@ public sealed class GenerationHistory
         lock (_lock) return _entries.FirstOrDefault(e => e.Key == key);
     }
 
-    public HistoryEntry? FindGeneration(IReadOnlyList<DuelSlot> selection, Effort effort) => Find(GenerationKey(selection, effort));
+    public HistoryEntry? FindGeneration(IReadOnlyList<DuelSlot> selection, Effort effort, string ownedScope = "") => Find(GenerationKey(selection, effort, ownedScope));
+    public HistoryEntry? FindComparison(IReadOnlyList<DuelSlot> a, IReadOnlyList<DuelSlot> b) => Find(ComparisonKey(a, b));
     public HistoryEntry? FindReport(IReadOnlyList<DuelSlot> deck, bool complete, Effort effort) => Find(ReportKey(deck, complete, effort));
 
     // ----- Écriture -----
-    public HistoryEntry AddGeneration(IReadOnlyList<DuelSlot> selection, Effort effort, string label, IReadOnlyList<GeneratedDeck> proposals) =>
+    public HistoryEntry AddGeneration(IReadOnlyList<DuelSlot> selection, Effort effort, string label, IReadOnlyList<GeneratedDeck> proposals, string ownedScope = "") =>
         Add(new HistoryEntry
         {
-            Kind = HistoryKind.Generation, Key = GenerationKey(selection, effort), Label = label, Effort = effort.ToString(),
+            Kind = HistoryKind.Generation, Key = GenerationKey(selection, effort, ownedScope), Label = label, Effort = effort.ToString(),
             Slots = selection.ToList(), Proposals = proposals.ToList(),
         });
 
     public HistoryEntry AddReport(IReadOnlyList<DuelSlot> deck, bool complete, Effort effort, string label, string title,
-        string sheet, string detail, int duels, double elapsedSeconds) =>
+        string sheet, string detail, int duels, double elapsedSeconds, Analysis.Measured? note = null) =>
         Add(new HistoryEntry
         {
             Kind = HistoryKind.Report, Key = ReportKey(deck, complete, effort), Label = label, Effort = effort.ToString(),
             Slots = deck.ToList(), Complete = complete, Title = title, Sheet = sheet, Detail = detail,
             Duels = duels, ElapsedSeconds = elapsedSeconds,
+            NoteScore = note?.Value, NoteMargin95 = note?.Margin95 ?? 0, NoteGames = note?.Games ?? 0,
+        });
+
+    public HistoryEntry AddComparison(IReadOnlyList<DuelSlot> a, IReadOnlyList<DuelSlot> b, string nameA, string nameB, Analysis.ComparisonResult result) =>
+        Add(new HistoryEntry
+        {
+            Kind = HistoryKind.Comparison, Key = ComparisonKey(a, b), Label = nameA + " contre " + nameB,
+            Slots = a.ToList(), SlotsB = b.ToList(), NameA = nameA, NameB = nameB, Comparison = result,
         });
 
     private HistoryEntry Add(HistoryEntry entry)
@@ -123,7 +148,7 @@ public sealed class GenerationHistory
         {
             _entries.RemoveAll(e => e.Key == entry.Key);   // une même demande n'apparaît qu'une fois, en tête
             _entries.Insert(0, entry);
-            foreach (var kind in new[] { HistoryKind.Generation, HistoryKind.Report })
+            foreach (var kind in new[] { HistoryKind.Generation, HistoryKind.Report, HistoryKind.Comparison })
             {
                 var extra = _entries.Where(e => e.Kind == kind).Skip(_maxPerKind).ToList();
                 foreach (var e in extra) _entries.Remove(e);
@@ -137,6 +162,13 @@ public sealed class GenerationHistory
     public void Remove(Guid id)
     {
         lock (_lock) { if (_entries.RemoveAll(e => e.Id == id) > 0) Save(); }
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Vide une seule sorte d'entrées (le Générateur ne vide pas les rapports de Tester).</summary>
+    public void ClearKind(HistoryKind kind)
+    {
+        lock (_lock) { if (_entries.RemoveAll(e => e.Kind == kind) > 0) Save(); }
         Changed?.Invoke(this, EventArgs.Empty);
     }
 

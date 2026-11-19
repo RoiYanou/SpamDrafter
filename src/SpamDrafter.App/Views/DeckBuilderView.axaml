@@ -110,7 +110,7 @@
               <TextBlock Text="⚙ Deck généré" Classes="title" FontSize="16" Foreground="{StaticResource BrushYellow}" />
               <TextBlock Text="{Binding LockedNotice}" TextWrapping="Wrap" FontSize="13" />
             </StackPanel>
-            <Button Grid.Column="1" Content="✕" VerticalAlignment="Top" Padding="8,2" FontSize="12" ToolTip.Tip="Fermer cette information"
+            <Button Grid.Column="1" Content="✕" Classes="neutral" VerticalAlignment="Top" Padding="8,2" FontSize="12" ToolTip.Tip="Fermer cette information"
                     Command="{Binding CloseGeneratedInfoCommand}" />
           </Grid>
         </Border>
@@ -179,41 +179,40 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Button Content="✕" Padding="7,1" FontSize="11" ToolTip.Tip="Enlever la couleur"
+            <Button Content="✕" Classes="neutral" Padding="7,1" FontSize="11" ToolTip.Tip="Enlever la couleur"
                     Command="{Binding SetDeckColorCommand}" CommandParameter="" />
           </StackPanel></Viewbox>
           <Border IsVisible="{Binding HasStats}" Background="#14808080" CornerRadius="8" Padding="10">
             <StackPanel Spacing="3">
-              <StackPanel Spacing="2">
-                <TextBlock Text="Éléments :" FontSize="12" Classes="hot" />
-                <ItemsControl ItemsSource="{Binding ElementIcons}">
-                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:IconText">
-                      <StackPanel Orientation="Horizontal" Spacing="3">
-                        <Image Source="{Binding Icon}" Height="18" Width="18" Stretch="Uniform" />
-                        <TextBlock Text="{Binding Text}" FontSize="12" VerticalAlignment="Center" />
-                      </StackPanel>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
+              <!-- Comme sur la fiche d'une carte : ♥ et les PV, puis l'icône du Spamton avec le revenu dessus. -->
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <TextBlock Text="♥" Foreground="#5FD86B" FontSize="16" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding HpTotalShort}" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" ToolTip.Tip="PV totaux du deck" />
+                <TextBlock Text="·" Opacity="0.6" VerticalAlignment="Center" />
+                <Grid Width="38" Height="38" VerticalAlignment="Center" ToolTip.Tip="Revenu total en Spamtons">
+                  <Image Source="{Binding SpamtonIcon}" Stretch="Uniform" />
+                  <TextBlock Text="{Binding IncomeTotalShort}" FontFamily="{StaticResource FontTitle}" Foreground="#6E3B14" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
               </StackPanel>
-              <TextBlock Text="{Binding TotalsText}" Classes="value" FontSize="12" TextWrapping="Wrap" />
-              <StackPanel Spacing="2">
+              <StackPanel Spacing="4">
                 <TextBlock Text="Résistances moyennes :" FontSize="12" Classes="hot" />
-                <ItemsControl ItemsSource="{Binding ResistanceIcons}">
-                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:IconText">
-                      <StackPanel Orientation="Horizontal" Spacing="3">
-                        <Image Source="{Binding Icon}" Height="18" Width="18" Stretch="Uniform" />
-                        <TextBlock Text="{Binding Text}" FontSize="12" Opacity="0.9" VerticalAlignment="Center" />
-                      </StackPanel>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <!-- Comme sur la fiche d'une carte : la grosse icône de l'élément, la valeur en dessous. -->
+                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Left">
+                  <ItemsControl ItemsSource="{Binding ResistanceItems}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="20" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ResistanceItem">
+                        <StackPanel Spacing="1" ToolTip.Tip="{Binding Text}">
+                          <Image Source="{Binding Icon}" Height="46" Width="46" Stretch="Uniform" HorizontalAlignment="Center" />
+                          <TextBlock Text="{Binding Percent}" FontFamily="{StaticResource FontTitle}" FontWeight="Bold" FontSize="17" Foreground="White" HorizontalAlignment="Center">
+                            <TextBlock.Effect><DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="3" Color="#000000" Opacity="1" /></TextBlock.Effect>
+                          </TextBlock>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Viewbox>
               </StackPanel>
-              <TextBlock Text="{Binding WeaknessText}" FontSize="12" TextWrapping="Wrap" Classes="warn" />
             </StackPanel>
           </Border>
           <!-- Version du jeu : discrète, tout en bas. -->
@@ -299,7 +298,7 @@
                   <TextBlock Grid.Column="1" Text="⚙" IsVisible="{Binding IsGenerated}" ToolTip.Tip="Deck issu du générateur" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" Text="⚠" Foreground="#FFB050" IsVisible="{Binding VersionImpacted}" VerticalAlignment="Center"
                              ToolTip.Tip="Touché par une mise à jour de SPAM : ouvre le deck pour voir les différences" />
-                  <TextBlock Grid.Column="3" Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="3" Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />
                   <v:MarqueeText Grid.Column="4" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"
                                  ToolTip.Tip="{Binding Name}">
                     <v:MarqueeText.Effect><DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="6" Color="#000000" Opacity="0.95" /></v:MarqueeText.Effect>

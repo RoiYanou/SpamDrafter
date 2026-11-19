@@ -15,9 +15,11 @@ public sealed class MainViewModel : ViewModelBase
         Settings = AppSettings.Load(SettingsPath);
         SpamDrafter.App.Views.PanelLayout.Settings = Settings;
         SpamDrafter.App.Views.PanelLayout.Save = () => Settings.TrySave(SettingsPath);
+        Settings.OwnedOnly = true;   // phase 15 : on démarre TOUJOURS en mode « possédés » (le choix n'est pas retenu)
         if (!Settings.UiScale130Applied) { Settings.UiScale = 1.3; Settings.UiScale130Applied = true; Settings.TrySave(SettingsPath); }   // 130 % par défaut
         Sounds.Enabled = Settings.SoundsEnabled; Sounds.Volume = Settings.SoundVolume;
         SpamDrafter.App.Views.Motion.Reduce = Settings.ReduceAnimations;
+        SpamDrafter.App.Views.CardFrameStyle.Set(Settings.CardFrame);
         SpamDrafter.App.Views.StarSettings.Set(Settings.StarCount, Settings.StarSize, Settings.StarSpeed, Settings.StarColor);
         ApplyTheme();
         // Données du jeu installées (paquet séparé, lot B) : on retire d'abord les anciennes révisions.
@@ -35,6 +37,8 @@ public sealed class MainViewModel : ViewModelBase
                     "Sans connexion : clique sur « Importer des données… » et choisis un fichier « SpamDrafter-donnees-<version>-r<N>.zip », " +
                     "puis sur « Redémarrer pour mettre à jour ».");
             var kb = KnowledgeBase.Load(dir);
+            MusicTracks = MusicCatalog.Load(dir);
+            ApplyMusic();
             var items = kb.Cards.Select(c => new CardItem(c, kb)).ToList();
             DeckChipsConverter.Register(kb, items);
             // Affichage par défaut choisi pour chaque carte (carte de base ou skin alternatif), retenu d'une fois sur l'autre.
@@ -52,21 +56,26 @@ public sealed class MainViewModel : ViewModelBase
                 : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SpamDrafter", "decks");
 
             var decks = new DeckLibrary(new DeckStore(decksDir));
+            // Phase 15 : la collection du joueur (cartes et talents possédés dans le jeu officiel) et l'interrupteur qui filtre les listes.
+            Collection = new CollectionViewModel(kb, items, PlayerCollectionPath, Settings, () => Settings.TrySave(SettingsPath));
+            Collection.Start();
             _browsers["library"] = new CardBrowser(items, kb);
             _browsers["builder"] = new CardBrowser(items, kb);
             _browsers["drafter"] = new CardBrowser(items, kb);
             _browsers["generator"] = new CardBrowser(items, kb);
-            foreach (var (name, b) in _browsers) b.ApplyFilters(Settings.Browsers.GetValueOrDefault(name));
-            Library = new LibraryViewModel(_browsers["library"], kb, decks, items);
-            LibraryTabs = new LibraryTabsViewModel(Library, new TalentsViewModel(kb, items), new ToxViewModel(kb, items), new ArtistsViewModel(kb, items));
+            foreach (var (name, b) in _browsers) { b.ApplyFilters(Settings.Browsers.GetValueOrDefault(name)); b.Collection = Collection; }
+            Library = new LibraryViewModel(_browsers["library"], kb, decks, items) { Collection = Collection };
+            var talentsTab = new TalentsViewModel(kb, items) { Collection = Collection };
+            LibraryTabs = new LibraryTabsViewModel(Library, talentsTab, new ToxViewModel(kb, items), new ArtistsViewModel(kb, items));
             LibraryTabs.SelectRandomRows();
-            QuickDetail = new LibraryViewModel(new CardBrowser(items, kb), kb, decks, items);
+            QuickDetail = new LibraryViewModel(new CardBrowser(items, kb), kb, decks, items) { Collection = Collection };
             LibraryTabs.CardOpener = OpenCardDetail;   // un clic sur une carte dans Talents, Tox, Artistes ou une astuce ouvre la même fiche que le clic droit
             DeckBuilder = new DeckBuilderViewModel(_browsers["builder"], items, kb, decks);
+            DeckBuilder.Collection = Collection;
             DeckBuilder.ApplySettings(Settings);
             DeckBuilder.SettingsChanged += () => Settings.TrySave(SettingsPath);
             DeckBuilder.ValidationFailed += () => Sounds.Play(SoundKind.Error);
-            Drafter = new DrafterViewModel(_browsers["drafter"], items, kb, decks, DeckBuilder);
+            Drafter = new DrafterViewModel(_browsers["drafter"], items, kb, decks, DeckBuilder) { Collection = Collection };
             // « Quoi de neuf » (lot E) : bandeau quand les données passent à une autre version de SPAM.
             WhatsNew = new WhatsNewViewModel(kb, Settings, () => Settings.TrySave(SettingsPath), () => DeckBuilder.ImpactedDeckCount);
             WhatsNew.ShowImpactedRequested += () => { DeckBuilder.ImpactedOnly = true; SelectedTab = 1; };
@@ -83,8 +92,12 @@ public sealed class MainViewModel : ViewModelBase
                 // Mémoire et historique des générations : à côté des réglages, valables pour ce contexte (version, méta, poids, moteurs).
                 var history = new SpamDrafter.Engines.History.GenerationHistory(
                     Path.Combine(Path.GetDirectoryName(SettingsPath)!, "history.json"), coordinator.CacheContext);
-                Generator = new GeneratorViewModel(_browsers["generator"], items, kb, coordinator, decks, history: history);
+                Generator = new GeneratorViewModel(_browsers["generator"], items, kb, coordinator, decks, history: history) { Collection = Collection };
                 _ = coordinator.WarmUpAsync();   // classement de référence des fiches, préparé en arrière-plan
+                // Onglet Tester (phase 14) : mêmes decks, recherche et filtres que le Deck builder.
+                Tester = new TesterViewModel(decks, DeckBuilder, coordinator, history);
+                Tester.OpenRequested += deck => { DeckBuilder.RequestOpen(deck); SelectedTab = 1; };
+                Generator.TestRequested += deck => { if (Tester.Select(deck)) SelectedTab = 5; };   // « Tester ce deck → » du Générateur
             }
             catch (Exception e)
             {
@@ -94,6 +107,12 @@ public sealed class MainViewModel : ViewModelBase
             Header = $"SPAM {kb.Manifest.GameVersion} · {kb.Cards.Count} cartes{revision}";
             Home = new HomeViewModel(kb, items, decks, deck => { DeckBuilder.RequestOpen(deck); SelectedTab = 1; }, card => OpenCardDetail(card));
             Home.OpenBuilder = () => SelectedTab = 1;
+            Home.DeckFilter = Collection.ShowsDeck;   // le deck proposé est un deck visible dans « Mes decks »
+            Home.OwnedMode = () => Collection.OwnedOnly;
+            Home.NoCards = () => Collection.OwnedOnly && Collection.Data.IsEmpty;
+            Home.OpenImport = () => Collection.OpenCommand.Execute(null);
+            Collection.Changed += Home.Refresh;
+            Home.Refresh();
             // Nom de l'illustrateur cliqué dans une fiche : l'artiste s'ouvre dans la Bibliothèque (la fiche rapide d'un autre onglet est fermée).
             Library.OpenArtistRequested += id => { LibraryTabs.ShowArtist(id); SelectedTab = 0; };
             QuickDetail.OpenArtistRequested += id => { QuickDetail.CloseOverlayCommand.Execute(null); LibraryTabs.ShowArtist(id); SelectedTab = 0; };
@@ -110,7 +129,7 @@ public sealed class MainViewModel : ViewModelBase
                 SelectedTab = 0;
             };
             // Thème « selon la carte choisie » : la couleur suit l'élément de la carte ouverte dans la Bibliothèque.
-            _lastWorkTab = Settings.SelectedTab is >= 0 and <= 3 && (Settings.SelectedTab != 3 || HasGenerator) ? Settings.SelectedTab : 0;
+            _lastWorkTab = Settings.SelectedTab is >= 0 and <= 5 && Settings.SelectedTab != 4 && (Settings.SelectedTab != 3 || HasGenerator) && (Settings.SelectedTab != 5 || HasTester) ? Settings.SelectedTab : 0;
             // Sons : sauvegarde d'un deck, fin d'une génération.
             decks.Changed += (_, _) => { if (_ready) Sounds.Play(SoundKind.Success); };
             if (Generator is { } gen)
@@ -127,6 +146,9 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     private readonly Dictionary<string, CardBrowser> _browsers = new();
+    private string PlayerCollectionPath => SpamDrafter.Core.Collection.PlayerCollection.DefaultPath(SettingsPath);
+    /// <summary>Collection du joueur et interrupteur « Cartes et talents possédés / Toutes les cartes et talents » (phase 15).</summary>
+    public CollectionViewModel? Collection { get; private set; }
     private bool _ready;
     private int _lastWorkTab;
 
@@ -210,6 +232,53 @@ public sealed class MainViewModel : ViewModelBase
         get => Settings.SoundVolume;
         set { Settings.SoundVolume = Math.Round(value, 2); Sounds.Volume = Settings.SoundVolume; Raise(nameof(SoundVolume)); Settings.TrySave(SettingsPath); }
     }
+    // ----- Contour des cartes -----
+    public IReadOnlyList<string> CardFrameOptions { get; } = SpamDrafter.App.Views.CardFrameStyle.Options.Select(o => o.Label).ToList();
+    public int CardFrameIndex
+    {
+        get => Math.Max(0, SpamDrafter.App.Views.CardFrameStyle.Options.ToList().FindIndex(o => o.Id == Settings.CardFrame));
+        set
+        {
+            var options = SpamDrafter.App.Views.CardFrameStyle.Options;
+            Settings.CardFrame = options[Math.Clamp(value, 0, options.Count - 1)].Id;
+            SpamDrafter.App.Views.CardFrameStyle.Set(Settings.CardFrame);
+            Raise(nameof(CardFrameIndex)); Settings.TrySave(SettingsPath);
+        }
+    }
+
+    // ----- Musique du jeu (désactivée par défaut) -----
+    /// <summary>Musiques du paquet de données ; vide sans paquet ou sans musique dedans.</summary>
+    public IReadOnlyList<MusicTrack> MusicTracks { get; private set; } = [];
+    public bool HasMusic => MusicTracks.Count > 0;
+    public IReadOnlyList<string> MusicTitles => MusicTracks.Select(t => t.Title).ToList();
+    public string MusicHint => HasMusic ? "" : "Aucune musique dans les données installées.";
+
+    private void ApplyMusic()
+    {
+        MusicPlayer.SetVolume(Settings.MusicVolume);
+        MusicPlayer.SetTrack(MusicTracks.Count == 0 ? null : MusicTracks[MusicIndex].Path);
+        MusicPlayer.SetEnabled(Settings.MusicEnabled && HasMusic);
+    }
+    public bool MusicEnabled
+    {
+        get => Settings.MusicEnabled;
+        set { Settings.MusicEnabled = value; Raise(nameof(MusicEnabled)); ApplyMusic(); Settings.TrySave(SettingsPath); }
+    }
+    public double MusicVolume
+    {
+        get => Settings.MusicVolume;
+        set { Settings.MusicVolume = Math.Round(value, 2); Raise(nameof(MusicVolume)); MusicPlayer.SetVolume(Settings.MusicVolume); Settings.TrySave(SettingsPath); }
+    }
+    public int MusicIndex
+    {
+        get => Math.Max(0, MusicTracks.ToList().FindIndex(t => t.Id == Settings.MusicTrack));
+        set
+        {
+            if (MusicTracks.Count == 0 || value < 0 || value >= MusicTracks.Count) return;
+            Settings.MusicTrack = MusicTracks[value].Id; Raise(nameof(MusicIndex)); ApplyMusic(); Settings.TrySave(SettingsPath);
+        }
+    }
+
     public bool ReduceAnimations
     {
         get => Settings.ReduceAnimations;
@@ -247,9 +316,12 @@ public sealed class MainViewModel : ViewModelBase
     public GeneratorViewModel? Generator { get; }
     public string? GeneratorError { get; }
     public bool HasGenerator => Generator is not null;
+    /// <summary>Onglet Tester (phase 14).</summary>
+    public TesterViewModel? Tester { get; private set; }
+    public bool HasTester => Tester is not null;
 
     private int _selectedTab;
-    /// <summary>0 = Bibliothèque, 1 = Deck builder, 2 = Drafter, 3 = Génération de deck.</summary>
+    /// <summary>0 = Bibliothèque, 1 = Deck builder, 2 = Drafter, 3 = Génération de deck, 4 = Accueil, 5 = Tester.</summary>
     public int SelectedTab
     {
         get => _selectedTab;
@@ -257,7 +329,7 @@ public sealed class MainViewModel : ViewModelBase
         {
             if (!Set(ref _selectedTab, value)) return;
             if (value != 4) _lastWorkTab = value;
-            foreach (var n in new[] { nameof(IsTab0), nameof(IsTab1), nameof(IsTab2), nameof(IsTab3), nameof(IsTab4) }) Raise(n);
+            foreach (var n in new[] { nameof(IsTab0), nameof(IsTab1), nameof(IsTab2), nameof(IsTab3), nameof(IsTab4), nameof(IsTab5) }) Raise(n);
             if (_ready) Sounds.Play(SoundKind.Tab);
         }
     }
@@ -269,6 +341,8 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsTab3 => _selectedTab == 3;
     /// <summary>L'accueil (numéro 4 pour ne pas changer les numéros des autres onglets, déjà enregistrés).</summary>
     public bool IsTab4 => _selectedTab == 4;
+    /// <summary>Tester (numéro 5, ajouté après l'accueil pour ne pas changer les numéros déjà enregistrés).</summary>
+    public bool IsTab5 => _selectedTab == 5;
     /// <summary>Choisit un onglet depuis la colonne d'icônes (le paramètre est son numéro, 0 à 3).</summary>
     /// <summary>Ouvre la fiche détaillée d'une carte (clic droit sur une carte) dans la Bibliothèque.</summary>
     public void OpenCardDetail(CardItem card)
@@ -278,9 +352,17 @@ public sealed class MainViewModel : ViewModelBase
         QuickDetail.Browser.Selected = card;   // la fiche s'ouvre par-dessus l'onglet en cours : le joueur ne le quitte pas
     }
 
+    /// <summary>Échap : ferme « Ma collection » si elle est ouverte, sinon la fiche d'une carte.</summary>
+    public RelayCommand EscapeCommand => _escape ??= new RelayCommand(_ =>
+    {
+        if (Collection is { IsOpen: true }) Collection.CloseCommand.Execute(null);
+        else QuickDetail?.CloseOverlayCommand.Execute(null);
+    });
+    private RelayCommand? _escape;
+
     public RelayCommand SelectTabCommand => _selectTab ??= new RelayCommand(p =>
     {
-        if (p is string s && int.TryParse(s, out var i) && (i != 3 || HasGenerator) && i is >= 0 and <= 4)
+        if (p is string s && int.TryParse(s, out var i) && (i != 3 || HasGenerator) && (i != 5 || HasTester) && i is >= 0 and <= 5)
         {
             SelectedTab = i;
             if (i == 0 && LibraryTabs is not null) LibraryTabs.SelectedTab = 0;   // un clic sur « Biblio » ramène toujours au sous-onglet « Cartes »

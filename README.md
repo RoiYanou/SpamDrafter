@@ -9,7 +9,7 @@ Application de bureau **non officielle** pour les joueurs de **SPAM** : biblioth
 ## Pour les joueurs
 
 - **Télécharger** : `SpamDrafter-win-Setup.exe` sur la page [Releases](../../releases/latest) (Windows 10 ou 11, 64 bits).
-- **Mode d'emploi** : [GUIDE.md](GUIDE.md) (installation, message SmartScreen, les quatre onglets, désinstallation).
+- **Mode d'emploi** : [GUIDE.md](GUIDE.md) (installation, message SmartScreen, les onglets, désinstallation).
 
 Ce que fait l'application :
 
@@ -18,7 +18,8 @@ Ce que fait l'application :
 | **Bibliothèque** | Toutes les cartes : illustration, statistiques, résistances, capacités, talents. |
 | **Deck builder** | Construire et sauvegarder des decks de 4 cartes avec leurs talents. |
 | **Drafter** | Retrouver, parmi vos decks, ceux qui contiennent les cartes choisies. |
-| **Génération de deck** | Compléter 1 à 4 cartes en un deck, puis l'analyser : verdict, carte clé, talents, Tox, adversaires à craindre. |
+| **Génération de deck** | Compléter 1 à 4 cartes en un deck de 4 cartes, avec une note sur 100. |
+| **Tester** | Noter un deck et lire sa fiche (verdict, carte clé, talents, Tox), ou comparer deux decks en duels simulés. |
 
 Les mises à jour du programme et des données du jeu se font automatiquement. Sans connexion, les données peuvent être installées depuis un fichier (**Importer des données…**).
 

@@ -4,10 +4,26 @@
              xmlns:v="using:SpamDrafter.App.Views"
              x:Class="SpamDrafter.App.Views.LibraryTabsView"
              x:DataType="vm:LibraryTabsViewModel">
-  <TabControl SelectedIndex="{Binding SelectedTab}">
-    <TabItem Header="Cartes" FontSize="18" Margin="16,12,6,0"><v:LibraryView v:PageFx.Enter="True" DataContext="{Binding Cards}" /></TabItem>
-    <TabItem Header="Talents" FontSize="18"><v:TalentsView v:PageFx.Enter="True" DataContext="{Binding Talents}" /></TabItem>
-    <TabItem Header="Tox" FontSize="18"><v:ToxView v:PageFx.Enter="True" DataContext="{Binding Tox}" /></TabItem>
-    <TabItem Header="Artistes" FontSize="18"><v:ArtistsView v:PageFx.Enter="True" DataContext="{Binding Artists}" /></TabItem>
-  </TabControl>
+  <!-- En-têtes seuls (TabControl sans contenu) ; les quatre vues restent en place et ne font que s'afficher ou se masquer : pas de reconstruction à chaque clic. -->
+  <DockPanel>
+    <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SelectedTab}">
+      <TabControl.Styles>
+        <!-- Les quatre sous-onglets ont la même taille. -->
+        <Style Selector="TabItem">
+          <Setter Property="Width" Value="130" />
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+      </TabControl.Styles>
+      <TabItem Header="Cartes" FontSize="18" Margin="16,12,6,8" />
+      <TabItem Header="Talents" FontSize="18" />
+      <TabItem Header="Tox" FontSize="18" />
+      <TabItem Header="Artistes" FontSize="18" />
+    </TabControl>
+    <Grid>
+      <v:LibraryView v:PageFx.Enter="True" DataContext="{Binding Cards}" IsVisible="{Binding $parent[v:LibraryTabsView].((vm:LibraryTabsViewModel)DataContext).IsCardsTab}" />
+      <v:TalentsView v:PageFx.Enter="True" DataContext="{Binding Talents}" IsVisible="{Binding $parent[v:LibraryTabsView].((vm:LibraryTabsViewModel)DataContext).IsTalentsTab}" />
+      <v:ToxView v:PageFx.Enter="True" DataContext="{Binding Tox}" IsVisible="{Binding $parent[v:LibraryTabsView].((vm:LibraryTabsViewModel)DataContext).IsToxTab}" />
+      <v:ArtistsView v:PageFx.Enter="True" DataContext="{Binding Artists}" IsVisible="{Binding $parent[v:LibraryTabsView].((vm:LibraryTabsViewModel)DataContext).IsArtistsTab}" />
+    </Grid>
+  </DockPanel>
 </UserControl>

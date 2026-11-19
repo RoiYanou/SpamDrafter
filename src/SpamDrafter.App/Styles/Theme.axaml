@@ -15,6 +15,9 @@
     <SolidColorBrush x:Key="BrushPanelSolid" Color="{StaticResource ColorPanel}" />
     <SolidColorBrush x:Key="BrushRail" Color="{StaticResource ColorPanel}" />
     <SolidColorBrush x:Key="BrushViolet" Color="{StaticResource ColorViolet}" />
+    <!-- Cadres des capacités, talents et Tox de la fiche détaillée : suivent la couleur principale du thème (ThemeManager). -->
+    <SolidColorBrush x:Key="BrushCardFill" Color="#4A3A7A" />
+    <SolidColorBrush x:Key="BrushCardEdge" Color="#8E78D0" />
     <SolidColorBrush x:Key="BrushYellow" Color="{StaticResource ColorYellow}" />
     <SolidColorBrush x:Key="BrushOnYellow" Color="{StaticResource ColorOnYellow}" />
     <!-- Dégradés du décor : leurs couleurs sont réglées par ThemeManager selon le thème (violet, feu, eau…). -->
@@ -24,6 +27,14 @@
     <LinearGradientBrush x:Key="BrushPanelEdge" StartPoint="0%,0%" EndPoint="100%,100%">
       <GradientStop Color="#9A7BFF" Offset="0" /><GradientStop Color="#E070D0" Offset="0.4" /><GradientStop Color="#FFC93C" Offset="0.68" /><GradientStop Color="#5BC0F0" Offset="1" />
     </LinearGradientBrush>
+    <!-- Boutons ordinaires et contour des boîtes : à la couleur secondaire du thème (ThemeManager). -->
+    <LinearGradientBrush x:Key="BrushActionFill" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Color="#D0A67F1F" Offset="0" /><GradientStop Color="#D07A5A12" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="BrushActionHover" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Color="#E8D9A82E" Offset="0" /><GradientStop Color="#E8A67F1F" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="BrushActionEdge" Color="#FFC93C" />
     <LinearGradientBrush x:Key="BrushButtonFill" StartPoint="0%,0%" EndPoint="0%,100%">
       <GradientStop Color="#C08A5BE8" Offset="0" /><GradientStop Color="#C05A33AC" Offset="1" />
     </LinearGradientBrush>
@@ -123,19 +134,19 @@
   <!-- Boutons : secondaire (par défaut) = texte blanc, fond transparent, bordure violet clair ;
        principal (classe « primary », un seul par écran) = fond jaune, texte violet très sombre. -->
   <Style Selector="Button">
-    <Setter Property="Background" Value="{StaticResource BrushButtonFill}" />
+    <Setter Property="Background" Value="{StaticResource BrushActionFill}" />
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
-    <Setter Property="BorderBrush" Value="{StaticResource BrushControlBorder}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushActionEdge}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusControl}" />
   </Style>
   <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource BrushButtonHover}" />
+    <Setter Property="Background" Value="{StaticResource BrushActionHover}" />
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
     <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
   </Style>
   <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource BrushViolet}" />
+    <Setter Property="Background" Value="{StaticResource BrushAccentDark}" />
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
   </Style>
   <Style Selector="Button.primary, Button.accent">
@@ -151,6 +162,17 @@
   <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{StaticResource BrushAccentDark}" />
     <Setter Property="Foreground" Value="{StaticResource BrushOnYellow}" />
+  </Style>
+  <!-- Boutons « neutres » (croix de fermeture, effacer, retirer) : gardent la couleur principale du thème, pas la secondaire. -->
+  <Style Selector="Button.neutral">
+    <Setter Property="Background" Value="{StaticResource BrushButtonFill}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushControlBorder}" />
+  </Style>
+  <Style Selector="Button.neutral:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource BrushButtonHover}" />
+  </Style>
+  <Style Selector="Button.neutral:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource BrushViolet}" />
   </Style>
   <!-- Bouton à bascule (ex. « Base » / « Skin ») : la classe « on » le met en jaune. -->
   <Style Selector="Button.toggle.on">
@@ -349,6 +371,16 @@
   <Style Selector="Button.soft">
     <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%"><GradientStop Color="#A09A6BF5" Offset="0" /><GradientStop Color="#A0603CB8" Offset="1" /></LinearGradientBrush></Setter>
     <Setter Property="BorderBrush" Value="#B79CFF" />
+  </Style>
+  <!-- Survol : un violet plus clair (le jaune du survol par défaut ne va pas avec ce bouton). -->
+  <Style Selector="Button.soft:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%"><GradientStop Color="#C0B08CFF" Offset="0" /><GradientStop Color="#C0764BD8" Offset="1" /></LinearGradientBrush></Setter>
+    <Setter Property="BorderBrush" Value="#D5C4FF" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.soft:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#B0603CB8" />
+    <Setter Property="Foreground" Value="White" />
   </Style>
 
   <!-- Textes : titre de section (jaune, souligné), valeur (bleu clair, gras), mise en avant (rose), réussite (vert), alerte (orange, gras),

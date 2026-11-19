@@ -150,6 +150,15 @@ public sealed class CardBrowser : ViewModelBase
     }
     public ObservableCollection<CardItem> Items { get; }
 
+    private CollectionViewModel? _collection;
+    /// <summary>Collection du joueur (phase 15) : en mode « possédées », seules ses cartes sont listées.</summary>
+    public CollectionViewModel? Collection
+    {
+        get => _collection;
+        set { _collection = value; if (value is not null) value.Changed += Refresh; Refresh(); }
+    }
+    private int PoolCount => _collection is null ? _all.Count : _all.Count(c => _collection.Shows(c));
+
     public string Search { get => _search; set { if (Set(ref _search, value)) Refresh(); } }
     /// <summary>Un seul élément (ou « tous ») : raccourci pour le code et les réglages ; l'écran utilise les cases à cocher.</summary>
     public FilterOption Element
@@ -209,13 +218,13 @@ public sealed class CardBrowser : ViewModelBase
     public bool HasLoreFilter => _species.Id is not null || _region.Id is not null || _chronology.Id is not null;
     public string AdvancedHeader => HasLoreFilter ? "Tri et filtres supplémentaires · filtre actif" : "Tri et filtres supplémentaires";
 
-    public string CountText => $"{Items.Count} / {_all.Count} cartes";
+    public string CountText => $"{Items.Count} / {PoolCount} cartes";
 
     private void Refresh()
     {
         Items.Clear();
         var els = Checked(ElementChoices); var ras = Checked(RarityChoices);
-        var shown = _all.Where(c => (els.Count == 0 || els.Contains(c.Card.Element)) && (ras.Count == 0 || ras.Contains(c.Card.Rarity))
+        var shown = _all.Where(c => (_collection?.Shows(c) ?? true) && (els.Count == 0 || els.Contains(c.Card.Element)) && (ras.Count == 0 || ras.Contains(c.Card.Rarity))
                                     && c.Matches(_search, null, null, _species?.Id, _region?.Id, _chronology?.Id));
         foreach (var c in Sorted(shown)) Items.Add(c);
         Raise(nameof(CountText)); Raise(nameof(HasLoreFilter)); Raise(nameof(AdvancedHeader)); Raise(nameof(LoreSummary)); Raise(nameof(AnyFilterActive)); Raise(nameof(FiltersToggleText));

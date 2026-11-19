@@ -113,7 +113,7 @@ public class LibraryTabsTests : IDisposable
         var vm = new ToxViewModel(w.Kb, w.Items);
         vm.Selected = vm.Rows.First(r => r.Name == "AoE");
         Assert.Equal("AoE", vm.Title);
-        Assert.Equal(new[] { "Commune", "Rare", "Épique", "Légendaire" }, vm.Variants.Select(v => v.RarityName));   // de la plus commune à la plus rare
+        Assert.Equal(new[] { "Commun", "Rare", "Épique", "Légendaire" }, vm.Variants.Select(v => v.RarityName));   // de la plus commune à la plus rare
         Assert.Equal(new[] { "Valeur : 20", "Valeur : 40", "Valeur : 80", "Valeur : 100" }, vm.Variants.Select(v => v.Value));
         Assert.Equal(new[] { "Prix en boutique : 45 Spamtons", "Prix en boutique : 90 Spamtons", "Prix en boutique : 135 Spamtons", "Prix en boutique : 180 Spamtons" },
             vm.Variants.Select(v => v.Price));
@@ -136,7 +136,7 @@ public class LibraryTabsTests : IDisposable
         Assert.True(camouflage.InShop);
 
         vm.Selected = vm.Rows.First(r => r.Name == "Contrecoup");
-        Assert.Equal(new[] { "Commune", "Rare" }, vm.Variants.Select(v => v.RarityName));
+        Assert.Equal(new[] { "Commun", "Rare" }, vm.Variants.Select(v => v.RarityName));
         Assert.All(vm.Variants, v => { Assert.Equal("Pas vendu en boutique", v.Price); Assert.False(v.InShop); });
         // L'image fournie par l'utilisateur est bien dans la base.
         Assert.All(w.Kb.AllTox.Where(t => t.Title.StartsWith("ContreCoup")), t => Assert.NotNull(w.Kb.ImagePath(t.Image)));
@@ -148,7 +148,7 @@ public class LibraryTabsTests : IDisposable
         if (Make() is not { } w) return;
         var vm = new ToxViewModel(w.Kb, w.Items);
         vm.Selected = vm.Rows.First(r => r.Name == "Phénix");
-        Assert.Contains(vm.InnateCards, c => c.Card.Name == "Bleu-mange-cailloux" && c.Note == "Commune");
+        Assert.Contains(vm.InnateCards, c => c.Card.Name == "Bleu-mange-cailloux" && c.Note == "Commun");
         Assert.Equal(w.Items.Count(i => (i.Card.InnatePassives ?? Array.Empty<string>()).Any(u => w.Kb.Tox(u) is { } t && DescriptionFormatter.ToxKey(t) == "Phoenix")),
             vm.InnateCards.Count);
         Assert.StartsWith("Cartes qui le possèdent de base (", vm.CardsTitle);

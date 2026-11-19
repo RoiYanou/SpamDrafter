@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Text.RegularExpressions;
 using SpamDrafter.Core.Decks;
 using SpamDrafter.Core.Knowledge;
 using SpamDrafter.Engines;
@@ -15,11 +14,13 @@ public sealed class FixedSlotViewModel : ViewModelBase
 {
     private TalentOption _talent;
 
-    public FixedSlotViewModel(CardItem card, KnowledgeBase kb)
+    public FixedSlotViewModel(CardItem card, KnowledgeBase kb, IReadOnlyList<string>? allowedTalents = null)
     {
         Card = card;
+        // Phase 15 : en mode « possédés », seuls les talents possédés se proposent.
         TalentOptions = new[] { new TalentOption(null, "Talent au choix du Cuisinier") }
-            .Concat(card.Card.Talents.Select((t, i) => new TalentOption(t, $"{i + 1}. {kb.TalentName(t)}"))).ToList();
+            .Concat(card.Card.Talents.Select((t, i) => (t, i)).Where(x => allowedTalents is null || allowedTalents.Contains(x.t))
+                .Select(x => new TalentOption(x.t, $"{x.i + 1}. {kb.TalentName(x.t)}"))).ToList();
         _talent = TalentOptions[0];
     }
 
@@ -58,6 +59,7 @@ public sealed class ProposalViewModel : ViewModelBase
         Avalonia.Threading.DispatcherTimer.RunOnce(() => { Gauge = n.Points; Raise(nameof(Gauge)); }, TimeSpan.FromMilliseconds(120));
         NoteText = n.Text;
         NoteLabel = n.Label;
+        NoteBrush = SpamDrafter.App.Views.NoteColors.For(n.Label);
         NoteHint = n.NeedsConfirmation ? "à confirmer : peu de duels" : "";
         // Le détail de la mesure reste disponible, mais n'encombre pas l'écran (info-bulle).
         NoteDetail = $"Mesuré sur {deck.Games} duels simulés : {100 * deck.Score:0} % de victoires (marge d'erreur ± {100 * deck.Margin95:0} points). " +
@@ -69,7 +71,9 @@ public sealed class ProposalViewModel : ViewModelBase
     public string Title { get; }
     /// <summary>Note sur 100 (D-072, D-074), par exemple « 54 / 100 ».</summary>
     public string NoteText { get; private set; } = "";
-    /// <summary>Faible, Correct, Bon ou Excellent.</summary>
+    /// <summary>Couleur du niveau de la note (Parfait multicolore, Excellent bleu, Bon vert, Passable jaune, Faible orange, Intankable rouge).</summary>
+    public Avalonia.Media.IBrush NoteBrush { get; private set; } = Avalonia.Media.Brushes.White;
+    /// <summary>Intankable, Faible, Passable, Bon, Excellent ou Parfait.</summary>
     /// <summary>Note de 0 à 100 pour la jauge animée (0 au début, puis la note).</summary>
     public double Gauge { get; private set; }
     public string NoteLabel { get; private set; } = "";
@@ -78,6 +82,8 @@ public sealed class ProposalViewModel : ViewModelBase
     public bool HasNoteHint => NoteHint.Length > 0;
     public IReadOnlyList<string> Lines { get; }
     public bool Saved { get => _saved; set { if (Set(ref _saved, value)) Raise(nameof(SaveLabel)); } }
+    /// <summary>Le deck sauvegardé à partir de cette proposition (null tant qu'elle ne l'est pas).</summary>
+    public Deck? SavedDeck { get; set; }
     public string SaveLabel => Saved ? "Sauvegardé ✓" : "Sauvegarder";
 }
 
@@ -89,7 +95,7 @@ public sealed record HistoryItem(HistoryEntry Entry, string Title, string Subtit
 /// demander le rapport du Grand Analyseur, sauvegarder un deck (origine « généré », visible dans le Drafter, D-017).
 /// Les calculs passent par le coordinateur, sur un fil de travail : l'interface reste utilisable et le calcul s'annule.
 /// </summary>
-public sealed partial class GeneratorViewModel : ViewModelBase
+public sealed class GeneratorViewModel : ViewModelBase
 {
     private readonly KnowledgeBase _kb;
     private readonly Coordinator _coordinator;
@@ -102,13 +108,6 @@ public sealed partial class GeneratorViewModel : ViewModelBase
     private string _step = "";
     private double _progress;
     private bool _busy;
-    private string _report = "";
-    private string _reportTitle = "";
-    private Deck? _savedToAnalyse;
-    private string _sheet = "";
-    private string _detail = "";
-    private bool _showDetail;
-    private (IReadOnlyList<DuelSlot> Deck, string Label)? _lastAnalysed;
     private readonly GenerationHistory? _history;
 
     /// <param name="post">Exécute une action sur le fil de l'interface (par défaut, le répartiteur d'Avalonia).</param>
@@ -130,24 +129,44 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         ClearCommand = new RelayCommand(_ => { if (!IsBusy) { Fixed.Clear(); Refresh(); } });
         GenerateCommand = new RelayCommand(_ => _ = GenerateAsync(), _ => !IsBusy && Fixed.Count is > 0 and <= Deck.MaxCards);
         CancelCommand = new RelayCommand(_ => _cts?.Cancel(), _ => IsBusy);
-        AnalyseCommand = new RelayCommand(p => { if (p is ProposalViewModel pr) _ = AnalyseAsync(pr.Deck.Deck, pr.Title); }, _ => !IsBusy);
-        ToggleDetailCommand = new RelayCommand(_ => ShowDetail = !ShowDetail);
-        CompleteAnalysisCommand = new RelayCommand(_ => { if (_lastAnalysed is { } a) _ = AnalyseAsync(a.Deck, a.Label, complete: true); },
-            _ => !IsBusy && _lastAnalysed is not null);
-        AnalyseSavedCommand = new RelayCommand(_ => AnalyseSaved(), _ => !IsBusy && _savedToAnalyse is not null);
         SaveCommand = new RelayCommand(p => { if (p is ProposalViewModel pr) Save(pr); });
+        TestCommand = new RelayCommand(p => { if (p is ProposalViewModel pr && !IsBusy) TestProposal(pr); }, _ => !IsBusy);
+        Proposals.CollectionChanged += (_, _) => Raise(nameof(HasProposals));
         OpenHistoryCommand = new RelayCommand(p => { if (p is HistoryItem h) OpenHistory(h.Entry); }, _ => !IsBusy);
         RemoveHistoryCommand = new RelayCommand(p => { if (p is HistoryItem h) _history?.Remove(h.Entry.Id); });
-        ClearHistoryCommand = new RelayCommand(_ => _history?.Clear(), _ => HistoryItems.Count > 0);
-        library.Changed += (_, _) => RefreshSaved();
-        RefreshSaved();
+        ClearHistoryCommand = new RelayCommand(_ => _history?.ClearKind(HistoryKind.Generation), _ => HistoryItems.Count > 0);
         if (_history is not null) { _history.Changed += (_, _) => RefreshHistory(); RefreshHistory(); }
     }
+
+    private CollectionViewModel? _collection;
+    /// <summary>Collection du joueur (phase 15) : en mode « possédés », le Cuisinier ne propose que ses cartes et ses talents.</summary>
+    public CollectionViewModel? Collection
+    {
+        get => _collection;
+        set
+        {
+            _collection = value;
+            if (value is null) return;
+            value.Changed += () =>
+            {
+                // Une carte imposée qui n'est plus possédée est retirée ; les talents imposés sont revérifiés.
+                if (!IsBusy)
+                {
+                    foreach (var f in Fixed.Where(f => !value.Shows(f.Card)).ToList()) Fixed.Remove(f);
+                    foreach (var f in Fixed.Where(f => f.Talent.Id is { } t && !value.AllowedTalents(f.Card).Contains(t) && value.OwnedOnly).ToList())
+                    { var i = Fixed.IndexOf(f); Fixed[i] = new FixedSlotViewModel(f.Card, _kb, value.AllowedTalents(f.Card)); }
+                    Refresh();
+                }
+                Raise(nameof(OwnedOnly));
+            };
+        }
+    }
+    /// <summary>Le générateur est limité aux cartes et talents possédés.</summary>
+    public bool OwnedOnly => _collection?.OwnedOnly == true;
 
     public CardBrowser Browser { get; }
     public ObservableCollection<FixedSlotViewModel> Fixed { get; } = new();
     public ObservableCollection<ProposalViewModel> Proposals { get; } = new();
-    public ObservableCollection<Deck> CompleteDecks { get; } = new();
     public IReadOnlyList<EffortOption> EffortOptions { get; }
 
     public RelayCommand AddCommand { get; }
@@ -155,11 +174,13 @@ public sealed partial class GeneratorViewModel : ViewModelBase
     public RelayCommand ClearCommand { get; }
     public RelayCommand GenerateCommand { get; }
     public RelayCommand CancelCommand { get; }
-    public RelayCommand AnalyseCommand { get; }
-    public RelayCommand AnalyseSavedCommand { get; }
     public RelayCommand SaveCommand { get; }
-    public RelayCommand ToggleDetailCommand { get; }
-    public RelayCommand CompleteAnalysisCommand { get; }
+    /// <summary>« Tester ce deck → » : sauvegarde la proposition si besoin, puis l'ouvre dans l'onglet Tester.</summary>
+    public RelayCommand TestCommand { get; }
+    /// <summary>Demande d'ouverture d'un deck sauvegardé dans l'onglet Tester.</summary>
+    public event Action<Deck>? TestRequested;
+    /// <summary>Vrai quand la colonne « Résultat » a des propositions à montrer.</summary>
+    public bool HasProposals => Proposals.Count > 0;
     public RelayCommand OpenHistoryCommand { get; }
     public RelayCommand RemoveHistoryCommand { get; }
     public RelayCommand ClearHistoryCommand { get; }
@@ -177,16 +198,19 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         "• La note va de 0 à 100. Elle vient du pourcentage de duels simulés que le deck gagne contre " +
         (_coordinator.Opponents == OpponentSource.Synthetic ? $"{_coordinator.Synthetic.Meta.Count} decks forts livrés avec l'application (la « méta »)" : "des decks tirés au hasard") +
         " : 0 = il ne gagne presque jamais, 100 = il gagne la moitié de ses duels ou plus, donc il est au niveau d'un deck de la méta. " +
-        "Faible : moins de 35. Correct : 35 à 54. Bon : 55 à 74. Excellent : 75 et plus. La proposition et la fiche d'un même deck donnent toujours la même note." +
+        "Intankable : 0. Faible : 1 à 34. Passable : 35 à 54. Bon : 55 à 74. Excellent : 75 à 99. Parfait : 100. La proposition et la fiche d'un même deck donnent toujours la même note." +
         Environment.NewLine +
-        "• « Fiche du deck » résume en quelques lignes comment jouer le deck : ses forces, ses talents et Tox conseillés, les adversaires à craindre." +
-        Environment.NewLine +
-        "• Ce sont des parties simulées par une intelligence artificielle, pas de vraies parties : prends les propositions comme des idées à essayer. " +
-        "Une même demande donne toujours le même résultat, et elle est gardée dans l'historique : la relancer est instantané.";
+        "• Ce sont des parties simulées par une intelligence artificielle, pas de vraies parties : {{prends les propositions comme des idées à essayer}}. " +
+        "Une même demande donne toujours le même résultat, et elle est gardée en mémoire : la relancer est instantané.";
 
     public string FixedText => $"{Fixed.Count} / {Deck.MaxCards} cartes imposées";
     public EffortOption SelectedEffort { get => _effort; set => Set(ref _effort, value); }
     public string Status { get => _status; private set => Set(ref _status, value); }
+    /// <summary>Le seul message affiché dans la colonne « Générateur » : un refus, une annulation ou une erreur (le reste est silencieux).</summary>
+    public string Problem { get => _problem; private set { if (Set(ref _problem, value)) Raise(nameof(HasProblem)); } }
+    public bool HasProblem => _problem.Length > 0;
+    private string _problem = "";
+    private void Warn(string text) { Status = text; Problem = text; }
     public string Step { get => _step; private set => Set(ref _step, value); }
     /// <summary>Avancement de 0 à 100.</summary>
     public double Progress { get => _progress; private set => Set(ref _progress, value); }
@@ -199,38 +223,18 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         {
             if (!Set(ref _busy, value)) return;
             if (value) { Tip = Tips.Any(); Raise(nameof(Tip)); }
-            foreach (var c in new[] { AddCommand, GenerateCommand, CancelCommand, AnalyseCommand, AnalyseSavedCommand, CompleteAnalysisCommand, OpenHistoryCommand })
+            foreach (var c in new[] { AddCommand, GenerateCommand, CancelCommand, TestCommand, OpenHistoryCommand })
                 c.RaiseCanExecuteChanged();
         }
     }
-    /// <summary>Texte affiché : la fiche joueur, ou le détail si demandé.</summary>
-    public string Report { get => _report; private set { if (Set(ref _report, value)) Raise(nameof(HasReport)); } }
-    /// <summary>Fiche joueur (lot E, D-050) : l'essentiel pour jouer le deck.</summary>
-    public string Sheet { get => _sheet; private set { if (Set(ref _sheet, value)) UpdateReport(); } }
-    /// <summary>Rapport détaillé (toutes les mesures).</summary>
-    public string Detail { get => _detail; private set { if (Set(ref _detail, value)) UpdateReport(); } }
-    public bool ShowDetail
-    {
-        get => _showDetail;
-        set { if (Set(ref _showDetail, value)) { Raise(nameof(DetailButtonLabel)); UpdateReport(); } }
-    }
-    public string DetailButtonLabel => ShowDetail ? "Revenir à la fiche" : "Voir le détail";
-    private void UpdateReport() => Report = ShowDetail ? Detail : Sheet;
-    public bool HasReport => Report.Length > 0;
-    public string ReportTitle { get => _reportTitle; private set => Set(ref _reportTitle, value); }
-    public Deck? SavedToAnalyse
-    {
-        get => _savedToAnalyse;
-        set { if (Set(ref _savedToAnalyse, value)) AnalyseSavedCommand.RaiseCanExecuteChanged(); }
-    }
-
     private void AddSelected()
     {
         var item = Browser.Selected;
-        if (item is null) { Status = "Choisis d'abord une carte dans la liste."; return; }
-        if (Fixed.Count >= Deck.MaxCards) { Status = $"La sélection contient déjà {Deck.MaxCards} cartes."; return; }
-        if (Fixed.Any(f => f.Card.Card.Id == item.Card.Id)) { Status = "Cette carte est déjà choisie (pas de doublon, D-020)."; return; }
-        Fixed.Add(new FixedSlotViewModel(item, _kb));
+        if (item is null) { Warn("Choisis d'abord une carte dans la liste."); return; }
+        if (Fixed.Count >= Deck.MaxCards) { Warn($"La sélection contient déjà {Deck.MaxCards} cartes."); return; }
+        if (Fixed.Any(f => f.Card.Card.Id == item.Card.Id)) { Warn("Cette carte est déjà choisie (pas de doublon, D-020)."); return; }
+        Problem = "";
+        Fixed.Add(new FixedSlotViewModel(item, _kb, OwnedOnly ? _collection!.AllowedTalents(item) : null));
         Refresh();
     }
 
@@ -240,39 +244,38 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         GenerateCommand.RaiseCanExecuteChanged();
         Status = Fixed.Count == 0 ? "Choisis 1 à 4 cartes, puis lance la génération."
             : Fixed.Count == Deck.MaxCards ? "4 cartes imposées : le Cuisinier choisira les talents et l'ordre."
-            : Fixed.Count == 1 && _coordinator.Opponents == OpponentSource.Synthetic && _coordinator.Synthetic.OneCard is not null
+            : Fixed.Count == 1 && !OwnedOnly && _coordinator.Opponents == OpponentSource.Synthetic && _coordinator.Synthetic.OneCard is not null
                 ? "Le Cuisinier complétera avec 3 cartes. Avec le talent au choix (réglage rapide ou normal), les propositions sont " +
                   "immédiates : elles ont été calculées à l'avance."
             : $"Le Cuisinier complétera avec {Deck.MaxCards - Fixed.Count} carte(s).";
     }
 
-    private void RefreshSaved()
-    {
-        var keep = _savedToAnalyse?.Id;
-        CompleteDecks.Clear();
-        foreach (var d in _library.Decks.Where(d => d.Slots.Count == Deck.MaxCards && d.GameVersion == _kb.Manifest.GameVersion))
-            CompleteDecks.Add(d);
-        SavedToAnalyse = CompleteDecks.FirstOrDefault(d => d.Id == keep);
-    }
-
     public async Task GenerateAsync()
     {
         if (IsBusy || Fixed.Count == 0) return;
+        var owned = _collection?.OwnedMap;
+        if (owned is not null && owned.Count < Deck.MaxCards)
+        {
+            Proposals.Clear();
+            Warn($"Il faut au moins {Deck.MaxCards} cartes possédées pour générer un deck (tu en as {owned.Count}). Importe tes cartes (« Importer ») ou passe sur « Toutes les cartes et talents ».");
+            return;
+        }
+        var scope = _collection?.Scope ?? "";
         var selection = Fixed.Select(f => new FixedCard(f.Card.Card.Id, f.Talent.Id)).ToList();
         var asSlots = selection.Select(f => new DuelSlot(f.CardId, f.TalentId)).ToList();
         Proposals.Clear();
-        Sheet = ""; Detail = ""; ReportTitle = "";
+        Problem = "";
         // Même demande déjà calculée : on la reprend en mémoire, sans attendre (les moteurs sont reproductibles).
-        if (_history?.FindGeneration(asSlots, SelectedEffort.Value) is { Proposals: { Count: > 0 } kept } hit)
+        if (_history?.FindGeneration(asSlots, SelectedEffort.Value, scope) is { Proposals: { Count: > 0 } kept } hit)
         {
             ShowProposals(kept);
-            Status = $"Résultat retrouvé en mémoire (calculé {When(hit.CreatedUtc)}) : aucun nouveau calcul. " + NoteExplanation();
+            Status = $"Résultat retrouvé en mémoire (calculé {HistoryText.When(hit.CreatedUtc)}) : aucun nouveau calcul. " + NoteExplanation();
             return;
         }
         var effort = SelectedEffort.Value;
         await Run("Génération", async (cancel, progress) =>
         {
-            var decks = await _coordinator.GenerateAsync(selection, effort, Seed(), cancel, progress);
+            var decks = await _coordinator.GenerateAsync(selection, effort, Seed(), cancel, progress, owned);
             ShowProposals(decks);
             if (decks.Count > 0 && decks[0].Precomputed && !decks[0].Measured)
             {
@@ -283,9 +286,10 @@ public sealed partial class GeneratorViewModel : ViewModelBase
                 decks = await _coordinator.MeasureNotesAsync(decks, Seed(), cancel, progress);
                 ShowProposals(decks);
             }
+            if (decks.Count == 0) Problem = "Aucune proposition.";
             Status = decks.Count == 0 ? "Aucune proposition."
                 : $"{decks.Count} proposition(s){(decks[0].Precomputed ? ", calculées à l'avance par le Studio" : "")}. " + NoteExplanation();
-            if (decks.Count > 0) _history?.AddGeneration(asSlots, effort, GenerationLabel(asSlots, effort), decks);
+            if (decks.Count > 0) _history?.AddGeneration(asSlots, effort, GenerationLabel(asSlots, effort), decks, scope);
         });
     }
 
@@ -304,21 +308,12 @@ public sealed partial class GeneratorViewModel : ViewModelBase
 
     private static string EffortName(Effort e) => e switch { Effort.Rapide => "rapide", Effort.Precis => "précis", _ => "normal" };
 
-    /// <summary>« aujourd'hui à 14:32 », « hier à 09:10 » ou « le 12/11 à 18:00 ».</summary>
-    public static string When(DateTime utc)
-    {
-        var local = utc.ToLocalTime();
-        var day = local.Date == DateTime.Today ? "aujourd'hui" : local.Date == DateTime.Today.AddDays(-1) ? "hier" : $"le {local:dd/MM}";
-        return $"{day} à {local:HH:mm}";
-    }
-
     // ----- Historique -----
     private void RefreshHistory()
     {
         HistoryItems.Clear();
-        foreach (var e in _history!.Entries)
-            HistoryItems.Add(new HistoryItem(e, e.Label,
-                (e.Kind == HistoryKind.Generation ? "Génération" : e.Complete ? "Analyse complète" : "Fiche du deck") + " · " + When(e.CreatedUtc)));
+        foreach (var e in _history!.Entries.Where(e => e.Kind == HistoryKind.Generation))   // les rapports et les confrontations sont dans l'onglet Tester
+            HistoryItems.Add(new HistoryItem(e, e.Label, "Génération · " + HistoryText.When(e.CreatedUtc)));
         Raise(nameof(HasHistory)); Raise(nameof(HistoryTitle));
         ClearHistoryCommand.RaiseCanExecuteChanged();
     }
@@ -337,57 +332,10 @@ public sealed partial class GeneratorViewModel : ViewModelBase
                     Fixed.Add(f);
                 }
             if (Enum.TryParse<Effort>(e.Effort, out var effort)) SelectedEffort = EffortOptions.First(o => o.Value == effort);
-            Sheet = ""; Detail = ""; ReportTitle = "";
             Refresh();
             ShowProposals(props);
-            Status = $"Génération rouverte depuis l'historique (calculée {When(e.CreatedUtc)}). " + NoteExplanation();
+            Status = $"Génération rouverte depuis l'historique (calculée {HistoryText.When(e.CreatedUtc)}). " + NoteExplanation();
         }
-        else if (e.Kind == HistoryKind.Report)
-        {
-            _lastAnalysed = (e.Slots, e.Label);
-            ReportTitle = e.Title ?? e.Label;
-            Sheet = e.Sheet ?? ""; Detail = e.Detail ?? "";
-            ShowDetail = e.Complete;
-            CompleteAnalysisCommand.RaiseCanExecuteChanged();
-            Status = $"Rapport rouvert depuis l'historique (calculé {When(e.CreatedUtc)}).";
-        }
-    }
-
-    private void AnalyseSaved()
-    {
-        if (_savedToAnalyse is not { } d) return;
-        _ = AnalyseAsync(d.Slots.Select(s => new DuelSlot(s.CardId, s.TalentId)).ToList(), $"« {d.Name} »");
-    }
-
-    /// <param name="complete">Faux : fiche joueur (rapide). Vrai : analyse complète (liens entre cartes, plus longue).</param>
-    public async Task AnalyseAsync(IReadOnlyList<DuelSlot> deck, string label, bool complete = false)
-    {
-        if (IsBusy) return;
-        Sheet = ""; Detail = ""; ReportTitle = "";
-        _lastAnalysed = (deck, label);
-        var effort = SelectedEffort.Value;
-        // Même rapport déjà calculé : on le reprend en mémoire.
-        if (_history?.FindReport(deck, complete, effort) is { Sheet: not null } hit)
-        {
-            ReportTitle = hit.Title ?? label;
-            Sheet = hit.Sheet; Detail = hit.Detail ?? "";
-            ShowDetail = complete;
-            Status = $"Rapport retrouvé en mémoire (calculé {When(hit.CreatedUtc)}) : aucun nouveau calcul.";
-            CompleteAnalysisCommand.RaiseCanExecuteChanged();
-            return;
-        }
-        await Run(complete ? "Analyse complète" : "Analyse", async (cancel, progress) =>
-        {
-            var res = await _coordinator.AnalyseAsync(deck, complete, effort, Seed(), cancel, progress);
-            var title = (complete ? "Analyse complète — " : "Fiche du deck — ") + label;
-            ReportTitle = title;
-            Sheet = res.Sheet;
-            Detail = ToPlainText(res.Markdown);
-            ShowDetail = complete;
-            Status = $"Analyse terminée : {res.Report.Duels} duels simulés en {res.Report.Elapsed.TotalSeconds:0} s.";
-            _history?.AddReport(deck, complete, effort, label, title, Sheet, Detail, res.Report.Duels, res.Report.Elapsed.TotalSeconds);
-        });
-        CompleteAnalysisCommand.RaiseCanExecuteChanged();
     }
 
     /// <summary>Lance un calcul : avancement, annulation, erreurs. Le corps reprend sur le fil de l'interface.</summary>
@@ -396,10 +344,11 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         _cts = new CancellationTokenSource();
         IsBusy = true;
         Progress = 0; Step = "Préparation…";
+        Problem = "";
         Status = $"{what} en cours… (tu peux annuler)";
         try { await body(_cts.Token, new Throttled(this)); }
-        catch (OperationCanceledException) { Status = $"{what} annulée."; }
-        catch (Exception e) { Status = $"{what} impossible : {e.Message}"; }
+        catch (OperationCanceledException) { Warn($"{what} annulée."); }
+        catch (Exception e) { Warn($"{what} impossible : {e.Message}"); }
         finally
         {
             IsBusy = false;
@@ -408,9 +357,9 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         }
     }
 
-    private void Save(ProposalViewModel p)
+    private Deck? Save(ProposalViewModel p)
     {
-        if (p.Saved) return;
+        if (p.Saved) return p.SavedDeck;
         var names = p.Deck.Deck.Select(s => _byId.TryGetValue(s.CardId, out var c) ? c.Name : s.CardId);
         var deck = new Deck
         {
@@ -421,7 +370,14 @@ public sealed partial class GeneratorViewModel : ViewModelBase
         };
         _library.Save(deck);
         p.Saved = true;
+        p.SavedDeck = deck;
         Status = $"« {deck.Name} » sauvegardé : il apparaît dans le Deck builder et le Drafter.";
+        return deck;
+    }
+
+    private void TestProposal(ProposalViewModel p)
+    {
+        if (Save(p) is { } deck) TestRequested?.Invoke(deck);
     }
 
     private string Describe(DuelSlot s)
@@ -441,19 +397,6 @@ public sealed partial class GeneratorViewModel : ViewModelBase
 
     /// <summary>Même graine à chaque fois : même sélection = mêmes propositions (reproductible).</summary>
     private static ulong Seed() => Coordinator.AppSeed;
-
-    /// <summary>Le rapport Markdown en texte lisible (sans les marques ** et # ; tableaux gardés).</summary>
-    public static string ToPlainText(string markdown)
-    {
-        var text = markdown.Replace("**", "");
-        text = Heading().Replace(text, m => m.Groups[1].Value.ToUpperInvariant());
-        return Separator().Replace(text, "");
-    }
-
-    [GeneratedRegex(@"^#{1,3} (.*)$", RegexOptions.Multiline)]
-    private static partial Regex Heading();
-    [GeneratedRegex(@"^\|(---\|)+\r?\n", RegexOptions.Multiline)]
-    private static partial Regex Separator();
 
     /// <summary>Avancement reçu des fils de calcul (très souvent) : transmis à l'interface au plus tous les 0,5 %.</summary>
     private sealed class Throttled(GeneratorViewModel vm) : IProgress<WorkProgress>

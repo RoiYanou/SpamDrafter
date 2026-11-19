@@ -78,6 +78,8 @@ public class Phase12LotDTests : IDisposable
         Assert.Contains("×1", w.Vm.ElementsText);
         var one = w.Vm.TotalsText;
         Assert.Contains("PV totaux", one);
+        Assert.EndsWith(" PV", w.Vm.HpTotalShort);
+        Assert.NotEmpty(w.Vm.IncomeTotalShort);
         Add(w.Vm, w.Items[1]);
         Assert.NotEqual(one, w.Vm.TotalsText);                 // se met à jour à chaque carte
         Assert.StartsWith("Résistances moyennes : ", w.Vm.ResistancesText);
@@ -88,19 +90,20 @@ public class Phase12LotDTests : IDisposable
     }
 
     [Fact]
-    public void Les_compteurs_suivent_l_ouverture_d_un_deck_et_les_points_faibles_nomment_la_carte()
+    public void Les_compteurs_suivent_l_ouverture_d_un_deck_et_les_resistances_ont_une_icone_et_une_valeur()
     {
         if (Make() is not { } w) return;
         var fragile = w.Items.First(i => i.Card.Resistances.Values.Any(v => v < 0));
         Add(w.Vm, fragile);
-        Assert.StartsWith("Points faibles : ", w.Vm.WeaknessText);
-        Assert.Contains(fragile.Name, w.Vm.WeaknessText);
+        Assert.NotEmpty(w.Vm.ResistanceItems);                  // comme sur la fiche d'une carte : icône + valeur
+        Assert.All(w.Vm.ResistanceItems, r => Assert.EndsWith("%", r.Percent));
+        Assert.Contains(w.Vm.ResistanceItems, r => r.Percent.StartsWith("-"));
         w.Vm.Name = "Fragile";
         w.Vm.SaveCommand.Execute(null);
         w.Vm.NewCommand.Execute(null);
         Assert.False(w.Vm.HasStats);
         w.Vm.SelectedSaved = w.Vm.SavedDecks[0];
         Assert.True(w.Vm.HasStats);
-        Assert.Contains(fragile.Name, w.Vm.WeaknessText);
+        Assert.NotEmpty(w.Vm.ResistanceItems);
     }
 }

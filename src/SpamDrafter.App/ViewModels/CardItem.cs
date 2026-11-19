@@ -5,12 +5,17 @@ using SpamDrafter.Core.Text;
 
 namespace SpamDrafter.App.ViewModels;
 
+/// <summary>Une étoile de talent : jaune (possédé) ou grise.</summary>
+public sealed record StarItem(Avalonia.Media.IBrush Fill);
+
 /// <summary>Une carte telle qu'affichée (nom, textes traduits, images chargées à la demande).</summary>
 public sealed class CardItem : ViewModelBase
 {
     private readonly KnowledgeBase _kb;
     private Bitmap? _thumb;
     private bool _thumbRequested;
+    private Bitmap? _large;
+    private bool _largeRequested;
     private string? _skinId;
 
     public CardItem(Card card, KnowledgeBase kb)
@@ -40,8 +45,8 @@ public sealed class CardItem : ViewModelBase
             if (value is not null && Skins.All(s => s.Id != value)) value = null;
             if (_skinId == value) return;
             _skinId = value;
-            _thumb = null; _thumbRequested = false;
-            Raise(nameof(SelectedSkinId)); Raise(nameof(Thumbnail));
+            _thumb = null; _thumbRequested = false; _large = null; _largeRequested = false;
+            Raise(nameof(SelectedSkinId)); Raise(nameof(Thumbnail)); Raise(nameof(LargeThumbnail));
             SkinChanged?.Invoke(this);
         }
     }
@@ -54,7 +59,56 @@ public sealed class CardItem : ViewModelBase
 
     public Card Card { get; }
 
+    private IReadOnlyList<StarItem> _stars = Array.Empty<StarItem>();
+    /// <summary>Étoiles de talents (phase 15) : vide hors du mode « possédés » ; sinon une par talent de la carte, jaune si possédé, grise sinon.</summary>
+    public IReadOnlyList<StarItem> Stars => _stars;
+    /// <summary>Illustration de base (jamais le skin choisi), pour l'écran d'importation.</summary>
+    public Bitmap? LoadBaseImage(int height)
+    {
+        var path = _kb.ImagePath(Card.Image);
+        if (path is null) return null;
+        try { using var s = File.OpenRead(path); return Bitmap.DecodeToHeight(s, height); }
+        catch (Exception) { return null; }
+    }
+    private static readonly Avalonia.Media.IBrush StarOn = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#FFC93C"));
+    private static readonly Avalonia.Media.IBrush StarOff = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#6E6E7C"));
+    /// <summary>Niveau de talent possédé (0 à 3) pour colorer les étoiles (3 = toutes jaunes, mode « toutes les cartes et talents »).</summary>
+    public void SetStars(int? level)
+    {
+        _stars = level is null ? Array.Empty<StarItem>() : Enumerable.Range(0, Card.Talents.Count).Select(i => new StarItem(i < level ? StarOn : StarOff)).ToList();
+        Raise(nameof(Stars));
+    }
+
+    private IReadOnlyList<AbilityTag>? _abilityTags;
+    /// <summary>
+    /// Capacités de la carte pour les bandeaux affichés dessus, comme dans le jeu : nom en majuscules, recharge, et icônes des éléments
+    /// qu'elles mettent en jeu (voir <see cref="DescriptionFormatter.AbilityElements"/>).
+    /// </summary>
+    public IReadOnlyList<AbilityTag> AbilityTags => _abilityTags ??= Card.Abilities.Select(BuildTag).Concat(BuildToxTags()).ToList();
+
+    private AbilityTag BuildTag(string a)
+    {
+        var (elements, logos) = Icons.AbilityPictures(_kb, a);
+        return new AbilityTag(_kb.AbilityName(a).ToUpper(System.Globalization.CultureInfo.GetCultureInfo("fr-FR")),
+                              _kb.Descriptions.Stats(a) is { Cooldown: > 0 } st ? st.Cooldown.ToString() : "", elements, logos,
+                              Icons.Load(_kb, "images/icons/stats/cooldown.webp", 96));
+    }
+
+    /// <summary>Tox de base de la carte, présentés comme des capacités : leur image à gauche, leur nom au centre, pas de recharge.</summary>
+    private IEnumerable<AbilityTag> BuildToxTags() => _kb.InnateTox(Card).Select(t =>
+        new AbilityTag(_kb.ToxName(t).ToUpper(System.Globalization.CultureInfo.GetCultureInfo("fr-FR")), "", Array.Empty<Bitmap>(),
+                       Icons.Load(_kb, t.Image, 64) is { } img ? new[] { img } : Array.Empty<Bitmap>(), null)
+        {
+            IsTox = true,
+            Frame = Icons.RarityBrush(_kb, t.Rarity),   // encadré de la couleur de rareté du Tox
+            RarityName = t.Rarity is { } rid ? _kb.RarityName(rid) : "",
+            RarityText = Icons.RarityTextBrush(_kb, t.Rarity),
+        });
+
     /// <summary>Icône de l'élément de la carte (null sans icône dans la base).</summary>
+    /// <summary>Icône d'élément cerclée de noir, et son masque sans contour (pastille de la carte).</summary>
+    public Bitmap? ElementBadge => Icons.ElementBadge(_kb, Card.Element)?.Badge;
+    public Bitmap? ElementBadgeMask => Icons.ElementBadge(_kb, Card.Element)?.Mask;
     public Bitmap? ElementIcon => Icons.Element(_kb, Card.Element, 32);
     /// <summary>Icône de la rareté de la carte.</summary>
     public Bitmap? RarityIcon => Icons.Rarity(_kb, Card.Rarity, 128);
@@ -68,6 +122,9 @@ public sealed class CardItem : ViewModelBase
 
     /// <summary>Icône du Spamton et revenu de la carte (affichés en haut à droite).</summary>
     public Bitmap? SpamtonIcon => Icons.Spamton(_kb);
+    /// <summary>Spamton cerclé de noir, et son masque sans contour (reflet métallique).</summary>
+    public Bitmap? SpamtonBadge => Icons.SpamtonBadge(_kb)?.Badge;
+    public Bitmap? SpamtonBadgeMask => Icons.SpamtonBadge(_kb)?.Mask;
     public string IncomeText => Card.GoldIncome.ToString();
     /// <summary>Illustration de bonne qualité (560 px de haut), gardée en mémoire : decks agrandis de l'accueil. Refaite si le skin change.</summary>
     public Bitmap? MediumImage
@@ -111,6 +168,32 @@ public sealed class CardItem : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Vignette nette pour les grandes tuiles (Bibliothèque, 6 colonnes) : la miniature de 256 px devient floue au-delà de ≈ 200 px à l'écran.
+    /// Décodée à 440 px de large depuis l'illustration complète, seulement quand une tuile en a besoin.
+    /// </summary>
+    public Bitmap? LargeThumbnail
+    {
+        get
+        {
+            if (!_largeRequested) { _largeRequested = true; _ = LoadLargeAsync(); }
+            return _large;
+        }
+    }
+
+    private async Task LoadLargeAsync()
+    {
+        var requestedSkin = _skinId;
+        var path = _kb.ImagePath(SelectedSkin?.Image ?? Card.Image);
+        if (path is null) return;
+        var bmp = await Task.Run(() =>
+        {
+            try { using var s = File.OpenRead(path); return Bitmap.DecodeToWidth(s, 440); }
+            catch (Exception) { return null; }
+        });
+        await Dispatcher.UIThread.InvokeAsync(() => { if (_skinId != requestedSkin) return; _large = bmp; Raise(nameof(LargeThumbnail)); });
+    }
+
     private async Task LoadThumbAsync()
     {
         var requestedSkin = _skinId;
@@ -146,4 +229,23 @@ public sealed class CardItem : ViewModelBase
         (region is null || Lore?.Region == region) &&
         (chronology is null || Lore?.Chronology == chronology) &&
         TextSearch.ContainsAllWords(SearchText, text);
+}
+
+/// <summary>Une capacité sur la carte : son nom et sa recharge (vide si elle n'en a pas).</summary>
+public sealed record AbilityTag(string Name, string Cooldown, IReadOnlyList<Bitmap> Elements, IReadOnlyList<Bitmap> Logos, Bitmap? CooldownIcon)
+{
+    public bool HasCooldown => Cooldown.Length > 0;
+    /// <summary>Tox de base (et non capacité) : encadré à la couleur de sa rareté, sans fond sombre, logo collé au nom.</summary>
+    public bool IsTox { get; init; }
+    public bool IsAbility => !IsTox;
+    public Avalonia.Media.IBrush? Frame { get; init; }
+    /// <summary>Nom de la rareté du Tox (vide pour une capacité) et sa couleur de texte.</summary>
+    public string RarityName { get; init; } = "";
+    public Avalonia.Media.IBrush? RarityText { get; init; }
+    public Avalonia.Media.IBrush Back => IsTox ? Avalonia.Media.Brushes.Transparent : AbilityBack;
+    private static readonly Avalonia.Media.IBrush AbilityBack = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#78120A24"));
+    public bool HasElements => Elements.Count > 0;
+    /// <summary>Logo de critique et/ou de précision, pour une capacité sans élément qui ne touche que ces statistiques (fusionnés en un disque s'il y en a deux).</summary>
+    public bool HasLogos => Elements.Count == 0 && Logos.Count > 0;
+    public bool HasLogosOfAbility => IsAbility && HasLogos;
 }

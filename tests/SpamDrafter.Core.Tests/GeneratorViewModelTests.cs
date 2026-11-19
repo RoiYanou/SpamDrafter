@@ -94,12 +94,11 @@ public class GeneratorViewModelTests
         vm.SaveCommand.Execute(vm.Proposals[0]);                   // pas de double sauvegarde
         Assert.Single(w.Library.Decks);
 
-        // Visible dans le Drafter avec son origine, et proposé à l'analyse.
+        // Visible dans le Drafter avec son origine.
         w.Drafter.Browser.Selected = w.Drafter.Browser.Items.First(i => i.Card.Id == imposed);
         w.Drafter.AddCommand.Execute(null);
         var found = Assert.Single(w.Drafter.Results);
         Assert.Contains("généré", found.Badge);
-        Assert.Contains(vm.CompleteDecks, d => d.Id == saved.Id);
     }
 
     [Fact]
@@ -138,26 +137,6 @@ public class GeneratorViewModelTests
     }
 
     [Fact]
-    public async Task La_fiche_s_affiche_puis_le_detail_sur_demande()
-    {
-        using var w = Make();
-        if (w is null) return;
-        var vm = w.Vm;
-        Assert.False(vm.CompleteAnalysisCommand.CanExecute(null));
-        var deck = w.Kb.Cards.Take(4).Select(c => new SpamDrafter.Simulator.Engine.DuelSlot(c.Id, c.Talents[0])).ToList();
-        await vm.AnalyseAsync(deck, "test");
-        Assert.Contains("VERDICT", vm.Sheet);
-        Assert.Equal(vm.Sheet, vm.Report);                         // la fiche d'abord
-        Assert.Equal("Voir le détail", vm.DetailButtonLabel);
-        vm.ToggleDetailCommand.Execute(null);
-        Assert.Equal(vm.Detail, vm.Report);
-        Assert.Contains("FORCE", vm.Report);
-        Assert.Equal("Revenir à la fiche", vm.DetailButtonLabel);
-        Assert.True(vm.CompleteAnalysisCommand.CanExecute(null));
-        Assert.StartsWith("Fiche du deck", vm.ReportTitle);
-    }
-
-    [Fact]
     public void Les_anciens_decks_de_reference_ne_changent_plus_les_adversaires()
     {
         // D-065 : la génération se fait toujours contre la méta synthétique (ou au hasard sans elle), jamais contre
@@ -188,7 +167,7 @@ public class GeneratorViewModelTests
     [Fact]
     public void Le_rapport_s_affiche_en_texte_lisible()
     {
-        var text = GeneratorViewModel.ToPlainText("# Analyse du deck\n\n## Force\n- **Carte** : 50 %\n\n| A | B |\n|---|---|\n| 1 | 2 |\n");
+        var text = HistoryText.ToPlain("# Analyse du deck\n\n## Force\n- **Carte** : 50 %\n\n| A | B |\n|---|---|\n| 1 | 2 |\n");
         Assert.DoesNotContain("**", text);
         Assert.DoesNotContain("#", text);
         Assert.Contains("ANALYSE DU DECK", text);

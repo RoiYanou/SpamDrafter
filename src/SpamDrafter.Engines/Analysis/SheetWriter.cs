@@ -97,27 +97,18 @@ public static class SheetWriter
                           $"(gagne {Pct(t.ScoreWith)} quand il est acheté, {Pct(t.ScoreWithout)} sinon ; {t.GamesWith} duels).");
         sb.AppendLine();
 
-        // Adversaires
-        sb.AppendLine("À CRAINDRE");
-        if (r.UsesMeta)
+        // Adversaires : avec la méta, rien n'est dit des decks qui la composent (ni leur nom, ni leurs cartes) ;
+        // sans méta (données de développement), les cartes adverses dangereuses des decks tirés au hasard.
+        if (!r.UsesMeta)
         {
-            // Decks de référence contre lesquels il perd nettement (la marge n'atteint pas 50 %), les pires d'abord.
-            var bad = r.Matchups.Where(m => m.Score.Value + m.Score.Margin95 < 0.5).Take(3).ToList();
-            if (bad.Count == 0)
-                sb.AppendLine($"• Aucun {r.Settings.MetaSingular} ne le bat nettement" +
-                              (r.Matchups.Count > 0 ? $" (le plus dur : {r.Matchups[0].Name}, {Pct(r.Matchups[0].Score.Value)} de victoires)." : "."));
-            foreach (var m in bad)
-                sb.AppendLine($"• {m.Name} : il ne gagne que {Pct(m.Score.Value)} contre lui ({m.Score.Games} duels).");
-            var good = r.Matchups.Where(m => m.Score.Value - m.Score.Margin95 > 0.5).ToList();
-            if (good.Count > 0) sb.AppendLine($"• Il bat nettement {good.Count} des {r.Matchups.Count} {r.Settings.MetaPlural}.");
+            sb.AppendLine("À CRAINDRE");
+            var dangers = r.Dangers.Where(d => d.Score.Value + d.Score.Margin95 < r.DangerOverall.Value).Take(3).ToList();
+            if (dangers.Count == 0) sb.AppendLine("• Aucune carte adverse nettement plus dangereuse que les autres.");
+            foreach (var d in dangers)
+                sb.AppendLine($"• {ReportWriter.CardName(kb, d.CardId)} : le deck ne gagne que {Pct(d.Score.Value)} contre elle " +
+                              $"({Pct(r.DangerOverall.Value)} en moyenne).");
             sb.AppendLine();
         }
-        var dangers = r.UsesMeta ? [] : r.Dangers.Where(d => d.Score.Value + d.Score.Margin95 < r.DangerOverall.Value).Take(3).ToList();
-        if (dangers.Count == 0 && !r.UsesMeta) sb.AppendLine("• Aucune carte adverse nettement plus dangereuse que les autres.");
-        foreach (var d in dangers)
-            sb.AppendLine($"• {ReportWriter.CardName(kb, d.CardId)} : le deck ne gagne que {Pct(d.Score.Value)} contre elle " +
-                          $"({Pct(r.DangerOverall.Value)} en moyenne).");
-        if (!r.UsesMeta) sb.AppendLine();
 
         sb.AppendLine($"Duels de {r.AverageRounds.ToString("0", Fr)} rounds en moyenne. Mesures : {r.Duels.ToString("N0", Fr)} duels simulés" +
                       (r.Errors > 0 ? $", {r.Errors} erreur(s)" : "") + ". Le détail explique chaque chiffre.");

@@ -63,10 +63,12 @@ public class Phase8LotFTests
         Assert.Equal(4 * TinySheet.Pairs * 2, r.Strength.Games);
         var sheet = SheetWriter.ToText(kb, r);
         Assert.Contains("decks de référence", sheet);
-        Assert.Contains("À CRAINDRE", sheet);
+        Assert.DoesNotContain("À CRAINDRE", sheet);                                  // plus de decks de la méta dans l'analyse
+        foreach (var m in meta) Assert.DoesNotContain(m.Name, sheet);
         var md = ReportWriter.ToMarkdown(kb, r);
-        Assert.Contains("| Deck de référence | Score | Marge |", md);
-        Assert.Contains("Réf 1", md);
+        Assert.DoesNotContain("Adversaires difficiles", md);                          // ni section, ni tableau des decks de la méta
+        Assert.DoesNotContain("| Deck de référence | Score | Marge |", md);
+        foreach (var m in meta) Assert.DoesNotContain(m.Name, md);
     }
 
     [Trait("Categorie", "Lent")]
@@ -84,9 +86,15 @@ public class Phase8LotFTests
     public void Qualificatif_contre_la_meta()
     {
         // Phase 12, lot B : la note sur 100 remplace les anciens qualificatifs.
-        Assert.Equal("Excellent", DeckNote.LabelFor(80));
-        Assert.Equal("Bon", DeckNote.LabelFor(60));
-        Assert.Equal("Correct", DeckNote.LabelFor(40));
-        Assert.Equal("Faible", DeckNote.LabelFor(20));
+        Assert.Equal("Parfait", DeckNote.LabelFor(100));
+        Assert.Equal("Excellent", DeckNote.LabelFor(99));
+        Assert.Equal("Excellent", DeckNote.LabelFor(75));
+        Assert.Equal("Bon", DeckNote.LabelFor(74));
+        Assert.Equal("Bon", DeckNote.LabelFor(55));
+        Assert.Equal("Passable", DeckNote.LabelFor(54));
+        Assert.Equal("Passable", DeckNote.LabelFor(35));
+        Assert.Equal("Faible", DeckNote.LabelFor(34));
+        Assert.Equal("Faible", DeckNote.LabelFor(1));
+        Assert.Equal("Intankable", DeckNote.LabelFor(0));
     }
 }

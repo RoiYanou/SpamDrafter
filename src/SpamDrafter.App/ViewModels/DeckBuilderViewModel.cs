@@ -30,12 +30,14 @@ public sealed class SlotViewModel : ViewModelBase
 {
     private TalentOption _talent;
 
-    public SlotViewModel(CardItem card, KnowledgeBase kb, string? talentId, Action changed, bool editable = true)
+    public SlotViewModel(CardItem card, KnowledgeBase kb, string? talentId, Action changed, bool editable = true, IReadOnlyList<string>? allowedTalents = null)
     {
         Card = card;
         IsEditable = editable;
+        // Phase 15 : en mode « possédés », seuls les talents du joueur sont proposés (le talent déjà choisi reste, pour ne rien changer en silence).
         TalentOptions = new[] { new TalentOption(null, "Aucun talent") }
-            .Concat(card.Card.Talents.Select((t, i) => new TalentOption(t, $"{i + 1}. {kb.TalentName(t)}"))).ToList();
+            .Concat(card.Card.Talents.Select((t, i) => (t, i)).Where(x => allowedTalents is null || allowedTalents.Contains(x.t) || x.t == talentId)
+                .Select(x => new TalentOption(x.t, $"{x.i + 1}. {kb.TalentName(x.t)}"))).ToList();
         _talent = TalentOptions.FirstOrDefault(o => o.Id == talentId) ?? TalentOptions[0];
         Changed = changed;
     }
@@ -236,11 +238,14 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     public bool HasStats => Slots.Count > 0;
     public string ElementsText { get; private set; } = "";
     /// <summary>Éléments du deck et résistances moyennes, avec leurs icônes (l'écran) ; les textes ci-dessus disent la même chose.</summary>
-    public IReadOnlyList<IconText> ElementIcons { get; private set; } = Array.Empty<IconText>();
-    public IReadOnlyList<IconText> ResistanceIcons { get; private set; } = Array.Empty<IconText>();
+    /// <summary>Résistances moyennes, présentées comme sur la fiche d'une carte : grosse icône de l'élément, valeur dessous.</summary>
+    public IReadOnlyList<ResistanceItem> ResistanceItems { get; private set; } = Array.Empty<ResistanceItem>();
     public string TotalsText { get; private set; } = "";
+    /// <summary>PV totaux et revenu total en Spamtons, présentés comme sur la fiche d'une carte (♥, puis l'icône du Spamton avec le nombre dessus).</summary>
+    public string HpTotalShort { get; private set; } = "";
+    public string IncomeTotalShort { get; private set; } = "";
+    public Avalonia.Media.Imaging.Bitmap? SpamtonIcon => Icons.Spamton(_kb);
     public string ResistancesText { get; private set; } = "";
-    public string WeaknessText { get; private set; } = "";
 
     /// <summary>Recalcule les compteurs (instantané : lus dans les données des cartes, aucune simulation).</summary>
     private void RaiseStats()
@@ -248,15 +253,11 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         var stats = DeckStats.Compute(Slots.Select(s => s.Card.Card), _kb);
         string El(string id) => _kb.ElementName(id);
         ElementsText = "Éléments : " + string.Join(" · ", stats.Elements.Select(e => $"{El(e.ElementId)} ×{e.Count}"));
-        ElementIcons = stats.Elements.Select(e => new IconText(Icons.Element(_kb, e.ElementId, 32), $"×{e.Count}")).ToList();
-        ResistanceIcons = stats.Resistances.Select(r => new IconText(Icons.Element(_kb, r.ElementId, 32), $"{r.Average.ToString("0.#", Fr)} %")).ToList();
+        ResistanceItems = stats.Resistances.Select(r => new ResistanceItem(Icons.Element(_kb, r.ElementId, 64), El(r.ElementId), $"{r.Average.ToString("0.#", Fr)} %", AbilityRichText.ElementBrush(r.ElementId))).ToList();
+        HpTotalShort = $"{stats.TotalHp.ToString("N0", Fr)} PV"; IncomeTotalShort = stats.TotalIncome.ToString("N0", Fr);
         TotalsText = $"PV totaux : {stats.TotalHp.ToString("N0", Fr)} · Revenu total : {stats.TotalIncome.ToString("N0", Fr)}";
         ResistancesText = "Résistances moyennes : " + string.Join(" · ", stats.Resistances.Select(r => $"{El(r.ElementId)} {r.Average.ToString("0.#", Fr)} %"));
-        WeaknessText = stats.Weaknesses.Count == 0
-            ? "Aucune résistance négative."
-            : "Points faibles : " + string.Join(" ; ", stats.Weaknesses.Take(4).Select(w =>
-                $"{(_byId.TryGetValue(w.CardId, out var c) ? c.Name : w.CardId)} ({El(w.ElementId)} {w.Value} %)"));
-        foreach (var n in new[] { nameof(HasStats), nameof(ElementsText), nameof(ElementIcons), nameof(ResistanceIcons), nameof(TotalsText), nameof(ResistancesText), nameof(WeaknessText) }) Raise(n);
+        foreach (var n in new[] { nameof(HasStats), nameof(ElementsText), nameof(ResistanceItems), nameof(TotalsText), nameof(HpTotalShort), nameof(IncomeTotalShort), nameof(SpamtonIcon), nameof(ResistancesText) }) Raise(n);
     }
 
     /// <summary>Demande à la fenêtre de placer ce texte dans le presse-papiers.</summary>
@@ -345,7 +346,15 @@ public sealed class DeckBuilderViewModel : ViewModelBase
                                          "Utilise « Dupliquer » pour en faire une copie modifiable.";
 
     private SlotViewModel MakeSlot(CardItem card, string? talentId) =>
-        new(card, _kb, talentId, () => OnEdited(), editable: !IsLocked);
+        new(card, _kb, talentId, () => OnEdited(), editable: !IsLocked, allowedTalents: _collection?.OwnedOnly == true ? _collection.AllowedTalents(card) : null);
+
+    private CollectionViewModel? _collection;
+    /// <summary>Collection du joueur (phase 15) : en mode « possédés », « Mes decks » ne montre que les decks entièrement possédés.</summary>
+    public CollectionViewModel? Collection
+    {
+        get => _collection;
+        set { _collection = value; if (value is not null) value.Changed += () => { RefreshDeckList(); Raise(nameof(DeckCountText)); }; RefreshDeckList(); }
+    }
 
     // ----- Ouverture, création -----
     private void NewDeck()
@@ -413,7 +422,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         if (item is null) { Status = "Choisis d'abord une carte dans la liste."; return; }
         if (Slots.Count >= Deck.MaxCards) { Status = $"Le deck contient déjà {Deck.MaxCards} cartes."; return; }
         if (Slots.Any(s => s.Card.Card.Id == item.Card.Id)) { Status = "Cette carte est déjà dans le deck."; return; }
-        Slots.Add(MakeSlot(item, item.Card.Talents[0]));
+        Slots.Add(MakeSlot(item, (_collection?.AllowedTalents(item) ?? item.Card.Talents).FirstOrDefault()));   // talent 1 par défaut (celui du joueur en mode « possédés »)
         Status = "";
         OnEdited();
     }
@@ -849,6 +858,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         // Plus aucun deck concerné (par exemple après « marquer vérifié ») : le filtre disparaît, il ne doit pas rester actif.
         if (_impactedOnly && !HasImpactedDecks) { _impactedOnly = false; Raise(nameof(ImpactedOnly)); }
         IEnumerable<Deck> q = _library.Decks;
+        if (_collection is { OwnedOnly: true }) q = q.Where(_collection.ShowsDeck);
         if (_favoritesOnly) q = q.Where(d => d.Favorite);
         if (_impactedOnly) q = q.Where(d => d.VersionImpacted);
         if (_originFilter.Id == "manual") q = q.Where(d => d.Origin == DeckOrigin.Manual);

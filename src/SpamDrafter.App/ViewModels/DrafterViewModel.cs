@@ -42,7 +42,16 @@ public sealed class DrafterViewModel : ViewModelBase
     private bool _searchPending;
     /// <summary>Recherche, tri et filtres des decks (ceux du Builder) ; null hors de l'application complète.</summary>
     public DeckBuilderViewModel? Decks => _builder;
-    private IReadOnlyList<Deck> Source => _builder is null ? _library.Decks.ToList() : _builder.SavedDecks.ToList();
+    private CollectionViewModel? _collection;
+    /// <summary>Collection du joueur (phase 15) : en mode « possédés », seuls les decks entièrement possédés sont proposés.
+    /// Avec le Builder, sa liste « Mes decks » est déjà filtrée.</summary>
+    public CollectionViewModel? Collection
+    {
+        get => _collection;
+        set { _collection = value; if (value is not null) value.Changed += Search; Search(); }
+    }
+    private bool OwnedOnly => _collection?.OwnedOnly == true;
+    private IReadOnlyList<Deck> Source => _builder is null ? _library.Decks.Where(d => _collection?.ShowsDeck(d) ?? true).ToList() : _builder.SavedDecks.ToList();
     public CardBrowser Browser { get; }
     public ObservableCollection<CardItem> Wanted { get; } = new();
     public ObservableCollection<DrafterResult> Results { get; } = new();
@@ -86,6 +95,7 @@ public sealed class DrafterViewModel : ViewModelBase
         {
             Message = _library.Decks.Count == 0
                 ? "Aucun deck sauvegardé pour l'instant : crée-en un dans le Deck builder."
+                : Results.Count == 0 && OwnedOnly ? "Aucun de tes decks n'est entièrement possédé (cartes et talents). Passe sur « Toutes les cartes et talents » pour les voir tous."
                 : $"{Results.Count} deck(s). Choisis 1 à 4 cartes pour affiner.";
             return;
         }
@@ -93,6 +103,7 @@ public sealed class DrafterViewModel : ViewModelBase
             ? $"{Results.Count} deck(s) trouvé(s)."
             : _library.Decks.Count == 0
                 ? "Aucun deck sauvegardé pour l'instant : crée-en un dans le Deck builder."
+                : OwnedOnly ? "Aucun de tes decks possédés ne contient toutes ces cartes."
                 : "Aucun de tes decks sauvegardés ne contient toutes ces cartes.";
     }
 

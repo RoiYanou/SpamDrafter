@@ -47,7 +47,20 @@ public sealed class LibraryTabsViewModel : ViewModelBase
     public ArtistsViewModel Artists { get; }
 
     /// <summary>0 = Cartes, 1 = Talents, 2 = Tox, 3 = Artistes.</summary>
-    public int SelectedTab { get => _selectedTab; set => Set(ref _selectedTab, value); }
+    public int SelectedTab
+    {
+        get => _selectedTab;
+        set
+        {
+            if (!Set(ref _selectedTab, value)) return;
+            Raise(nameof(IsCardsTab)); Raise(nameof(IsTalentsTab)); Raise(nameof(IsToxTab)); Raise(nameof(IsArtistsTab));
+        }
+    }
+    // Les quatre vues restent construites et en place : changer de sous-onglet n'est qu'un changement de visibilité (pas de reconstruction des 151 cartes).
+    public bool IsCardsTab => _selectedTab == 0;
+    public bool IsTalentsTab => _selectedTab == 1;
+    public bool IsToxTab => _selectedTab == 2;
+    public bool IsArtistsTab => _selectedTab == 3;
 
     /// <summary>Ouvre un talent dans le sous-onglet « Talents » (la recherche est vidée pour qu'il soit dans la liste).</summary>
     public void ShowTalent(string id)
@@ -99,18 +112,53 @@ public sealed class TalentsViewModel : ViewModelBase
 {
     private readonly KnowledgeBase _kb;
     private readonly IReadOnlyList<CardItem> _items;
-    private readonly List<TalentRow> _all;
+    private List<TalentRow> _all;
     private string _search = "";
     private TalentRow? _selected;
 
     public TalentsViewModel(KnowledgeBase kb, IReadOnlyList<CardItem> items)
     {
         _kb = kb; _items = items;
-        _all = items.SelectMany(i => i.Card.Talents).GroupBy(t => t)
-            .Select(g => new TalentRow(g.Key, kb.TalentName(g.Key), g.Count()))
-            .OrderBy(t => TextSearch.Normalize(t.Name), StringComparer.Ordinal).ThenBy(t => t.Id, StringComparer.Ordinal).ToList();
+        _all = BuildAll();
         Rows = new ObservableCollection<TalentRow>(_all);
         OpenCardCommand = new RelayCommand(p => { if (p is CardLink l) OpenCardRequested?.Invoke(l.Card); });
+    }
+
+    /// <summary>Les talents de chaque carte (le n-ième talent d'une carte n'est montré que si le joueur le possède, en mode « possédés »).</summary>
+    private IEnumerable<(CardItem Card, string Talent)> Pairs() =>
+        _items.Where(i => _collection?.Shows(i) ?? true)
+              .SelectMany(i => (_collection?.AllowedTalents(i) ?? i.Card.Talents).Select(t => (i, t)));
+
+    private List<TalentRow> BuildAll() => Pairs().GroupBy(p => p.Talent)
+        .Select(g => new TalentRow(g.Key, _kb.TalentName(g.Key), g.Count()))
+        .OrderBy(t => TextSearch.Normalize(t.Name), StringComparer.Ordinal).ThenBy(t => t.Id, StringComparer.Ordinal).ToList();
+
+    private CollectionViewModel? _collection;
+    /// <summary>Collection du joueur (phase 15) : en mode « possédés », seuls les talents possédés sont listés.</summary>
+    public CollectionViewModel? Collection
+    {
+        get => _collection;
+        set
+        {
+            _collection = value;
+            if (value is null) return;
+            value.Changed += () =>
+            {
+                var keep = _selected?.Id;
+                _all = BuildAll(); ApplySearch();
+                _selected = keep is null ? null : Rows.FirstOrDefault(r => r.Id == keep);
+                Raise(nameof(Selected)); Raise(nameof(HasSelection));
+                if (_selected is not null) UpdateDetail();
+            };
+            _all = BuildAll(); ApplySearch();
+        }
+    }
+
+    private void ApplySearch()
+    {
+        Rows.Clear();
+        foreach (var t in _all.Where(t => TextSearch.ContainsAllWords(TextSearch.Normalize(t.Name), _search))) Rows.Add(t);
+        Raise(nameof(CountText));
     }
 
     public ObservableCollection<TalentRow> Rows { get; }
@@ -123,9 +171,7 @@ public sealed class TalentsViewModel : ViewModelBase
         set
         {
             if (!Set(ref _search, value)) return;
-            Rows.Clear();
-            foreach (var t in _all.Where(t => TextSearch.ContainsAllWords(TextSearch.Normalize(t.Name), value))) Rows.Add(t);
-            Raise(nameof(CountText));
+            ApplySearch();
         }
     }
 
@@ -149,7 +195,7 @@ public sealed class TalentsViewModel : ViewModelBase
         Title = _selected.Name;
         var d = _kb.Descriptions.Talent(_selected.Id);
         Description = d.Length > 0 ? d : "(pas de description dans les données du jeu)";
-        Cards = _items.Where(i => i.Card.Talents.Contains(_selected.Id))
+        Cards = Pairs().Where(p => p.Talent == _selected.Id).Select(p => p.Card)
             .OrderBy(i => TextSearch.Normalize(i.Name), StringComparer.Ordinal)
             .Select(i => new CardLink(i, $"Talent {i.Card.Talents.ToList().IndexOf(_selected.Id) + 1}", OpenCardCommand)).ToList();
         CardsTitle = Cards.Count == 1 ? "Carte qui possède ce talent" : $"Cartes qui possèdent ce talent ({Cards.Count})";

@@ -155,20 +155,10 @@ public static partial class ReportWriter
         }
         sb.AppendLine();
 
-        // Adversaires
+        // Adversaires : avec la méta, aucun deck de la méta n'est nommé (la section n'existe pas) ; sans elle, les cartes adverses dangereuses.
+        if (!r.UsesMeta)
+        {
         sb.AppendLine("## Adversaires difficiles");
-        if (r.UsesMeta)
-        {
-            sb.AppendLine($"Score contre chaque {s.MetaSingular} (joueur « {s.RolePlayer} », {s.MetaPairs * 2} duels chacun), du plus dur au plus facile :");
-            sb.AppendLine();
-            sb.AppendLine(s.MetaIsSynthetic ? "| Deck de la méta synthétique | Score | Marge |" : "| Deck de référence | Score | Marge |");
-            sb.AppendLine("|---|---|---|");
-            foreach (var m in r.Matchups)
-                sb.AppendLine($"| {m.Name} | {Pct(m.Score.Value)} | ± {(100 * m.Score.Margin95).ToString("0", Fr)} |");
-            sb.AppendLine();
-        }
-        else
-        {
         sb.AppendLine($"Contre les {s.PoolSize} decks du groupe tirés au hasard ({r.DangerOverall.Games} duels, joueur « {s.RolePlayer} »), " +
                       $"le deck marque {Pct(r.DangerOverall.Value)}. Cartes adverses contre lesquelles il marque le moins " +
                       $"(au moins {s.DangerMinGames} duels) :");

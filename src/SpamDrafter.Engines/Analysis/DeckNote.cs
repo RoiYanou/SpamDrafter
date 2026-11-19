@@ -30,13 +30,18 @@ public sealed record DeckNote(int Points, string Label, bool NeedsConfirmation)
         return new DeckNote(points, LabelFor(points), margin95 > ConfirmMargin);
     }
 
-    /// <summary>Faible (moins de 35), Correct (35 à 54), Bon (55 à 74), Excellent (75 et plus).</summary>
+    /// <summary>
+    /// Parfait (100), Excellent (75 à 99), Bon (55 à 74), Passable (35 à 54), Faible (1 à 34), Intankable (0 : le deck ne gagne presque jamais).
+    /// Présentation 🟡 : ces mots ne changent pas le classement des decks.
+    /// </summary>
     public static string LabelFor(int points) => points switch
     {
+        >= 100 => "Parfait",
         >= 75 => "Excellent",
         >= 55 => "Bon",
-        >= 35 => "Correct",
-        _ => "Faible",
+        >= 35 => "Passable",
+        >= 1 => "Faible",
+        _ => "Intankable",
     };
 
     /// <summary>Phrase qui explique la note à un joueur qui découvre l'outil.</summary>

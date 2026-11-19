@@ -13,7 +13,11 @@ public sealed record ResistanceItem(Bitmap? Icon, string Name, string Value, IBr
     public string Percent => Value.Replace(" %", "%");
 }
 
-public sealed record TalentLine(string Name, string Description);
+public sealed record TalentLine(string Name, string Description, bool Owned = true)
+{
+    /// <summary>Un talent non possédé reste lisible, mais grisé.</summary>
+    public double Dim => Owned ? 1 : 0.42;
+}
 
 /// <summary>Une capacité de la carte et sa description chiffrée.</summary>
 /// <summary>
@@ -36,6 +40,9 @@ public sealed record AbilityLine(string Name, string Description, string Stats =
     public Bitmap? PrecisionIcon { get; init; }
     public Bitmap? CritIcon { get; init; }
     public Bitmap? RatioIcon { get; init; }
+    /// <summary>Illustration de la capacité (éléments, ou logos de critique / précision), comme sur la carte ; vide si elle n'en a pas.</summary>
+    public IReadOnlyList<Bitmap> Pictures { get; init; } = Array.Empty<Bitmap>();
+    public bool HasPictures => Pictures.Count > 0;
 }
 
 /// <summary>Un Tox possédé de base : image dans un cadre de la couleur de sa rareté, nom, rareté et description.</summary>
@@ -78,6 +85,14 @@ public sealed class LibraryViewModel : ViewModelBase
             if (e.PropertyName == nameof(CardBrowser.Selected)) { UpdateDetail(); Raise(nameof(HasOverlay)); }
         };
         if (decks is not null) decks.Changed += (_, _) => UpdateDecksUsing();
+    }
+
+    private CollectionViewModel? _collection;
+    /// <summary>Collection du joueur (phase 15) : en mode « possédés », la fiche d'une carte possédée ne montre que ses talents possédés.</summary>
+    public CollectionViewModel? Collection
+    {
+        get => _collection;
+        set { _collection = value; if (value is not null) value.Changed += () => { if (Browser.Selected is not null) UpdateDetail(); }; }
     }
 
     public CardBrowser Browser { get; }
@@ -264,7 +279,10 @@ public sealed class LibraryViewModel : ViewModelBase
         Abilities = c.Abilities.Select(a => _kb.Text("Card.Ability." + a)).ToList();
         AbilityLines = c.Abilities.Select(a => BuildAbilityLine(a, c.Element)).ToList();
         // « Talent 1 : nom », « Talent 2 : nom », « Talent 3 : nom » (l'ordre des talents de la carte, comme dans le Deck builder).
-        Talents = c.Talents.Select((t, i) => new TalentLine($"Talent {i + 1} : {_kb.TalentName(t)}", DescribeTalent(t))).ToList();
+        // Mode « possédés » : tous les talents restent visibles, ceux qui ne sont pas possédés sont grisés.
+        var allowed = _collection is { OwnedOnly: true } col ? col.AllowedTalents(item) : null;
+        Talents = c.Talents.Select((t, i) => (t, i))
+            .Select(x => new TalentLine($"Talent {x.i + 1} : {_kb.TalentName(x.t)}", DescribeTalent(x.t), allowed is null || allowed.Contains(x.t))).ToList();
         _updatingSkins = true;
         SkinOptions = new[] { new SkinOption(null, "Carte de base") }
             .Concat(item.Skins.Select((s, i) => new SkinOption(s, SkinLabel(s, i, item.Skins.Count), s.Artist))).ToList();
@@ -303,6 +321,7 @@ public sealed class LibraryViewModel : ViewModelBase
         {
             Rich = AbilityRichText.Build(_kb, _kb.Descriptions.AbilityRich(a), _kb.Descriptions.AbilityTox(a)),
             HasStats = true,
+            Pictures = Icons.AbilityPictures(_kb, a) is var (pe, pl) ? (pe.Count > 0 ? pe : pl) : Array.Empty<Bitmap>(),
             HasCooldown = s.Cooldown > 0,
             CooldownText = s.Cooldown.ToString(),
             PrecisionText = $"{s.Precision.ToString("0.##", fr)}%",
@@ -311,7 +330,7 @@ public sealed class LibraryViewModel : ViewModelBase
             CritRatioText = $"×{s.CritRatio.ToString("0.##", fr)}",
             CooldownIcon = Icons.Load(_kb, "images/icons/stats/cooldown.webp", 96),
             PrecisionIcon = Icons.Load(_kb, "images/icons/stats/accuracy.webp", 64),
-            CritIcon = Icons.Load(_kb, "images/icons/stats/critical.webp", 64),
+            CritIcon = Icons.CritChanceIcon(_kb),
             RatioIcon = Icons.Load(_kb, "images/icons/stats/multiplier.webp", 64),
         };
     }

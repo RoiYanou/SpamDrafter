@@ -52,4 +52,7 @@ public sealed record AbilityStats(double ChanceOfMiss, bool CanCrit, double Crit
     public double Precision => 100 - ChanceOfMiss;
 }
 
+/// <summary>Illustration d'une capacité sur une carte : ses éléments (1 à 6), ou le logo de critique et/ou de précision.</summary>
+public sealed record AbilityVisual(IReadOnlyList<string> Elements, bool Crit, bool Precision);
+
 public sealed record Manifest(string GameVersion, string FormatVersion);

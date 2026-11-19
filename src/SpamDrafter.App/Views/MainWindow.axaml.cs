@@ -35,11 +35,12 @@ public partial class MainWindow : Window
             if (DataContext is not MainViewModel { IsLoaded: true } vm) return;
             await Task.Delay(300);
             PageFx.Suppress = true;
-            var pages = new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3) };
+            var pages = new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3), (PageTester, 5) };
             foreach (var (page, tab) in pages)
             {
                 if (vm.SelectedTab == tab || page.IsVisible) continue;
                 if (tab == 3 && !vm.HasGenerator) continue;
+                if (tab == 5 && !vm.HasTester) continue;
                 page.Opacity = 0; page.IsHitTestVisible = false;
                 page.SetCurrentValue(IsVisibleProperty, true);
                 await Task.Delay(40);
@@ -67,7 +68,7 @@ public partial class MainWindow : Window
             PageFx.Suppress = false;
             // Sécurité : toute page restée affichée sans que le joueur l'ait choisie est recachée.
             if (DataContext is MainViewModel vm2)
-                foreach (var (p, tab) in new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3) })
+                foreach (var (p, tab) in new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3), (PageTester, 5) })
                 {
                     if (vm2.SelectedTab != tab && p.IsVisible) p.SetCurrentValue(IsVisibleProperty, false);
                     p.Opacity = 1; p.IsHitTestVisible = true;
@@ -140,7 +141,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         WireSounds();
         Opened += (_, _) => { RestoreWindow(); _ = Task.Run(Sounds.Warm); _ = PrewarmAsync(); };
-        Closed += (_, _) => SaveWindow();
+        Closed += (_, _) => { SaveWindow(); SpamDrafter.App.ViewModels.MusicPlayer.Shutdown(); };
         // Phase 12, lot A : fermer la fenêtre avec un deck modifié et non sauvegardé demande d'abord confirmation.
         Closing += (_, e) =>
         {
