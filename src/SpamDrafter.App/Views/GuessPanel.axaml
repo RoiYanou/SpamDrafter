@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             x:Class="SpamDrafter.App.Views.GuessPanel"
+             x:DataType="vm:CardGuessViewModel">
+  <!-- Fin de partie, saisie et réponses données, communs aux jeux « retrouve la carte » (énigme, détail). Le résultat est tout en haut : pas besoin de défiler. -->
+  <StackPanel Spacing="12">
+    <!-- Fin de partie -->
+    <Border IsVisible="{Binding IsFinished}" Background="#22000000" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" CornerRadius="10" Padding="14">
+      <Grid ColumnDefinitions="Auto,16,*" ColumnSpacing="0">
+        <ContentControl Content="{Binding AnswerItem}" ContentTemplate="{StaticResource CardThumbFlat}" Width="150" VerticalAlignment="Top" IsVisible="{Binding ShowAnswerCard}" />
+        <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center">
+          <TextBlock Text="{Binding ResultTitle}" Classes="title" FontSize="22" Foreground="{StaticResource BrushYellow}" />
+          <TextBlock Text="{Binding ResultText}" FontSize="16" TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Partie en cours : saisie -->
+    <StackPanel IsVisible="{Binding IsPlaying}" Spacing="8">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding AttemptText}" FontWeight="SemiBold" VerticalAlignment="Center" IsVisible="{Binding ShowAttempts}" />
+        <Button Grid.Column="1" Content="Abandonner" Classes="danger" Command="{Binding GiveUpCommand}" IsVisible="{Binding ShowGiveUp}" Padding="12,4" FontSize="12"
+                ToolTip.Tip="Abandonner : la réponse t'est donnée et la partie est finie" />
+      </Grid>
+      <TextBox x:Name="SearchBox" Text="{Binding Search}" PlaceholderText="Écris le nom d'une carte puis clique dessus…" />
+      <!-- Les cartes proposées : liste déroulante qui passe par-dessus la page (elle ne pousse rien), un peu transparente. -->
+      <Popup x:Name="SuggestPopup" IsOpen="{Binding HasSuggestions}" PlacementTarget="{Binding #SearchBox}" Placement="BottomEdgeAlignedLeft" IsLightDismissEnabled="False">
+        <Border x:Name="SuggestBox" Background="#E21E1236" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1" CornerRadius="8" Padding="6" Opacity="0.9">
+          <ItemsControl ItemsSource="{Binding Suggestions}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CardItem">
+                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,5" Margin="0,0,0,3"
+                        Command="{Binding #SearchBox.((vm:CardGuessViewModel)DataContext).GuessCommand}" CommandParameter="{Binding}">
+                  <TextBlock Text="{Binding Name}" FontSize="16" VerticalAlignment="Center" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </Border>
+      </Popup>
+    </StackPanel>
+
+    <!-- Réponses données -->
+    <ItemsControl ItemsSource="{Binding Guesses}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:RiddleGuess">
+          <Border Background="#22FFFFFF" CornerRadius="8" Padding="10,4" Margin="0,0,8,8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding Mark}" FontWeight="Bold" FontSize="16" Foreground="{Binding Color}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Name}" FontSize="15" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

@@ -29,14 +29,14 @@
               <!-- Le TextBlock rogne ce qui dépasse de sa propre zone : l'italique dépasse un peu de la dernière lettre, d'où une marge intérieure (Padding) et non extérieure. -->
               <TextBlock Text="{Binding Credit}" FontSize="{Binding CreditSize}" FontStyle="Italic" Foreground="White" TextTrimming="CharacterEllipsis" Padding="1,0,5,0" />
             </Border>
-            <Border IsVisible="{Binding ShowName}" VerticalAlignment="Top" IsHitTestVisible="False" Padding="{Binding NamePadding}">
+            <Border Classes="popnamebg" IsVisible="{Binding ShowName}" VerticalAlignment="Top" IsHitTestVisible="False" Padding="{Binding NamePadding}">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
                   <GradientStop Color="#D0120A24" Offset="0" />
                   <GradientStop Color="#00120A24" Offset="1" />
                 </LinearGradientBrush>
               </Border.Background>
-              <v:OutlinedText Text="{Binding Item.Name}" FontSize="{Binding NameSize}" HorizontalAlignment="Stretch"
+              <v:OutlinedText Classes="pop popname" Text="{Binding Item.Name}" FontSize="{Binding NameSize}" HorizontalAlignment="Stretch"
                               FontFamily="{StaticResource FontTitle}" FontWeight="SemiBold" Foreground="White" />
             </Border>
           </Grid>
@@ -48,7 +48,7 @@
         <Border CornerRadius="{Binding Corner}" BorderBrush="#E0000000" BorderThickness="1" IsHitTestVisible="False" />
         <Border CornerRadius="{Binding ImageCorner}" BorderBrush="#B0000000" BorderThickness="1" Margin="{Binding FrameThickness}" IsHitTestVisible="False" />
         <!-- Élément : l'icône seule, sans fond, avec un reflet métallique permanent. -->
-        <Grid IsVisible="{Binding ShowElement}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding OverlayMargin}"
+        <Grid Classes="pop popel" IsVisible="{Binding ShowElement}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding OverlayMargin}"
               Width="{Binding Glyph}" Height="{Binding Glyph}" IsHitTestVisible="False">
           <Image Source="{Binding Item.ElementBadge}" Stretch="Uniform" />
           <!-- Reflet métallique animé en permanence : un éclat clair, bordé d'une ombre, traverse l'icône en diagonale (pinceau partagé, voir ElementSheen). -->
@@ -58,7 +58,7 @@
           </Rectangle>
         </Grid>
         <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding OverlayMargin}" Spacing="3" IsHitTestVisible="False">
-          <Grid IsVisible="{Binding ShowIncome}" HorizontalAlignment="Right" Width="{Binding Glyph}" Height="{Binding Glyph}">
+          <Grid Classes="pop popgold" IsVisible="{Binding ShowIncome}" HorizontalAlignment="Right" Width="{Binding Glyph}" Height="{Binding Glyph}">
             <Image Source="{Binding Item.SpamtonBadge}" Stretch="Uniform" />
             <Rectangle IsVisible="{Binding On, Source={x:Static v:ElementSheen.State}}" Fill="{x:Static v:ElementSheen.Brush}" IsHitTestVisible="False">
               <Rectangle.OpacityMask><ImageBrush Source="{Binding Item.SpamtonBadgeMask}" Stretch="Uniform" /></Rectangle.OpacityMask>
@@ -72,7 +72,7 @@
           </Border>
         </StackPanel>
         <!-- Capacités (comme dans le jeu) : un bandeau sombre translucide par capacité, nom en majuscules au centre, recharge à droite. -->
-        <Grid IsVisible="{Binding AbilitiesVisible}" VerticalAlignment="Bottom" Height="{Binding AbilitiesHeight}" Margin="{Binding AbilitiesMargin}" IsHitTestVisible="False">
+        <Grid Classes="pop popab" IsVisible="{Binding AbilitiesVisible}" VerticalAlignment="Bottom" Height="{Binding AbilitiesHeight}" Margin="{Binding AbilitiesMargin}" IsHitTestVisible="False">
         <ItemsControl ItemsSource="{Binding Item.AbilityTags}" VerticalAlignment="Top">
           <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
@@ -117,7 +117,7 @@
         </Grid>
         <!-- Talent en bas à gauche (présentation d'un deck) : « T1 » puis son nom, en gras. -->
         <!-- PV dans le coin bas gauche : un cœur vert puis « 500 PV », sans fond, avec un contour noir (texte noir décalé dessiné autour, voir OutlinedText). -->
-        <StackPanel IsVisible="{Binding HpVisible}" Orientation="Horizontal" Spacing="1" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+        <StackPanel Classes="pop pophp" IsVisible="{Binding HpVisible}" Orientation="Horizontal" Spacing="1" HorizontalAlignment="Left" VerticalAlignment="Bottom"
                     Margin="{Binding HpMargin}" IsHitTestVisible="False">
           <!-- Pas de fond : cœur vert et « 500 PV » en blanc, avec un contour noir. -->
           <v:OutlinedText Text="♥" Foreground="#5FD86B" FontWeight="Black" FontSize="{Binding HpSize}" VerticalAlignment="Center" />
@@ -146,7 +146,7 @@
       <!-- Symbole de rareté : une arche sombre (même fond que l'icône d'élément) au contour du cadre, posée sur le bord bas et reliée à lui. -->
       </Grid>
       <!-- Logo de la rareté, seul, centré sur le bord bas du corps de la carte : la moitié du logo est sous le cadre, dans l'espace réservé. -->
-      <Grid IsVisible="{Binding ShowRarity}" Width="{Binding RarityLogo}" Height="{Binding RarityLogoHeight}" RenderOptions.BitmapInterpolationMode="HighQuality"
+      <Grid Classes="pop poprar" IsVisible="{Binding RarityLogoVisible}" Width="{Binding RarityLogo}" Height="{Binding RarityLogoHeight}" RenderOptions.BitmapInterpolationMode="HighQuality"
             HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding RarityLogoMargin}" IsHitTestVisible="False">
         <Image Source="{Binding Item.RarityIcon}" Stretch="Uniform" />
         <Rectangle IsVisible="{Binding On, Source={x:Static v:ElementSheen.State}}" Fill="{x:Static v:ElementSheen.Brush}">

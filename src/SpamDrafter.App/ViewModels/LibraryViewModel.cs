@@ -82,9 +82,10 @@ public sealed class LibraryViewModel : ViewModelBase
         OpenDeckCommand = new RelayCommand(p => { if (p is DeckLine l) OpenDeckRequested?.Invoke(l.Deck); });
         browser.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(CardBrowser.Selected)) { if (Browser.Selected is null) SeeCard = false; UpdateDetail(); Raise(nameof(HasOverlay)); }
+            if (e.PropertyName == nameof(CardBrowser.Selected)) { UpdateDetail(); Raise(nameof(HasOverlay)); }
         };
         if (decks is not null) decks.Changed += (_, _) => UpdateDecksUsing();
+        SeeCardChanged += () => { Raise(nameof(SeeCard)); Raise(nameof(ShowCardInfo)); };   // l'autre fiche (Bibliothèque / clic droit) suit
     }
 
     private CollectionViewModel? _collection;
@@ -113,9 +114,11 @@ public sealed class LibraryViewModel : ViewModelBase
     private RelayCommand? _openArtist;
 
     public Bitmap? Image { get => _image; private set => Set(ref _image, value); }
-    private bool _seeCard;
+    // Le choix vaut pour toutes les cartes et toutes les fiches jusqu'au prochain redémarrage (non enregistré sur le disque).
+    private static bool _seeCard;
+    private static event Action? SeeCardChanged;
     /// <summary>Case « Voir la carte » : cochée, la carte de la fiche n'affiche plus que l'illustration (ni élément, ni Spamtons, ni PV, ni talents, ni capacités).</summary>
-    public bool SeeCard { get => _seeCard; set { if (Set(ref _seeCard, value)) Raise(nameof(ShowCardInfo)); } }
+    public bool SeeCard { get => _seeCard; set { if (_seeCard == value) return; _seeCard = value; SeeCardChanged?.Invoke(); } }
     public bool ShowCardInfo => !_seeCard;
 
     private IReadOnlyList<SkinOption> _skinOptions = Array.Empty<SkinOption>();

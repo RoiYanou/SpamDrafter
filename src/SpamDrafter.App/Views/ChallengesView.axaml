@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             x:Class="SpamDrafter.App.Views.ChallengesView"
+             x:DataType="vm:ChallengesViewModel">
+  <Grid Margin="12" ColumnDefinitions="1.25*,12,1*" ColumnSpacing="0">
+    <!-- 1. La roue -->
+    <Border Classes="panel" Padding="14">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Roue des challenges" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
+          <Border IsVisible="{Binding HasResult}" Background="#22000000" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" CornerRadius="10" Padding="12,10">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Ton challenge" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" />
+              <TextBlock Text="{Binding ResultTitle}" Classes="title" FontSize="19" TextWrapping="Wrap" Foreground="{StaticResource BrushYellow}" />
+              <TextBlock Text="{Binding ResultConditions}" TextWrapping="Wrap" FontSize="13" />
+              <Button Content="Créer un deck pour ce challenge" Command="{Binding OpenResultCommand}" Classes="primary" Padding="14,8" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding Hint}" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" />
+          <Button Content="Lancer la roue" Command="{Binding SpinCommand}" Classes="primary" FontSize="18" Padding="22,10" HorizontalAlignment="Center" />
+        </StackPanel>
+        <v:WheelControl x:Name="Wheel" Slices="{Binding Slices}" MinHeight="260" />
+      </DockPanel>
+    </Border>
+
+    <!-- 2. Les challenges, leurs probabilités et les pré-sets -->
+    <Border Grid.Column="2" Classes="panel" Padding="14">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Liste des challenges" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+        <!-- Pré-sets -->
+        <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,6,0,8">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <ComboBox ItemsSource="{Binding PresetNames}" SelectedItem="{Binding SelectedPreset}" PlaceholderText="Pré-sets de roue…" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="1" Content="Supprimer" Classes="danger" Command="{Binding DeletePresetCommand}" Padding="10,5" FontSize="12" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+            <TextBox Text="{Binding PresetName}" PlaceholderText="Nom du nouveau pré-set (état actuel de la roue)" FontSize="13" />
+            <Button Grid.Column="1" Content="Enregistrer" Command="{Binding SavePresetCommand}" Padding="10,5" FontSize="12" />
+          </Grid>
+          <TextBlock Text="{Binding PresetMessage}" FontSize="12" Classes="good" TextWrapping="Wrap" />
+        </StackPanel>
+        <!-- Ajouter mon challenge (menu par-dessus la liste) et « Chances égales ». -->
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,8" FontSize="13">
+            <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Ajouter mon challenge" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="▴" VerticalAlignment="Center" /></Grid>
+            <Button.Flyout>
+              <Flyout Placement="Top" FlyoutPresenterClasses="tight">
+                <StackPanel Spacing="6" Width="330" Margin="10" x:DataType="vm:ChallengesViewModel">
+                  <TextBox Text="{Binding NewTitle}" PlaceholderText="Nom du challenge (ex. Jouer un deck sans soin)" FontSize="13" />
+                  <TextBox Text="{Binding NewConditions}" PlaceholderText="Conditions (non vérifiées par SpamDrafter)" FontSize="13" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="52" />
+                  <Button Content="Ajouter à la roue" Command="{Binding AddCommand}" Classes="primary" Padding="12,6" HorizontalAlignment="Left" />
+                  <TextBlock Text="{Binding AddMessage}" FontSize="12" Classes="good" TextWrapping="Wrap" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+          <Button Grid.Column="1" Content="Chances égales" Command="{Binding EqualChancesCommand}" Padding="12,8" FontSize="13" ToolTip.Tip="Remet le même poids à tous les challenges" />
+        </Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Entries}" Margin="0,0,8,0">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ChallengeEntry">
+                <Border Background="#18000000" BorderBrush="{StaticResource BrushControlBorder}" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,0,0,6">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
+                    <CheckBox Grid.RowSpan="2" IsChecked="{Binding Enabled}" VerticalAlignment="Center" ToolTip.Tip="Dans la roue" />
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" TextWrapping="Wrap" FontSize="13" FontWeight="SemiBold" ToolTip.Tip="{Binding Conditions}" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+                      <Button Content="✕" Classes="danger" Padding="8,3" FontSize="12" IsVisible="{Binding IsCustom}" ToolTip.Tip="Supprimer ce challenge"
+                              Command="{Binding $parent[UserControl].((vm:ChallengesViewModel)DataContext).DeleteCommand}" CommandParameter="{Binding}" />
+                      <Button Content="▾" Classes="neutral" Padding="9,3" FontSize="12" ToolTip.Tip="Faire un deck avec ce challenge">
+                        <Button.Flyout>
+                          <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="tight">
+                            <Button Content="Faire un deck avec cette restriction" Classes="primary" Padding="14,8" FontSize="13" Margin="6"
+                                    Command="{Binding $parent[UserControl].((vm:ChallengesViewModel)DataContext).OpenEditorCommand}" CommandParameter="{Binding}" x:DataType="vm:ChallengeEntry" />
+                          </Flyout>
+                        </Button.Flyout>
+                      </Button>
+                    </StackPanel>
+                    <Grid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" IsEnabled="{Binding Enabled}">
+                      <Slider Minimum="1" Maximum="{Binding SliderMax}" Value="{Binding WeightValue}" ToolTip.Tip="Probabilité (poids)" />
+                      <!-- Le pourcentage se clique pour le taper à la main. -->
+                      <Button Grid.Column="1" Content="{Binding Percent}" IsVisible="{Binding NotEditingPercent}" Command="{Binding BeginEditCommand}" Classes="neutral"
+                              MinWidth="62" Padding="8,2" FontSize="12" VerticalAlignment="Center" ToolTip.Tip="Cliquer pour entrer le pourcentage" />
+                      <TextBox Grid.Column="1" x:Name="PercentBox" Text="{Binding PercentEdit}" IsVisible="{Binding IsEditingPercent}" MinWidth="62" Width="72" FontSize="12" Padding="6,3"
+                               VerticalAlignment="Center" AttachedToVisualTree="PercentBox_Attached" LostFocus="PercentBox_LostFocus">
+                        <TextBox.KeyBindings>
+                          <KeyBinding Gesture="Enter" Command="{Binding CommitCommand}" />
+                          <KeyBinding Gesture="Escape" Command="{Binding CancelEditCommand}" />
+                        </TextBox.KeyBindings>
+                      </TextBox>
+                    </Grid>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

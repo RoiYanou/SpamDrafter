@@ -8,7 +8,7 @@
       <Grid RowDefinitions="Auto,*" Margin="24">
         <StackPanel Spacing="4" HorizontalAlignment="Center">
           <TextBlock x:Name="TitleText" Classes="title glow" FontSize="40" Foreground="{StaticResource BrushYellow}" HorizontalAlignment="Center" />
-          <TextBlock Text="SpamDrafter (non officiel)" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center" FontSize="13" />
+          <TextBlock Text="SpamDrafter" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center" FontSize="13" />
         </StackPanel>
         <Canvas x:Name="Fan" Grid.Row="1" />
       </Grid>

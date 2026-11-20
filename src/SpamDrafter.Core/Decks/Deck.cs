@@ -28,6 +28,16 @@ public sealed class Deck
     /// <summary>Dernière sauvegarde (UTC) ; null pour les decks d'avant la phase 12.</summary>
     public DateTime? ModifiedUtc { get; set; }
     public List<DeckSlot> Slots { get; set; } = new();
+    /// <summary>
+    /// Challenge relevé avec ce deck (onglet Challenges) : le deck porte un badge avec les conditions et ses cartes et talents ne se modifient plus.
+    /// Absent des anciens fichiers : aucun.
+    /// </summary>
+    public SpamDrafter.Core.Challenges.DeckChallenge? Challenge { get; set; }
+
+    /// <summary>Pour l'affichage : le deck relève un challenge.</summary>
+    [JsonIgnore] public bool IsChallenge => Challenge is not null;
+    /// <summary>Pour l'affichage : conditions du challenge, affichées au survol du badge.</summary>
+    [JsonIgnore] public string ChallengeTip => Challenge?.Tooltip ?? "";
 
     /// <summary>Pour l'affichage : le deck vient du générateur (le badge reste après un renommage).</summary>
     [JsonIgnore] public bool IsGenerated => Origin == DeckOrigin.Generated;

@@ -1,0 +1,359 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpamDrafter.App.ViewModels"
+             xmlns:v="using:SpamDrafter.App.Views"
+             xmlns:g="using:SpamDrafter.Core.Games"
+             x:Class="SpamDrafter.App.Views.GamesView"
+             x:DataType="vm:GamesViewModel">
+  <!-- Phase 16 (D-095) : onglet Jeux. Sous-onglets Quotidiens / Permanent. L'en-tête de chaque jeu (retour, titre, date, historique) reste fixe : seul le contenu défile. -->
+  <UserControl.Styles>
+    <!-- Jeu quotidien pas encore fait : la même aura lumineuse que la carte du jour de l'accueil. -->
+    <Style Selector="Border.aura">
+      <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.09" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Border.aura.pending">
+      <Setter Property="BoxShadow" Value="0 0 17 1 #90FFC93C, inset 0 0 18 0 #30FFC93C" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <!-- Au clic, c'est tout le bouton avec sa lueur qui s'enfonce (et non le bouton seul). -->
+    <Style Selector="Border.aura.down"><Setter Property="RenderTransform" Value="scale(0.97)" /></Style>
+    <Style Selector="Border.aura Button:pressed"><Setter Property="RenderTransform" Value="none" /></Style>
+  </UserControl.Styles>
+  <Border Classes="panel" Margin="12" Padding="14" MaxWidth="1000" HorizontalAlignment="Stretch">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top" Classes="title glow" Text="Jeux" FontSize="22" Foreground="{StaticResource BrushYellow}" Margin="-24,-12,-24,-2" />
+      <TabControl DockPanel.Dock="Top" SelectedIndex="{Binding SubTab}" IsEnabled="{Binding NotLocked}">
+        <TabControl.Styles>
+          <Style Selector="TabItem">
+            <Setter Property="Width" Value="200" />
+            <Setter Property="Margin" Value="0,4,6,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+          </Style>
+        </TabControl.Styles>
+        <TabItem Header="Quotidiens" FontSize="18" />
+        <TabItem Header="Permanent" FontSize="18" />
+      </TabControl>
+
+      <!-- Permanent : à définir -->
+      <StackPanel IsVisible="{Binding ShowPermanent}" Spacing="8" Margin="0,16,0,0">
+        <TextBlock Text="Les jeux à volonté arrivent bientôt." FontSize="16" />
+        <TextBlock Text="Ici, tu pourras jouer autant de fois que tu veux." Opacity="0.7" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <!-- Quotidiens -->
+      <Grid IsVisible="{Binding ShowDaily}">
+        <!-- Liste des jeux -->
+        <ScrollViewer IsVisible="{Binding ShowMenu}">
+          <StackPanel>
+            <ItemsControl ItemsSource="{Binding Daily}" Margin="0,0,0,0" VerticalAlignment="Top">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DailyGameEntry">
+                  <Border Classes="aura" Classes.pending="{Binding Pending}" Margin="20" CornerRadius="9">
+                  <Button HorizontalAlignment="Stretch" Height="150" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"
+                          Command="{Binding $parent[UserControl].((vm:GamesViewModel)DataContext).OpenCommand}" CommandParameter="{Binding}"
+                          IsEnabled="{Binding Ready}">
+                    <StackPanel Spacing="8">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="{Binding Emoji}" FontFamily="Segoe UI Emoji" FontSize="26" VerticalAlignment="Center" LineHeight="40" Padding="0,5,0,0" />
+                        <TextBlock Text="{Binding Title}" Classes="title" FontSize="20" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="13" />
+                      <TextBlock Text="{Binding Status}" FontWeight="Bold" Opacity="0.8" />
+                    </StackPanel>
+                  </Button>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Énigme du jour -->
+        <Panel IsVisible="{Binding ShowRiddle}">
+          <DockPanel DataContext="{Binding Riddle}" x:DataType="vm:RiddleViewModel" Margin="0,8,10,8">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,0,0,12">
+              <Button Content="← Les jeux" Padding="12,5"
+                      Command="{Binding $parent[UserControl].((vm:GamesViewModel)DataContext).BackCommand}" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="💬" FontFamily="Segoe UI Emoji" FontSize="24" VerticalAlignment="Center" LineHeight="38" Padding="0,5,0,0" />
+                <TextBlock Text="Énigme du jour" Classes="title" FontSize="22" VerticalAlignment="Center" Foreground="{StaticResource BrushYellow}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <TextBlock Text="{Binding NextGameText}" IsVisible="{Binding IsFinished}" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DayText}" Opacity="0.7" VerticalAlignment="Center" />
+                <Button Content="{Binding HistoryButtonText}" Command="{Binding ToggleHistoryCommand}" Padding="12,5" />
+              </StackPanel>
+            </Grid>
+            <ScrollViewer>
+              <StackPanel Spacing="12" Margin="0,0,6,0">
+                <TextBlock IsVisible="{Binding Unavailable}" Text="Les énigmes ne sont pas dans les données installées. Mets les données à jour." TextWrapping="Wrap" />
+                <StackPanel IsVisible="{Binding ShowGame}">
+                  <StackPanel IsVisible="{Binding Available}" Spacing="12">
+                    <Border Background="#22000000" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" CornerRadius="10" Padding="18,14">
+                      <TextBlock Text="{Binding Text}" FontSize="19" FontStyle="Italic" TextWrapping="Wrap" LineHeight="28" />
+                    </Border>
+                    <v:GuessPanel />
+                  </StackPanel>
+                </StackPanel>
+                <Panel IsVisible="{Binding ShowHistory}"><v:GameHistoryList DataContext="{Binding History}" /></Panel>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </Panel>
+
+        <!-- Détail du jour -->
+        <Panel IsVisible="{Binding ShowDetail}">
+          <DockPanel DataContext="{Binding Detail}" x:DataType="vm:DetailViewModel" Margin="0,8,10,8">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,0,0,12">
+              <Button Content="← Les jeux" Padding="12,5"
+                      Command="{Binding $parent[UserControl].((vm:GamesViewModel)DataContext).BackCommand}" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="🔍" FontFamily="Segoe UI Emoji" FontSize="24" VerticalAlignment="Center" LineHeight="38" Padding="0,5,0,0" />
+                <TextBlock Text="Détail du jour" Classes="title" FontSize="22" VerticalAlignment="Center" Foreground="{StaticResource BrushYellow}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <TextBlock Text="{Binding NextGameText}" IsVisible="{Binding IsFinished}" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DayText}" Opacity="0.7" VerticalAlignment="Center" />
+                <Button Content="{Binding HistoryButtonText}" Command="{Binding ToggleHistoryCommand}" Padding="12,5" />
+              </StackPanel>
+            </Grid>
+            <ScrollViewer>
+              <StackPanel Spacing="12" Margin="0,0,6,0">
+                <TextBlock IsVisible="{Binding Unavailable}" Text="Les illustrations ne sont pas dans les données installées. Mets les données à jour." TextWrapping="Wrap" />
+                <Grid IsVisible="{Binding ShowGame}" ColumnDefinitions="Auto,24,*">
+                  <StackPanel Spacing="6" IsVisible="{Binding Available}">
+                    <Border BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" CornerRadius="10" ClipToBounds="True" Width="300" Height="430">
+                      <v:ZoomImage CornerRadius="8.5" Source="{Binding Image}" Window="{Binding Window}" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                    </Border>
+                  </StackPanel>
+                  <v:GuessPanel Grid.Column="2" IsVisible="{Binding Available}" />
+                </Grid>
+                <Panel IsVisible="{Binding ShowHistory}"><v:GameHistoryList DataContext="{Binding History}" /></Panel>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </Panel>
+
+        <!-- Tirage du jour -->
+        <Panel IsVisible="{Binding ShowRng}">
+          <DockPanel DataContext="{Binding Rng}" x:DataType="vm:RngViewModel" Margin="0,8,10,8">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,0,0,12">
+              <Button Content="← Les jeux" Padding="12,5"
+                      Command="{Binding $parent[UserControl].((vm:GamesViewModel)DataContext).BackCommand}" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="🎲" FontFamily="Segoe UI Emoji" FontSize="24" VerticalAlignment="Center" LineHeight="38" Padding="0,5,0,0" />
+                <TextBlock Text="Tirage du jour" Classes="title" FontSize="22" VerticalAlignment="Center" Foreground="{StaticResource BrushYellow}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <TextBlock Text="{Binding NextDrawText}" IsVisible="{Binding Started}" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DayText}" Opacity="0.7" VerticalAlignment="Center" />
+                <Button Content="{Binding HistoryButtonText}" Command="{Binding ToggleHistoryCommand}" Padding="12,5" />
+              </StackPanel>
+            </Grid>
+            <ScrollViewer>
+              <StackPanel Spacing="12" Margin="0,0,6,0">
+                <TextBlock IsVisible="{Binding Unavailable}" Text="Les cartes ne sont pas dans les données installées. Mets les données à jour." TextWrapping="Wrap" />
+                <Grid IsVisible="{Binding ShowGame}" ColumnDefinitions="Auto,24,*">
+                  <!-- La carte qui se forme : la vraie carte du jeu, ses éléments apparaissent un par un (place réservée au logo de rareté et au survol) -->
+                  <Border x:Name="FormingBox" Padding="20,20,20,34" Width="340" Height="500" VerticalAlignment="Top">
+                    <Panel>
+                      <TextBlock Text="?" FontSize="90" FontWeight="Bold" Opacity="0.35" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !ShowCardFace}" />
+                      <v:CardFace x:Name="FormingCard" Item="{Binding Card}" IsVisible="{Binding ShowCardFace}" ShowName="{Binding ShowName}" ShowElement="{Binding ShowElement}"
+                                  ShowRarity="True" RarityLogoShown="{Binding ShowRarity}" ShowIncome="{Binding ShowIncome}" HpShown="{Binding ShowStats}" ShowAbilities="{Binding ShowStats}"
+                                  HoverZoom="{Binding CardComplete}" />
+                    </Panel>
+                  </Border>
+                  <StackPanel Grid.Column="2" Spacing="12">
+                    <!-- Avant le tirage -->
+                    <StackPanel IsVisible="{Binding CanStart}" Spacing="12">
+                      <TextBlock TextWrapping="Wrap" FontSize="16" LineHeight="24"
+                                 Text="Un clic crée une carte au hasard : l'illustration, le nom, l'élément, les PV, les Spamtons et les compétences sont tirés au hasard parmi ceux des vraies cartes du jeu. Plus les tirages sont rares et cohérents entre eux, plus ton score est élevé." />
+                      <Button Command="{Binding StartCommand}" Classes="primary" Padding="20,12" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <TextBlock Text="🎲" FontFamily="Segoe UI Emoji" FontSize="22" LineHeight="32" Padding="0,3,0,0" VerticalAlignment="Center" />
+                          <TextBlock Text="Créer ma carte du jour" FontSize="18" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                    </StackPanel>
+                    <!-- Résultat final -->
+                    <Border x:Name="ResultBorder" IsVisible="{Binding IsFinished}" Background="#22000000" BorderBrush="{Binding QualityBrush}" BorderThickness="1.5" CornerRadius="10" Padding="16">
+                      <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding FinalTitle}" Classes="title" FontSize="22" Foreground="{Binding QualityBrush}" />
+                        <TextBlock Text="{Binding DisplayedTotalText}" FontSize="40" FontWeight="Black" Foreground="{Binding QualityBrush}" />
+                        <TextBlock Text="{Binding TopText}" FontSize="26" FontWeight="Bold" Foreground="{Binding QualityBrush}" />
+                      </StackPanel>
+                    </Border>
+                    <!-- Les points, du plus petit gain au plus grand (le dernier gagné est en haut), colorés selon la rareté de la coïncidence -->
+                    <StackPanel IsVisible="{Binding Started}" Spacing="6">
+                      <TextBlock x:Name="TotalLive" Text="{Binding DisplayedTotalText}" FontSize="32" FontWeight="Black" Foreground="{StaticResource BrushYellow}" IsVisible="{Binding IsScoring}" HorizontalAlignment="Left" />
+                      <ItemsControl ItemsSource="{Binding Scores}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:RngScoreRow">
+                            <Border BorderBrush="#26FFFFFF" BorderThickness="0,0,0,1" Padding="0,4" Loaded="ScoreRow_Loaded">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                  <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" FontSize="13">
+                                    <Run Text="{Binding Reason, Mode=OneWay}" /><Run Text="  ·  " Foreground="#70FFFFFF" /><Run Text="{Binding Value, Mode=OneWay}" Foreground="#B0FFFFFF" FontSize="12" />
+                                  </TextBlock>
+                                  <TextBlock Grid.Column="1" Text="{Binding PointsText}" FontWeight="Bold" FontSize="14" Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                                </Grid>
+                              </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </StackPanel>
+                </Grid>
+                <!-- Historique des tirages -->
+                <StackPanel IsVisible="{Binding ShowHistory}" Spacing="8">
+                  <TextBlock IsVisible="{Binding NoHistory}" Text="Aucun tirage pour le moment. Ton premier tirage apparaîtra ici avec sa date." Opacity="0.7" TextWrapping="Wrap" />
+                  <ItemsControl ItemsSource="{Binding History}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:RngHistoryRow">
+                        <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8" Background="#14000000" Margin="0,0,0,6">
+                          <StackPanel>
+                            <Button Command="{Binding ToggleCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,5" Background="Transparent" BorderThickness="0">
+                              <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                <Border Width="34" Height="48" CornerRadius="5" ClipToBounds="True" Background="#33000000">
+                                  <Image Source="{Binding Item.Thumbnail}" Stretch="UniformToFill" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                  <TextBlock Text="{Binding DayText}" FontWeight="SemiBold" FontSize="14" />
+                                  <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding RankText}" FontSize="13" FontWeight="Bold" Foreground="{Binding RankBrush}" />
+                                    <TextBlock Text="{Binding Name}" Opacity="0.75" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                  </StackPanel>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding ScoreText}" FontSize="17" FontWeight="Bold" Foreground="{Binding RankBrush}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="3" Text="{Binding Arrow}" Opacity="0.7" VerticalAlignment="Center" />
+                              </Grid>
+                            </Button>
+                            <ItemsControl ItemsSource="{Binding Lines}" IsVisible="{Binding IsOpen}" Margin="12,0,12,8">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RngScoreRow">
+                                  <Border BorderBrush="#26FFFFFF" BorderThickness="0,0,0,1" Padding="0,4" >
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                  <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" FontSize="13">
+                                    <Run Text="{Binding Reason, Mode=OneWay}" /><Run Text="  ·  " Foreground="#70FFFFFF" /><Run Text="{Binding Value, Mode=OneWay}" Foreground="#B0FFFFFF" FontSize="12" />
+                                  </TextBlock>
+                                  <TextBlock Grid.Column="1" Text="{Binding PointsText}" FontWeight="Bold" FontSize="14" Foreground="{Binding Brush}" VerticalAlignment="Center" />
+                                </Grid>
+                              </Border>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </Panel>
+
+        <!-- Quizz du jour -->
+        <Panel IsVisible="{Binding ShowQuiz}">
+          <DockPanel DataContext="{Binding Quiz}" x:DataType="vm:QuizViewModel" Margin="0,8,10,8">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,0,0,12">
+              <Panel>
+                <Button Content="← Les jeux" Padding="12,5" IsVisible="{Binding NotLocked}"
+                        Command="{Binding $parent[UserControl].((vm:GamesViewModel)DataContext).BackCommand}" />
+                <Button Content="Abandonner" Classes="danger" Command="{Binding AbandonCommand}" Padding="12,5" IsVisible="{Binding IsLocked}"
+                        ToolTip.Tip="Abandonner le quizz : les questions sans réponse comptent comme fausses" />
+              </Panel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="❓" FontFamily="Segoe UI Emoji" FontSize="24" VerticalAlignment="Center" LineHeight="38" Padding="0,5,0,0" />
+                <TextBlock Text="Quizz du jour" Classes="title" FontSize="22" VerticalAlignment="Center" Foreground="{StaticResource BrushYellow}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <TextBlock Text="{Binding NextGameText}" IsVisible="{Binding IsFinished}" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DayText}" Opacity="0.7" VerticalAlignment="Center" />
+                <Button Content="{Binding HistoryButtonText}" Command="{Binding ToggleHistoryCommand}" Padding="12,5" IsVisible="{Binding NotLocked}" />
+              </StackPanel>
+            </Grid>
+            <ScrollViewer>
+              <StackPanel Spacing="12" Margin="0,0,6,0">
+                <TextBlock IsVisible="{Binding Unavailable}" Text="Les questions ne sont pas dans les données installées. Mets les données à jour." TextWrapping="Wrap" />
+                <StackPanel IsVisible="{Binding ShowGame}" Spacing="12">
+                  <!-- Avertissement avant de commencer -->
+                  <Border IsVisible="{Binding ShowIntro}" Background="#22000000" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" CornerRadius="10" Padding="18">
+                    <StackPanel Spacing="12">
+                      <TextBlock Text="Avant de commencer" Classes="title" FontSize="22" Foreground="{StaticResource BrushYellow}" />
+                      <TextBlock TextWrapping="Wrap" FontSize="16" LineHeight="24"
+                                 Text="Le quizz comporte 5 questions. Une fois lancé, tu ne pourras plus changer d'onglet jusqu'à la fin, pour éviter de chercher les réponses dans l'application." />
+                      <TextBlock TextWrapping="Wrap" FontSize="16" LineHeight="24" Foreground="#FF9F5A"
+                                 Text="Si tu abandonnes le quizz avant la fin (bouton « Abandonner » ou fermeture de l'application), les questions sans réponse comptent comme fausses, et tu ne pourras pas le rejouer aujourd'hui." />
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Commencer le quizz" Command="{Binding StartCommand}" Classes="primary" Padding="18,9" />
+                        <Button Content="Retour" Padding="18,9" Command="{Binding $parent[UserControl].((vm:GamesViewModel)DataContext).BackCommand}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Question en cours : la question (au-dessus de l'image) à gauche, les réponses à droite -->
+                  <StackPanel IsVisible="{Binding IsPlaying}" Spacing="10">
+                    <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="*,16,*">
+                      <Border Background="#22000000" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" CornerRadius="10" Padding="16" VerticalAlignment="Top">
+                        <StackPanel Spacing="12">
+                          <TextBlock Text="{Binding QuestionText}" FontSize="20" TextWrapping="Wrap" LineHeight="28" />
+                          <Border IsVisible="{Binding HasCardImage}" HorizontalAlignment="Center" CornerRadius="10" ClipToBounds="True" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5">
+                            <Image Source="{Binding CardImage}" Height="190" Stretch="Uniform" />
+                          </Border>
+                        </StackPanel>
+                      </Border>
+                      <ItemsControl Grid.Column="2" ItemsSource="{Binding Options}" VerticalAlignment="Top">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:QuizOption">
+                            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="16,14" Margin="0,0,0,10" FontSize="17"
+                                    Background="{Binding Background}"
+                                    Command="{Binding $parent[ItemsControl].((vm:QuizViewModel)DataContext).AnswerCommand}" CommandParameter="{Binding}">
+                              <TextBlock Text="{Binding Text}" Foreground="White" TextWrapping="Wrap" />
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </Grid>
+                  </StackPanel>
+
+                  <!-- Fin de partie -->
+                  <Border IsVisible="{Binding IsFinished}" Background="#22000000" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1.5" CornerRadius="10" Padding="16">
+                    <StackPanel Spacing="10">
+                      <StackPanel Orientation="Horizontal" Spacing="16">
+                        <TextBlock Text="{Binding ScoreText}" FontSize="30" FontWeight="Bold" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ResultTitle}" Classes="title" FontSize="22" Foreground="{StaticResource BrushYellow}" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <ItemsControl ItemsSource="{Binding Recap}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:QuizRecap">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,0,0,8">
+                              <TextBlock Text="{Binding Mark}" FontWeight="Bold" FontSize="18" Foreground="{Binding Color}" VerticalAlignment="Top" />
+                              <StackPanel Grid.Column="1" Spacing="2">
+                                <TextBlock Text="{Binding Question}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Chosen}" Opacity="0.8" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowCorrect}">
+                                  <TextBlock Text="Bonne réponse :" Opacity="0.7" />
+                                  <TextBlock Text="{Binding Correct}" FontWeight="Bold" Foreground="#6EE08A" TextWrapping="Wrap" />
+                                </StackPanel>
+                              </StackPanel>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+                <Panel IsVisible="{Binding ShowHistory}"><v:GameHistoryList DataContext="{Binding History}" /></Panel>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </Panel>
+      </Grid>
+    </DockPanel>
+  </Border>
+</UserControl>

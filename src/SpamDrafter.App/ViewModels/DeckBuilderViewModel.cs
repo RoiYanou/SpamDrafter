@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using SpamDrafter.Core.Challenges;
 using SpamDrafter.Core.Decks;
 using SpamDrafter.Core.Knowledge;
 using SpamDrafter.Core.Settings;
@@ -105,7 +106,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         };
         OriginOptions = new DeckListOption[]
         {
-            new("all", "Tous les decks"), new("manual", "Faits à la main"), new("generated", "Du chef"),
+            new("all", "Tous les decks"), new("manual", "Faits à la main"), new("generated", "Du chef"), new("challenge", "Restreints par un challenge"),
         };
         _sort = SortOptions[0];
         _originFilter = OriginOptions[0];
@@ -134,7 +135,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
             DeckFilter = ""; FavoritesOnly = false; ImpactedOnly = false; OriginFilter = OriginOptions[0]; TagFilter = TagOptions[0];
         });
         MarkCheckedCommand = new RelayCommand(_ => MarkChecked(), _ => CanMarkChecked);
-        Slots.CollectionChanged += (_, _) => { Raise(nameof(SlotsText)); RaiseStats(); RefreshVersion(); };
+        Slots.CollectionChanged += (_, _) => { Raise(nameof(SlotsText)); RaiseStats(); RefreshVersion(); if (_challenge is not null) ApplyChallengeFilter(); };
         library.Changed += (_, _) => RefreshDeckList();
 
         var startup = "";
@@ -225,7 +226,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         {
             Id = saved.Id, Name = saved.Name, Origin = saved.Origin, IsReference = saved.IsReference,
             GameVersion = _kb.Manifest.GameVersion, Favorite = saved.Favorite, Tags = saved.Tags.ToList(),
-            ModifiedUtc = saved.ModifiedUtc, Slots = saved.Slots.ToList(),
+            ModifiedUtc = saved.ModifiedUtc, Slots = saved.Slots.ToList(), Challenge = saved.Challenge,
         };
         _library.Save(updated);
         _current = _library.Decks.First(d => d.Id == updated.Id);
@@ -343,12 +344,15 @@ public sealed class DeckBuilderViewModel : ViewModelBase
 
     // ----- Deck généré : composition verrouillée -----
     /// <summary>Un deck venu du générateur ne se modifie pas (cartes et talents) ; son nom, ses étiquettes et son favori restent libres.</summary>
-    public bool IsLocked => _current.Origin == DeckOrigin.Generated;
+    public bool IsLocked => _current.Origin == DeckOrigin.Generated || _current.Challenge is not null;
     public bool CanEditCards => !IsLocked;
-    public string LockedNotice => "Deck du chef : ses cartes et ses talents sont verrouillés. Tu peux le renommer, lui ajouter des tags, " +
+    public string LockedNotice => _current.Challenge is not null
+        ? "Deck de challenge : ses cartes et ses talents sont verrouillés. Tu peux le renommer, lui ajouter des tags ou le mettre en favori."
+        : "Deck du chef : ses cartes et ses talents sont verrouillés. Tu peux le renommer, lui ajouter des tags, " +
                                    "le mettre en favori, ou le dupliquer pour en faire une copie modifiable.";
-    private const string LockedMessage = "Ce deck est un deck du chef : ses cartes et ses talents ne se modifient pas. " +
-                                         "Utilise « Dupliquer » pour en faire une copie modifiable.";
+    private string LockedMessage => _current.Challenge is not null
+        ? "Ce deck relève un challenge : ses cartes et ses talents ne se modifient pas. Utilise « Dupliquer » pour en faire une copie modifiable (sans le badge)."
+        : "Ce deck est un deck du chef : ses cartes et ses talents ne se modifient pas. Utilise « Dupliquer » pour en faire une copie modifiable.";
 
     private SlotViewModel MakeSlot(CardItem card, string? talentId) =>
         new(card, _kb, talentId, () => OnEdited(), editable: !IsLocked, allowedTalents: _collection?.OwnedOnly == true ? _collection.AllowedTalents(card) : null);
@@ -364,6 +368,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     // ----- Ouverture, création -----
     private void NewDeck()
     {
+        EndChallenge();
         _loading = true;
         _current = new Deck { GameVersion = _kb.Manifest.GameVersion };
         Slots.Clear();
@@ -388,6 +393,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
 
     public void OpenDeck(Deck d)
     {
+        EndChallenge();
         GeneratedInfoVisible = d.Origin == DeckOrigin.Generated;
         _errorsShown = false;
         _loading = true;
@@ -414,7 +420,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     private void SetSelected(Deck? d)
     {
         _selectedSaved = d;
-        Raise(nameof(IsLocked)); Raise(nameof(CanEditCards));
+        Raise(nameof(IsLocked)); Raise(nameof(CanEditCards)); RaiseChallenge();
         Raise(nameof(SelectedSaved));
         DeleteCommand.RaiseCanExecuteChanged();
     }
@@ -427,6 +433,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         if (item is null) { Status = "Choisis d'abord une carte dans la liste."; return; }
         if (Slots.Count >= Deck.MaxCards) { Status = $"Le deck contient déjà {Deck.MaxCards} cartes."; return; }
         if (Slots.Any(s => s.Card.Card.Id == item.Card.Id)) { Status = "Cette carte est déjà dans le deck."; return; }
+        if (_challenge is { } ch && !ChallengeAllows(ch, item)) { Status = "Cette carte ne respecte pas le challenge : " + ch.Conditions; ValidationFailed?.Invoke(); return; }
         Slots.Add(MakeSlot(item, (_collection?.AllowedTalents(item) ?? item.Card.Talents).FirstOrDefault()));   // talent 1 par défaut (celui du joueur en mode « possédés »)
         Status = "";
         OnEdited();
@@ -558,6 +565,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         Tags = ParseTags(_tagsText),
         ModifiedUtc = _current.ModifiedUtc,
         Slots = Slots.Select(s => new DeckSlot(s.Card.Card.Id, s.Talent.Id)).ToList(),
+        Challenge = _challenge?.ToBadge() ?? _current.Challenge,
     };
 
     private bool _errorsShown;
@@ -571,6 +579,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
     {
         Problems.Clear();
         foreach (var p in DeckValidator.Validate(BuildDeck(), _kb)) Problems.Add(p);
+        if (_challenge is { } ch) foreach (var p in ChallengeProblems(ch)) Problems.Add(p);
         if (Name.Trim().Length > 0 && NameTaken())
             Problems.Add("Un autre deck porte déjà ce nom (les accents et les majuscules ne comptent pas).");
         Raise(nameof(ErrorSummary)); Raise(nameof(HasErrorSummary));
@@ -592,6 +601,10 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         }
         var blocking = DeckValidator.Validate(deck, _kb, requireComplete: !AllowIncompleteDecks);
         if (blocking.Count > 0) { Status = "Sauvegarde impossible : " + blocking[0]; ShowErrors(); ValidationFailed?.Invoke(); return false; }
+        if (_challenge is { } active && ChallengeProblems(active).FirstOrDefault() is { } cp)
+        {
+            Status = "Sauvegarde impossible : " + cp; ShowErrors(); ValidationFailed?.Invoke(); return false;
+        }
         if (NameTaken())
         {
             Status = $"Sauvegarde impossible : un autre deck s'appelle déjà « {deck.Name} ». Choisis un autre nom.";
@@ -600,8 +613,16 @@ public sealed class DeckBuilderViewModel : ViewModelBase
             return false;
         }
         _errorsShown = false;
+        var wasChallenge = _challenge is not null;
         _library.Save(deck);
         _current = _library.Decks.FirstOrDefault(d => d.Id == deck.Id) ?? deck;
+        if (wasChallenge)
+        {
+            // Le deck est maintenant verrouillé : on le rouvre pour que les talents deviennent non modifiables.
+            OpenDeck(_current);
+            Status = "Deck de challenge sauvegardé : il porte maintenant son badge et ne se modifie plus.";
+            return true;
+        }
         SetSelected(_library.Decks.FirstOrDefault(d => d.Id == deck.Id) is { } shown && SavedDecks.Contains(shown) ? shown : null);
         ResetHistory(saved: true);
         Status = Slots.Count == Deck.MaxCards ? "Deck sauvegardé." : "Brouillon sauvegardé (deck incomplet).";
@@ -655,6 +676,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         copy.Name = DeckNames.MakeUnique(_library.Decks, (copy.Name.Length > 0 ? copy.Name : "Deck") + " (copie)", copy.Id);
         copy.Favorite = false;
         copy.Origin = DeckOrigin.Manual;   // la copie d'un deck généré est un deck à soi, modifiable
+        copy.Challenge = null;             // et celle d'un deck de challenge n'a plus son badge
         _library.Save(copy);
         OpenDeck(_library.Decks.First(d => d.Id == copy.Id));
         Status = $"Copie « {copy.Name} » créée et ouverte.";
@@ -670,7 +692,7 @@ public sealed class DeckBuilderViewModel : ViewModelBase
             {
                 Id = saved.Id, Name = saved.Name, Origin = saved.Origin, IsReference = saved.IsReference,
                 GameVersion = saved.GameVersion, Favorite = _favorite, Tags = saved.Tags.ToList(),
-                ModifiedUtc = saved.ModifiedUtc, Slots = saved.Slots.ToList(),
+                ModifiedUtc = saved.ModifiedUtc, Slots = saved.Slots.ToList(), Challenge = saved.Challenge,
             };
             _library.Save(onDisk);
             _current = _library.Decks.First(d => d.Id == onDisk.Id);
@@ -842,6 +864,75 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         return Status;
     }
 
+    // ----- Challenges (onglet Challenges) : éditeur de deck restreint -----
+    private ChallengeDefinition? _challenge;
+    private ChallengeContext? _challengeCtx;
+    private ChallengeContext Ctx => _challengeCtx ??= new ChallengeContext(_kb);
+
+    /// <summary>Challenge en cours d'édition (deck pas encore sauvegardé) ; null en édition libre.</summary>
+    public ChallengeDefinition? ActiveChallenge => _challenge;
+    /// <summary>Une restriction est en cours d'édition : la croix du bandeau permet de l'annuler.</summary>
+    public bool ChallengeCancelable => _challenge is not null;
+    private RelayCommand? _cancelChallenge;
+    public RelayCommand CancelChallengeCommand => _cancelChallenge ??= new RelayCommand(_ =>
+    {
+        if (_challenge is null) return;
+        EndChallenge();
+        Revalidate();
+        Status = "Restriction annulée : le deck est libre.";
+    });
+    public bool ChallengeBannerVisible => _challenge is not null || _current.Challenge is not null;
+    public string ChallengeBannerTitle => _challenge?.Title ?? _current.Challenge?.Title ?? "";
+    public string ChallengeBannerText => _challenge is not null
+        ? _challenge.Conditions + (_challenge.IsCustom ? " (À toi de le respecter : SpamDrafter ne le vérifie pas.)" : " Seules les cartes permises sont proposées.")
+          + (ChallengeCatalog.UsesTags(_challenge.Kind) ? " (Trié à la main. Des choix ont été faits pour certaines cartes.)" : "")
+        : _current.Challenge?.Conditions ?? "";
+
+    private void RaiseChallenge()
+    {
+        Raise(nameof(ActiveChallenge)); Raise(nameof(ChallengeCancelable)); Raise(nameof(ChallengeBannerVisible)); Raise(nameof(ChallengeBannerTitle)); Raise(nameof(ChallengeBannerText));
+        Raise(nameof(LockedNotice));
+    }
+
+    private IReadOnlyList<CardView> CurrentViews() => Slots.Select(s => Ctx.View(s.Card.Card)).ToList();
+
+    private bool ChallengeAllows(ChallengeDefinition d, CardItem item) =>
+        ChallengeCatalog.CanAdd(d, CurrentViews(), Ctx.View(item.Card), Ctx);
+
+    private IReadOnlyList<string> ChallengeProblems(ChallengeDefinition d) => ChallengeCatalog.Problems(d, CurrentViews());
+
+    /// <summary>La liste des cartes ne montre que les cartes permises par le challenge (et celles déjà dans le deck).</summary>
+    private void ApplyChallengeFilter()
+    {
+        Browser.ExtraFilter = _challenge is { } d
+            ? c => Slots.Any(s => s.Card.Card.Id == c.Card.Id) || ChallengeAllows(d, c)
+            : null;
+        Browser.RefreshFilter();
+    }
+
+    private void EndChallenge()
+    {
+        if (_challenge is null) return;
+        _challenge = null;
+        ApplyChallengeFilter(); RaiseChallenge();
+    }
+
+    /// <summary>Ouvre l'éditeur de deck d'un challenge : un deck neuf, dont seules les cartes permises par le challenge sont proposées.</summary>
+    public void StartChallenge(ChallengeDefinition d)
+    {
+        RequestLeave(() =>
+        {
+            NewDeck();
+            _challenge = d;
+            _loading = true;
+            _name = DeckNames.MakeUnique(_library.Decks, "Deck challenge", Guid.Empty); Raise(nameof(Name));
+            _loading = false;
+            ResetHistory(saved: true);
+            ApplyChallengeFilter(); RaiseChallenge(); Revalidate();
+            Status = "";
+        }, "Commencer un challenge");
+    }
+
     // ----- Liste « Mes decks » -----
     private void RefreshDeckList()
     {
@@ -866,8 +957,9 @@ public sealed class DeckBuilderViewModel : ViewModelBase
         if (_collection is { OwnedOnly: true }) q = q.Where(_collection.ShowsDeck);
         if (_favoritesOnly) q = q.Where(d => d.Favorite);
         if (_impactedOnly) q = q.Where(d => d.VersionImpacted);
-        if (_originFilter.Id == "manual") q = q.Where(d => d.Origin == DeckOrigin.Manual);
+        if (_originFilter.Id == "manual") q = q.Where(d => d.Origin == DeckOrigin.Manual && d.Challenge is null);   // un deck de challenge a son propre filtre
         else if (_originFilter.Id == "generated") q = q.Where(d => d.Origin == DeckOrigin.Generated);
+        else if (_originFilter.Id == "challenge") q = q.Where(d => d.Challenge is not null);
         if (_tagFilter.Id.Length > 0)
             q = q.Where(d => d.Tags.Any(t => TextSearch.Normalize(t) == TextSearch.Normalize(_tagFilter.Id)));
         if (TextSearch.Normalize(_deckFilter).Length > 0)

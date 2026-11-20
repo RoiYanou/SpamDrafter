@@ -21,7 +21,7 @@ public sealed class NavIconAnimator
     {
         public Button Button = null!;
         public double Time;
-        public bool Hover => Button.IsPointerOver && !Motion.Reduce;
+        public bool Hover => Button.IsPointerOver && !Motion.Reduce && !Button.Classes.Contains("locked");
         public bool Selected => Button.Classes.Contains("on");
         /// <summary>Fait avancer l'icône ; renvoie vrai tant qu'elle bouge encore.</summary>
         public abstract bool Step(double dt);
@@ -236,6 +236,137 @@ public sealed class NavIconAnimator
             var x = 1.0 + eased * 23.0;
             canvas.Clip = new RectangleGeometry(new Rect(0, 0, x, 24));
             canvas.Opacity = 1 - Math.Clamp((ph - 2.0) / 0.4, 0, 1);
+            return true;
+        }
+    }
+
+    // ------------------------------------------------------------------ Challenges
+    /// <summary>La roue tourne en boucle tant que l'onglet est survolé ; à la fin de chaque tour elle s'arrête sur une couleur tirée au hasard, sous la flèche.</summary>
+    public void AddWheel(Button button, Canvas wheel)
+    {
+        var rot = new RotateTransform(0);
+        wheel.RenderTransform = rot;
+        wheel.RenderTransformOrigin = new RelativePoint(0.5, 13.0 / 24, RelativeUnit.Relative);
+        Add(button, new WheelIcon(rot));
+    }
+
+    private sealed class WheelIcon(RotateTransform rot) : Icon
+    {
+        private const double Cycle = 2.8, SpinTime = 2.0;
+        private int _cycle = -1;
+        private double _from, _to;
+        private readonly Random _rng = new();
+        public override bool Step(double dt)
+        {
+            if (!Hover)
+            {
+                if (_cycle < 0 && rot.Angle == 0) return false;
+                Time = 0; _cycle = -1; _from = _to = 0; rot.Angle = 0;
+                return false;
+            }
+            Time += dt;
+            var cycle = (int)(Time / Cycle);
+            if (cycle != _cycle)
+            {
+                _cycle = cycle;
+                // Cinq parts de 72° (rose, bleu, vert, jaune, violet) : la flèche est en haut, la part tirée finit dessous.
+                var k = _rng.Next(5);
+                _from = _to % 360;
+                var target = (360 - (72 * k + 36)) % 360;
+                var delta = ((target - _from) % 360 + 360) % 360;
+                _to = _from + 720 + delta;
+            }
+            var u = Math.Clamp(Time % Cycle / SpinTime, 0, 1);
+            rot.Angle = _from + (_to - _from) * (1 - Math.Pow(1 - u, 4));
+            return true;
+        }
+    }
+
+    // ------------------------------------------------------------------ Jeux
+    /// <summary>
+    /// Le dé : au survol il est lancé (il saute, rebondit, tourne et change vite de face) puis retombe sur une face de 1 à 6 tirée au hasard, et recommence.
+    /// Au repos, il montre le 5. Les 7 points sont posés sur une grille 3 × 3 centrée sur le dé, dans l'ordre : haut-gauche, haut-droite, milieu-gauche, centre,
+    /// milieu-droite, bas-gauche, bas-droite (chaque face est symétrique par rapport au centre du dé).
+    /// </summary>
+    public void AddDice(Button button, Canvas die, Shape[] pips)
+    {
+        var rot = new RotateTransform(0);
+        var scale = new ScaleTransform(1, 1);
+        var move = new TranslateTransform(0, 0);
+        die.RenderTransform = new TransformGroup { Children = { scale, rot, move } };
+        die.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+        Add(button, new DiceIcon(rot, scale, move, pips));
+    }
+
+    private sealed class DiceIcon : Icon
+    {
+        private static readonly int[][] Faces =
+        [
+            [], [3], [0, 6], [0, 3, 6], [0, 1, 5, 6], [0, 1, 3, 5, 6], [0, 1, 2, 4, 5, 6],
+        ];
+        private const double Cycle = 3.7, RollTime = 2.35;
+        private readonly RotateTransform _rot;
+        private readonly ScaleTransform _scale;
+        private readonly TranslateTransform _move;
+        private readonly Shape[] _pips;
+        private readonly Random _rng = new();
+        private int _cycle = -1, _face = 5, _final = 5;
+        private double _spins, _nextChange;
+
+        public DiceIcon(RotateTransform rot, ScaleTransform scale, TranslateTransform move, Shape[] pips)
+        {
+            _rot = rot; _scale = scale; _move = move; _pips = pips; Show(5);
+        }
+
+        private void Show(int face)
+        {
+            _face = face;
+            for (var i = 0; i < _pips.Length; i++) _pips[i].IsVisible = Faces[face].Contains(i);
+        }
+
+        private void Rest()
+        {
+            _rot.Angle = 0; _scale.ScaleX = _scale.ScaleY = 1; _move.X = 0; _move.Y = 0;
+        }
+
+        public override bool Step(double dt)
+        {
+            if (!Hover)
+            {
+                if (_cycle < 0 && _face == 5 && _rot.Angle == 0 && _move.Y == 0) return false;
+                Time = 0; _cycle = -1; Rest(); Show(5);
+                return false;
+            }
+            Time += dt;
+            var cycle = (int)(Time / Cycle);
+            if (cycle != _cycle)
+            {
+                _cycle = cycle; _nextChange = 0;
+                _final = _rng.Next(1, 7);                                   // face d'arrivée : de 1 à 6, au hasard
+                _spins = 360 * (1 + _rng.Next(2)) * (_rng.Next(2) == 0 ? 1 : -1);
+            }
+            var t = Time % Cycle;
+            if (t < RollTime)
+            {
+                var u = t / RollTime;
+                _rot.Angle = _spins * (1 - Math.Pow(1 - u, 3));               // tourne en ralentissant
+                // Deux rebonds qui s'amortissent, avec un léger grossissement en l'air.
+                var hop = Math.Abs(Math.Sin(u * 2 * Math.PI)) * 4.0 * (1 - u);
+                _move.Y = -hop;
+                _scale.ScaleX = _scale.ScaleY = 1 + 0.12 * hop / 4.0;
+                // Les faces défilent de plus en plus lentement, la dernière est la face tirée.
+                if (t >= _nextChange)
+                {
+                    if (u >= 0.88) { if (_face != _final) Show(_final); _nextChange = double.MaxValue; }
+                    else
+                    {
+                        int f; do { f = _rng.Next(1, 7); } while (f == _face || f == _final && u > 0.8);
+                        Show(f);
+                        _nextChange = t + 0.13 + 0.28 * u * u;
+                    }
+                }
+            }
+            else { Rest(); if (_face != _final) Show(_final); }
             return true;
         }
     }

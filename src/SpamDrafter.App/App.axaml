@@ -72,6 +72,7 @@
               <Path Data="M6.5 16.2 H17.5" Stroke="#B9AEE0" StrokeThickness="1.2" />
             </Canvas>
           </Viewbox>
+          <Border IsVisible="{Binding IsChallenge}" ToolTip.Tip="{Binding ChallengeTip}" Background="#FFD84D" BorderBrush="#B8890F" BorderThickness="1" CornerRadius="9" Padding="6,0" VerticalAlignment="Center"><TextBlock Text="🏆" FontFamily="Segoe UI Emoji" FontSize="12" Foreground="#3A2B66" VerticalAlignment="Center" LineHeight="18" Padding="0,2,0,0" /></Border>
           <TextBlock Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />
         </StackPanel>
       </DataTemplate>

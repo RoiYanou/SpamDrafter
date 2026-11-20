@@ -1,0 +1,911 @@
+{
+"_note": "Etiquettes estimees a la main (regard vu par l observateur : L gauche, R droite, F de face, N sans regard). A corriger si besoin.",
+"cards": {
+"esprit_feu": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"esprit_eau": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 9
+},
+"esprit_nature": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"esprit_terre": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"esprit_ombre": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"esprit_lumiere": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"hibernatus": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"croqueur_de_fruits_verdoyant": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"felin_errant": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"lueur_despoir": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"artisan_des_heures": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"amber": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"blaze": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"hippocampe_nimbe": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 11
+},
+"princesse_meridia": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"naissance_daldrin": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 2
+},
+"raffteru": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"maitresse_des_teintes": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"nakyel": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"eclat_du_renard_blanc": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 3
+},
+"leo": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"astry": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"roi_des_flammes_ardentes": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"sylvan_protecteur_de_la_verdure": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 2
+},
+"dragonnet_des_lumieres": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"souverain_des_flammes": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"leviathan_des_cieux": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 9
+},
+"aldrin_gorakar": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"veilleur_nocturne": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"sorciere_pyrokinetique": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"loutre_intrepide": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 20
+},
+"lisa_la_dragonniere": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 4
+},
+"le_transporteur_sauvage": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 3
+},
+"guerrier_des_neiges": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"protecteur_des_ruines": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"shado_fleau_abyssal": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"maitre_thronebeur": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"logidrake_lignatus": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"scorch_les_lezards_ignes": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 6
+},
+"soigneuse_astrale_des_bois": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"girafe_florale": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"gardien_vert": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"luminaire_abyssal": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"baleine_farceuse": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 99
+},
+"panthere_imaginaire": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 2
+},
+"bleu_mange_cailloux": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 6
+},
+"regent_des_abysses": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"faerylia": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"ignea": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"frost_glacier": {
+"facing": "L",
+"quadruped": true,
+"clothes": true,
+"animals": 2
+},
+"zayd": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"melodie_des_divinites": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"pyro": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"blancheur_aquatique": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 2
+},
+"neilla": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 3
+},
+"murmures_du_corail_noir": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"lame_de_la_foret": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 5
+},
+"lepine_damour": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 7
+},
+"lums": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"aidan": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"prisonniere_de_la_machine": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 12
+},
+"keria": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"fleurmarine": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"esprit_de_la_faune": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 17
+},
+"tisseuse_de_mots": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"wyrm_des_dunes_cornu": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"spectre_canin": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 10
+},
+"devoreur_de_faune": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"wibs_lenflamme": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 99
+},
+"souverain_des_chutes_dether": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 25
+},
+"cerf_des_couleurs_funebres": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"cornu_mythologique": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"souris_des_bles": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"squall_emissaire_des_cauchemars": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"poulpe_parleur": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 6
+},
+"sbire_des_flammes": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"le_heraut_des_cendres": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 3
+},
+"linventeur": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"lil_des_montagnes": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"lapin_plume": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"sanglier_dore": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"zombie_floral": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"rob_laventurier": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 3
+},
+"moxilys_la_fredonneuse": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 14
+},
+"epine_medusine": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 8
+},
+"dragon_ciel": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 2
+},
+"commando_gerz": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"lames_en_peine": {
+"facing": "N",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"ameru": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 10
+},
+"vladislaus": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"gabriel": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"codex_des_maux_ancestraux": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 0
+},
+"codex_des_sorts_lumineux": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 0
+},
+"ashtarae_lycaria": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 99
+},
+"ephial": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 99
+},
+"catimimi": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 5
+},
+"dragosaure_celeste": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"catixy": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 2
+},
+"crapaud_des_etoiles": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"fleur_de_vie": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 0
+},
+"apprenti_evocateur": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 5
+},
+"chouette_polychrome": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"maitre_amphibian": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"aleera_mange_cauchemars": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"oisillons_de_midas": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 7
+},
+"rongeur_nuageux": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 2
+},
+"apprentie_de_la_mort": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 6
+},
+"voyageur_des_cretes": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 3
+},
+"chimere_brasse_chair": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"vivy": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"gazpoison_flottant": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 4
+},
+"shinobi_eclairant": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"roi_feu": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"roi_eau": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"roi_nature": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"roi_terre": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"roi_ombre": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"roi_lumiere": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 0
+},
+"verdelune": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 3
+},
+"heraldesse_serpentine": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 3
+},
+"dragon_de_la_cite_infernale": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"le_compagnon_des_esprits": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 4
+},
+"godlur": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"yotaru_gardefeuille": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 11
+},
+"paguroniyx": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"aristocrate_nebulaire": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"manchot_des_laves": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 3
+},
+"haut_bois_des_glaces": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"koala_fleuri": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 17
+},
+"sage_de_la_pierre_sacree": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 5
+},
+"bernard_le_fluide_visqueux": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"glouton_des_lueurs": {
+"facing": "F",
+"quadruped": true,
+"clothes": false,
+"animals": 4
+},
+"pyropoule": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 5
+},
+"fleur_de_givre": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 3
+},
+"maitresse_de_la_giraphe_pourpre": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"crabe_joyau_monde": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"misty": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 99
+},
+"coursier_de_laube": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"pyrocoq": {
+"facing": "L",
+"quadruped": false,
+"clothes": true,
+"animals": 2
+},
+"sarah_melodie_marine": {
+"facing": "R",
+"quadruped": false,
+"clothes": true,
+"animals": 0
+},
+"arbre_des_mysteres": {
+"facing": "N",
+"quadruped": false,
+"clothes": false,
+"animals": 16
+},
+"guerrier_tatou": {
+"facing": "F",
+"quadruped": true,
+"clothes": true,
+"animals": 2
+},
+"chef_croac_croac": {
+"facing": "R",
+"quadruped": true,
+"clothes": true,
+"animals": 1
+},
+"lombre_du_blanc": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+},
+"keria_lensorcelee": {
+"facing": "F",
+"quadruped": false,
+"clothes": false,
+"animals": 2
+},
+"serpent_de_cristal_arctique": {
+"facing": "L",
+"quadruped": false,
+"clothes": false,
+"animals": 12
+},
+"fanure": {
+"facing": "L",
+"quadruped": true,
+"clothes": false,
+"animals": 2
+},
+"tresoriere": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 1
+},
+"kagura_souveraine_des_ames": {
+"facing": "F",
+"quadruped": false,
+"clothes": true,
+"animals": 5
+},
+"chenille_mielleuse": {
+"facing": "R",
+"quadruped": false,
+"clothes": false,
+"animals": 1
+},
+"aeltheria_mere_primordiale": {
+"facing": "R",
+"quadruped": true,
+"clothes": false,
+"animals": 1
+}
+}
+}

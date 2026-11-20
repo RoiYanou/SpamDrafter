@@ -76,6 +76,20 @@ public sealed class MainViewModel : ViewModelBase
             DeckBuilder.ApplySettings(Settings);
             DeckBuilder.SettingsChanged += () => Settings.TrySave(SettingsPath);
             DeckBuilder.ValidationFailed += () => Sounds.Play(SoundKind.Error);
+            // Onglet Challenges : la roue, ses pré-sets, et l'éditeur de deck restreint (Deck Builder).
+            Challenges = new ChallengesViewModel(SpamDrafter.Core.Challenges.ChallengeBook.DefaultPath(SettingsPath));
+            Challenges.OpenEditor += def => { DeckBuilder.StartChallenge(def); SelectedTab = 1; };
+            // Onglet Jeux (phase 16) : jeux quotidiens (énigme du jour…) ; parties enregistrées dans daily.json.
+            var dailyPath = SpamDrafter.Core.Games.DailyBook.DefaultPath(SettingsPath);
+            var dailyBook = SpamDrafter.Core.Games.DailyBook.Load(dailyPath);
+            var historyPath = SpamDrafter.Core.Games.DailyHistory.DefaultPath(SettingsPath);
+            var dailyHistory = SpamDrafter.Core.Games.DailyHistory.Load(historyPath);
+            GameHistoryViewModel HistoryOf(string game) => new(game, dailyHistory, historyPath, items);
+            Games = new GamesViewModel(new RiddleViewModel(kb, items, dir, dailyBook, dailyPath, HistoryOf(SpamDrafter.Core.Games.RiddleGame.GameId)),
+                new DetailViewModel(kb, items, dailyBook, dailyPath, HistoryOf(SpamDrafter.Core.Games.DetailGame.GameId)),
+                new QuizViewModel(dir, items, dailyBook, dailyPath, HistoryOf(SpamDrafter.Core.Games.QuizGame.GameId)),
+                new RngViewModel(kb, items, dir, dailyBook, dailyPath, SpamDrafter.Core.Games.RngHistory.Load(SpamDrafter.Core.Games.RngHistory.DefaultPath(SettingsPath)), SpamDrafter.Core.Games.RngHistory.DefaultPath(SettingsPath), deferLoad: true) { Animate = !Settings.ReduceAnimations });
+            Games.Quiz.LockChanged += () => Raise(nameof(NavLocked));
             Drafter = new DrafterViewModel(_browsers["drafter"], items, kb, decks, DeckBuilder) { Collection = Collection };
             // « Quoi de neuf » (lot E) : bandeau quand les données passent à une autre version de SPAM.
             WhatsNew = new WhatsNewViewModel(kb, Settings, () => Settings.TrySave(SettingsPath), () => DeckBuilder.ImpactedDeckCount);
@@ -131,7 +145,7 @@ public sealed class MainViewModel : ViewModelBase
                 SelectedTab = 0;
             };
             // Thème « selon la carte choisie » : la couleur suit l'élément de la carte ouverte dans la Bibliothèque.
-            _lastWorkTab = Settings.SelectedTab is >= 0 and <= 5 && Settings.SelectedTab != 4 && (Settings.SelectedTab != 3 || HasGenerator) && (Settings.SelectedTab != 5 || HasTester) ? Settings.SelectedTab : 0;
+            _lastWorkTab = Settings.SelectedTab is >= 0 and <= 7 && Settings.SelectedTab != 4 && (Settings.SelectedTab != 3 || HasGenerator) && (Settings.SelectedTab != 5 || HasTester) ? Settings.SelectedTab : 0;
             // Sons : sauvegarde d'un deck, fin d'une génération.
             decks.Changed += (_, _) => { if (_ready) Sounds.Play(SoundKind.Success); };
             if (Generator is { } gen)
@@ -321,17 +335,43 @@ public sealed class MainViewModel : ViewModelBase
     /// <summary>Onglet Tester (phase 14).</summary>
     public TesterViewModel? Tester { get; private set; }
     public bool HasTester => Tester is not null;
+    /// <summary>Onglet Challenges (numéro 6).</summary>
+    public ChallengesViewModel? Challenges { get; private set; }
+    /// <summary>Onglet Jeux (numéro 7, phase 16).</summary>
+    public GamesViewModel? Games { get; private set; }
+
+    /// <summary>Quizz en cours : les onglets sont grisés et ne répondent plus (anti-triche).</summary>
+    public bool NavLocked => Games?.Quiz.IsLocked == true;
+    private bool _lockMessageVisible;
+    /// <summary>Message « Pas de triche pendant le quizz du jour ! » (quelques secondes après un clic sur un onglet verrouillé).</summary>
+    public bool LockMessageVisible { get => _lockMessageVisible; private set => Set(ref _lockMessageVisible, value); }
+    private Avalonia.Threading.DispatcherTimer? _lockTimer;
+    /// <summary>Un clic sur un onglet verrouillé : la fenêtre joue le rebond du message puis son fondu de sortie.</summary>
+    public event Action? LockMessageRequested;
+    /// <summary>Un clic sur une commande bloquée par le quizz (onglet, « Importer ») : affiche le message anti-triche.</summary>
+    public void NotifyLocked() { if (NavLocked) ShowLockMessage(); }
+    private void ShowLockMessage()
+    {
+        LockMessageVisible = true;
+        LockMessageRequested?.Invoke();
+        _lockTimer?.Stop();
+        _lockTimer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3.2) };
+        _lockTimer.Tick += (_, _) => { _lockTimer!.Stop(); LockMessageVisible = false; };
+        _lockTimer.Start();
+    }
 
     private int _selectedTab;
-    /// <summary>0 = Bibliothèque, 1 = Deck builder, 2 = Drafter, 3 = Génération de deck, 4 = Accueil, 5 = Tester.</summary>
+    /// <summary>0 = Bibliothèque, 1 = Deck builder, 2 = Drafter, 3 = Génération de deck, 4 = Accueil, 5 = Tester, 6 = Challenges, 7 = Jeux.</summary>
     public int SelectedTab
     {
         get => _selectedTab;
         set
         {
+            if (value != 7 && Games?.Quiz.IsLocked == true) return;   // quizz en cours : pas de changement d'onglet (anti-triche)
             if (!Set(ref _selectedTab, value)) return;
             if (value != 4) _lastWorkTab = value;
-            foreach (var n in new[] { nameof(IsTab0), nameof(IsTab1), nameof(IsTab2), nameof(IsTab3), nameof(IsTab4), nameof(IsTab5) }) Raise(n);
+            foreach (var n in new[] { nameof(IsTab0), nameof(IsTab1), nameof(IsTab2), nameof(IsTab3), nameof(IsTab4), nameof(IsTab5), nameof(IsTab6), nameof(IsTab7) }) Raise(n);
+            if (value == 7) Games?.Refresh();
             if (_ready) Sounds.Play(SoundKind.Tab);
         }
     }
@@ -345,6 +385,10 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsTab4 => _selectedTab == 4;
     /// <summary>Tester (numéro 5, ajouté après l'accueil pour ne pas changer les numéros déjà enregistrés).</summary>
     public bool IsTab5 => _selectedTab == 5;
+    /// <summary>Challenges (numéro 6).</summary>
+    public bool IsTab6 => _selectedTab == 6;
+    /// <summary>Jeux (numéro 7, phase 16).</summary>
+    public bool IsTab7 => _selectedTab == 7;
     /// <summary>Choisit un onglet depuis la colonne d'icônes (le paramètre est son numéro, 0 à 3).</summary>
     /// <summary>Ouvre la fiche détaillée d'une carte (clic droit sur une carte) dans la Bibliothèque.</summary>
     public void OpenCardDetail(CardItem card)
@@ -364,8 +408,9 @@ public sealed class MainViewModel : ViewModelBase
 
     public RelayCommand SelectTabCommand => _selectTab ??= new RelayCommand(p =>
     {
-        if (p is string s && int.TryParse(s, out var i) && (i != 3 || HasGenerator) && (i != 5 || HasTester) && i is >= 0 and <= 5)
+        if (p is string s && int.TryParse(s, out var i) && (i != 3 || HasGenerator) && (i != 5 || HasTester) && i is >= 0 and <= 7)
         {
+            if (i != 7 && NavLocked) { ShowLockMessage(); return; }   // quizz en cours
             SelectedTab = i;
             if (i == 0 && LibraryTabs is not null) LibraryTabs.SelectedTab = 0;   // un clic sur « Biblio » ramène toujours au sous-onglet « Cartes »
         }

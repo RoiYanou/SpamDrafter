@@ -248,10 +248,14 @@ public sealed class CardBrowser : ViewModelBase
 
     public string CountText => $"{Items.Count} / {PoolCount} cartes";
 
+    /// <summary>Restriction supplémentaire sur les cartes listées (éditeur de challenge) ; null = aucune.</summary>
+    public Func<CardItem, bool>? ExtraFilter { get; set; }
+    public void RefreshFilter() => Refresh();
+
     private void Refresh()
     {
         var els = Checked(ElementChoices); var ras = Checked(RarityChoices);
-        var shown = _all.Where(c => (_collection?.Shows(c) ?? true) && (els.Count == 0 || els.Contains(c.Card.Element)) && (ras.Count == 0 || ras.Contains(c.Card.Rarity))
+        var shown = _all.Where(c => (_collection?.Shows(c) ?? true) && (ExtraFilter?.Invoke(c) ?? true) && (els.Count == 0 || els.Contains(c.Card.Element)) && (ras.Count == 0 || ras.Contains(c.Card.Rarity))
                                     && c.Matches(_search, null, null, _species?.Id, _region?.Id, _chronology?.Id));
         SyncItems(Sorted(shown).ToList());
         Raise(nameof(CountText)); Raise(nameof(HasLoreFilter)); Raise(nameof(AdvancedHeader)); Raise(nameof(LoreSummary)); Raise(nameof(AnyFilterActive)); Raise(nameof(FiltersToggleText));

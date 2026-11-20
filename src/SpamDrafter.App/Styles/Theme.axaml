@@ -133,12 +133,19 @@
 
   <!-- Boutons : secondaire (par défaut) = texte blanc, fond transparent, bordure violet clair ;
        principal (classe « primary », un seul par écran) = fond jaune, texte violet très sombre. -->
+  <!-- Boutons : couleur principale du thème (violet par défaut), couleur secondaire (jaune par défaut) au survol ; un peu transparents. -->
   <Style Selector="Button">
-    <Setter Property="Background" Value="{StaticResource BrushActionFill}" />
+    <Setter Property="Background" Value="{StaticResource BrushButtonFill}" />
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
-    <Setter Property="BorderBrush" Value="{StaticResource BrushActionEdge}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushControlBorder}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusControl}" />
+  </Style>
+  <Style Selector="Button:not(.nav)">
+    <Setter Property="Opacity" Value="0.86" />
+  </Style>
+  <Style Selector="Button:not(.nav):pointerover">
+    <Setter Property="Opacity" Value="0.95" />
   </Style>
   <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{StaticResource BrushActionHover}" />
@@ -150,10 +157,11 @@
     <Setter Property="Foreground" Value="{StaticResource BrushText}" />
   </Style>
   <Style Selector="Button.primary, Button.accent">
-    <Setter Property="Background" Value="{StaticResource BrushPrimaryFill}" />
-    <Setter Property="Foreground" Value="{StaticResource BrushOnYellow}" />
+    <Setter Property="Background" Value="{StaticResource BrushButtonHover}" />
+    <Setter Property="Foreground" Value="{StaticResource BrushText}" />
+    <Setter Property="BorderBrush" Value="{StaticResource BrushYellow}" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="BorderThickness" Value="1.5" />
   </Style>
   <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{StaticResource BrushPrimaryHover}" />
@@ -287,6 +295,13 @@
   <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="#2AFFFFFF" />
     <Setter Property="Foreground" Value="White" />
+  </Style>
+  <!-- Onglets verrouillés (quizz en cours) : grisés, sans effet de survol. -->
+  <Style Selector="Button.nav.locked">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
+  <Style Selector="Button.nav.locked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
   </Style>
   <Style Selector="Button.nav.on /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background">

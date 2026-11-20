@@ -57,11 +57,26 @@
             </WrapPanel>
           </StackPanel>
         </Border>
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-          <TextBox x:Name="NameBox" Text="{Binding Name}" PlaceholderText="Nom du deck" FontSize="17" RenderTransformOrigin="50%,50%" Padding="22,5,6,5" />
+        <Border IsVisible="{Binding ChallengeBannerVisible}" Background="#33FFD84D" BorderBrush="{StaticResource BrushYellow}" BorderThickness="1" CornerRadius="8" Padding="10,8">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <TextBlock Text="🏆" FontFamily="Segoe UI Emoji" FontSize="15" VerticalAlignment="Top" LineHeight="22" Padding="0,2,0,0" />
+                <TextBlock Grid.Column="1" Text="{Binding ChallengeBannerTitle}" FontWeight="Bold" TextWrapping="Wrap" Foreground="{StaticResource BrushYellow}" />
+              </Grid>
+              <TextBlock Text="{Binding ChallengeBannerText}" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+            <!-- Croix : annule la restriction en cours (le deck devient libre ; ses cartes restent). -->
+            <Button Grid.Column="1" Content="✕" Classes="danger" VerticalAlignment="Top" Padding="8,2" FontSize="12" IsVisible="{Binding ChallengeCancelable}"
+                    Command="{Binding CancelChallengeCommand}" ToolTip.Tip="Annuler la restriction du challenge" />
+          </Grid>
+        </Border>
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+          <Button Content="Nouveau" Command="{Binding NewCommand}" Classes="soft" Padding="9,6" FontSize="13" ToolTip.Tip="Commence un nouveau deck" />
+          <TextBox Grid.Column="1" x:Name="NameBox" Text="{Binding Name}" PlaceholderText="Nom du deck" FontSize="16" MinWidth="90" RenderTransformOrigin="50%,50%" Padding="22,5,6,5" />
           <!-- Barre de la couleur de repère choisie pour ce deck (la même que dans « Mes decks »). -->
-          <Border Width="5" Margin="9,8" CornerRadius="3" HorizontalAlignment="Left" IsHitTestVisible="False" Background="{Binding DeckColorBrush}" />
-          <Button Grid.Column="1" Content="Sauvegarder" Command="{Binding SaveCommand}" Classes="primary" Padding="12,6" ToolTip.Tip="Ctrl+S" />
+          <Border Grid.Column="1" Width="5" Margin="9,8" CornerRadius="3" HorizontalAlignment="Left" IsHitTestVisible="False" Background="{Binding DeckColorBrush}" />
+          <Button Grid.Column="2" Content="Sauvegarder" Command="{Binding SaveCommand}" Classes="primary" Padding="9,6" FontSize="13" ToolTip.Tip="Ctrl+S" />
         </Grid>
       </StackPanel>
       <!-- Boutons du deck au-dessus des cartes (gain de place en bas) ; le compteur « 4 / 4 cartes » et la liste d'erreurs n'existent plus ici. -->
@@ -272,7 +287,6 @@
       <!-- Gestion des decks : repliée de base pour gagner de la place. -->
       <v:Collapse DockPanel.Dock="Bottom" OpensUp="True" Header="Gérer les decks" HorizontalAlignment="Stretch" FontSize="12" Margin="0,8,0,0">
       <WrapPanel ItemSpacing="8" LineSpacing="8" Margin="0,6,0,2">
-        <Button Content="Nouveau  (Ctrl+N)" Command="{Binding NewCommand}" Classes="soft" Padding="12,6" />
         <Button Content="Dupliquer" Command="{Binding DuplicateCommand}" Padding="12,6" ToolTip.Tip="Ctrl+D : enregistre une copie du deck en cours sous un nouveau nom" />
         <Button Content="Coller…" Click="Paste_Click" Padding="12,6" ToolTip.Tip="Crée un deck à partir d'un texte copié (voir « Copier le deck »)" />
         <Button Content="Supprimer" Command="{Binding DeleteCommand}" Classes="danger" Padding="12,6" />
@@ -296,8 +310,11 @@
                 <Grid Margin="30,0,12,0" ColumnDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="7" VerticalAlignment="Center">
                   <TextBlock Text="★" Foreground="#FFD35A" IsVisible="{Binding Favorite}" VerticalAlignment="Center" />
                   <ContentControl Grid.Column="1" IsVisible="{Binding IsGenerated}" ToolTip.Tip="Deck du chef" VerticalAlignment="Center"><Viewbox Width="18" Height="18" VerticalAlignment="Center"><Canvas Width="24" Height="24"><Path Data="M6.5 13 C3.5 12.5 3 8 6 7 C6.5 4 10.5 3 12 5.5 C13.5 3 17.5 4 18 7 C21 8 20.5 12.5 17.5 13 V19.5 H6.5 Z" Fill="#F4F0FF" Stroke="#B9AEE0" StrokeThickness="1.2" StrokeJoin="Round" /><Path Data="M6.5 16.2 H17.5" Stroke="#B9AEE0" StrokeThickness="1.2" /></Canvas></Viewbox></ContentControl>
-                  <TextBlock Grid.Column="2" Text="⚠" Foreground="#FFB050" IsVisible="{Binding VersionImpacted}" VerticalAlignment="Center"
-                             ToolTip.Tip="Touché par une mise à jour de SPAM : ouvre le deck pour voir les différences" />
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                    <TextBlock Text="⚠" Foreground="#FFB050" IsVisible="{Binding VersionImpacted}" VerticalAlignment="Center"
+                               ToolTip.Tip="Touché par une mise à jour de SPAM : ouvre le deck pour voir les différences" />
+                    <Border IsVisible="{Binding IsChallenge}" ToolTip.Tip="{Binding ChallengeTip}" Background="#FFD84D" BorderBrush="#B8890F" BorderThickness="1" CornerRadius="9" Padding="6,0" VerticalAlignment="Center"><TextBlock Text="🏆" FontFamily="Segoe UI Emoji" FontSize="12" Foreground="#3A2B66" VerticalAlignment="Center" LineHeight="18" Padding="0,2,0,0" /></Border>
+                  </StackPanel>
                   <TextBlock Grid.Column="3" Text="{Binding Id, Converter={x:Static vm:DeckDecor.Emoji}}" FontFamily="Segoe UI Emoji" FontSize="22" VerticalAlignment="Center" LineHeight="32" Padding="0,3,0,0" />
                   <v:MarqueeText Grid.Column="4" Text="{Binding Name}" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"
                                  ToolTip.Tip="{Binding Name}">

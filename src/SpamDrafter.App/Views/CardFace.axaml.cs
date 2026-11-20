@@ -22,6 +22,14 @@ public partial class CardFace : UserControl
     public static readonly StyledProperty<bool> ShowElementProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(ShowElement));
     public static readonly StyledProperty<bool> ShowRarityProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(ShowRarity), true);
     /// <summary>Le revenu en Spamtons (icône + nombre), en haut à droite.</summary>
+    /// <summary>Choisit si les PV sont visibles, indépendamment du Spamton (Tirage du jour : les Spamtons apparaissent avant les PV) ; null : ils suivent <see cref="ShowIncome"/>.</summary>
+    public static readonly StyledProperty<bool?> HpShownProperty = AvaloniaProperty.Register<CardFace, bool?>(nameof(HpShown));
+    public bool? HpShown { get => GetValue(HpShownProperty); set => SetValue(HpShownProperty, value); }
+    /// <summary>Cache le logo de rareté tout en gardant sa place (Tirage du jour : le logo arrive après la carte, sans que celle-ci change de taille).</summary>
+    public static readonly StyledProperty<bool> RarityLogoShownProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(RarityLogoShown), true);
+    public bool RarityLogoShown { get => GetValue(RarityLogoShownProperty); set => SetValue(RarityLogoShownProperty, value); }
+    public static readonly StyledProperty<bool> RarityLogoVisibleProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(RarityLogoVisible), true);
+    public bool RarityLogoVisible { get => GetValue(RarityLogoVisibleProperty); private set => SetValue(RarityLogoVisibleProperty, value); }
     public static readonly StyledProperty<bool> ShowIncomeProperty = AvaloniaProperty.Register<CardFace, bool>(nameof(ShowIncome));
     /// <summary>Étiquette du talent choisi (« T2 »), en haut à droite ; vide = pas d'étiquette.</summary>
     public static readonly StyledProperty<string?> TalentTagProperty = AvaloniaProperty.Register<CardFace, string?>(nameof(TalentTag));
@@ -419,8 +427,9 @@ public partial class CardFace : UserControl
             RefreshLarge();
         }
         if (change.Property == CreditCommandProperty) CreditBox.IsHitTestVisible = CreditCommand is not null;
-        if (change.Property == ShowIncomeProperty || change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
-            HpVisible = ShowIncome && !(TalentAtBottom && !string.IsNullOrEmpty(TalentTag));
+        if (change.Property == ShowRarityProperty || change.Property == RarityLogoShownProperty) RarityLogoVisible = ShowRarity && RarityLogoShown;
+        if (change.Property == ShowIncomeProperty || change.Property == HpShownProperty || change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)
+            HpVisible = (HpShown ?? ShowIncome) && !(TalentAtBottom && !string.IsNullOrEmpty(TalentTag));
         if (change.Property == LargeImageProperty || change.Property == ImageOverrideProperty) ShowThumb = ImageOverride is null && LargeImage is null;
         if (change.Property == ShowNameProperty || change.Property == ShowRarityProperty || change.Property == ShowAbilitiesProperty || change.Property == CompactAbilitiesProperty || change.Property == CreditBelowAbilitiesProperty) Adapt();
         else if (change.Property == TalentTagProperty || change.Property == TalentAtBottomProperty)

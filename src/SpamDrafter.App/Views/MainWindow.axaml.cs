@@ -36,7 +36,7 @@ public partial class MainWindow : Window
             if (DataContext is not MainViewModel { IsLoaded: true } vm) return;
             await Task.Delay(300);
             PageFx.Suppress = true;
-            var pages = new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3), (PageTester, 5) };
+            var pages = new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3), (PageTester, 5), (PageChallenges, 6), (PageGames, 7) };
             foreach (var (page, tab) in pages)
             {
                 if (vm.SelectedTab == tab || page.IsVisible) continue;
@@ -71,7 +71,7 @@ public partial class MainWindow : Window
             PageFx.Suppress = false;
             // Sécurité : toute page restée affichée sans que le joueur l'ait choisie est recachée.
             if (DataContext is MainViewModel vm2)
-                foreach (var (p, tab) in new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3), (PageTester, 5) })
+                foreach (var (p, tab) in new (Control Page, int Tab)[] { (PageLibrary, 0), (PageBuilder, 1), (PageDrafter, 2), (PageGenerator, 3), (PageTester, 5), (PageChallenges, 6), (PageGames, 7) })
                 {
                     if (vm2.SelectedTab != tab && p.IsVisible) p.SetCurrentValue(IsVisibleProperty, false);
                     p.Opacity = 1; p.IsHitTestVisible = true;
@@ -160,6 +160,8 @@ public partial class MainWindow : Window
         icons.AddBook(NavLibrary, BookGroup, BookCover, BookCoverOuter, BookCoverInner);
         icons.AddBuilder(NavBuilder, BuilderSq1, BuilderSq2, BuilderSq3, BuilderSq4);
         icons.AddDrafter(NavDrafter, DrafterCanvas, DrafterPink, DrafterHeadPink, DrafterPurpleA, DrafterPurpleB, DrafterHeadPurple);
+        icons.AddWheel(NavChallenges, WheelSpin);
+        icons.AddDice(NavGames, DiceBody, new[] { DicePipTL, DicePipTR, DicePipML, DicePipC, DicePipMR, DicePipBL, DicePipBR });
         icons.AddContact(ContactButton, ContactDot1, ContactDot2, ContactDot3);
         icons.Kick();   // état de départ (porte et livre ouverts si leur onglet est celui choisi)
         Rail.PointerEntered += (_, _) => { brand.Hover = true; brand.Kick(); };
@@ -204,9 +206,28 @@ public partial class MainWindow : Window
 
     private bool _quitAsked, _watchingConfirm;
 
+    private int _toastGeneration;
+
+    private void LockedControl_Pressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm) vm.NotifyLocked();
+        e.Handled = true;
+    }
+
     public MainWindow()
     {
         InitializeComponent();
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is not MainViewModel vm) return;
+            // Message « Pas de triche pendant le quizz du jour ! » : il rebondit en apparaissant, puis disparaît en fondu.
+            vm.LockMessageRequested += () =>
+            {
+                PopIn.Play(LockToast, 0.55);
+                var gen = ++_toastGeneration;
+                DispatcherTimer.RunOnce(() => { if (gen == _toastGeneration) PopIn.FadeOut(LockToast, 0.7); }, TimeSpan.FromSeconds(2.3));
+            };
+        };
         WireSounds();
         Opened += (_, _) => { RestoreWindow(); _ = Task.Run(Sounds.Warm); _ = PrewarmAsync(); HookModeTransition(); };
         Closed += (_, _) => { SaveWindow(); SpamDrafter.App.ViewModels.MusicPlayer.Shutdown(); };
